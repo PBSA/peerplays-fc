@@ -3,6 +3,8 @@
 #include <memory>
 #include <string>
 #include <fc/any.hpp>
+#include <fc/network/ip.hpp>
+#include <fc/signals.hpp>
 
 namespace fc { namespace http {
    namespace detail {
@@ -22,6 +24,8 @@ namespace fc { namespace http {
 
          void     set_session_data( fc::any d ){ _session_data = std::move(d); }
          fc::any& get_session_data() { return _session_data; }
+
+         fc::signal<void()> closed;
       private:
          fc::any                                 _session_data; 
          std::function<void(const std::string&)> _on_message;
@@ -38,6 +42,7 @@ namespace fc { namespace http {
 
          void on_connection( const on_connection_handler& handler);
          void listen( uint16_t port );
+         void listen( const fc::ip::endpoint& ep );
          void start_accept();
 
       private:

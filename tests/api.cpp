@@ -8,9 +8,10 @@ class calculator
    public:
       int32_t add( int32_t a, int32_t b ); // not implemented
       int32_t sub( int32_t a, int32_t b ); // not implemented
+      void    on_result( const std::function<void(int32_t)>& cb );
 };
 
-FC_API( calculator, (add)(sub) )
+FC_API( calculator, (add)(sub)(on_result) )
 
 
 class login_api
@@ -22,7 +23,7 @@ class login_api
          return *calc;
       }
       fc::optional<fc::api<calculator>> calc;
-      std::set<std::string> test( const std::string&, const std::string& ){};
+      std::set<std::string> test( const std::string&, const std::string& ) { return std::set<std::string>(); }
 };
 FC_API( login_api, (get_calc)(test) );
 
@@ -31,14 +32,18 @@ using namespace fc;
 class some_calculator
 {
    public:
-      int32_t add( int32_t a, int32_t b ) { return a+b; }
-      int32_t sub( int32_t a, int32_t b ) { return a-b; }
+      int32_t add( int32_t a, int32_t b ) { wlog("."); if( _cb ) _cb(a+b); return a+b; }
+      int32_t sub( int32_t a, int32_t b ) {  wlog(".");if( _cb ) _cb(a-b); return a-b; }
+      void    on_result( const std::function<void(int32_t)>& cb ) { wlog( "set callback" ); _cb = cb;  return ; }
+      std::function<void(int32_t)> _cb;
 };
 class variant_calculator
 {
    public:
       double add( fc::variant a, fc::variant b ) { return a.as_double()+b.as_double(); }
       double sub( fc::variant a, fc::variant b ) { return a.as_double()-b.as_double(); }
+      void    on_result( const std::function<void(int32_t)>& cb ) { wlog("set callback"); _cb = cb; return ; }
+      std::function<void(int32_t)> _cb;
 };
 
 using namespace fc::http;
@@ -46,12 +51,12 @@ using namespace fc::rpc;
 
 int main( int argc, char** argv )
 {
-   {
+   try {
       fc::api<calculator> calc_api( std::make_shared<some_calculator>() );
 
       fc::http::websocket_server server;
       server.on_connection([&]( const websocket_connection_ptr& c ){
-               auto wsc = std::make_shared<websocket_api_connection>(c);
+               auto wsc = std::make_shared<websocket_api_connection>(*c);
                auto login = std::make_shared<login_api>();
                login->calc = calc_api;
                wsc->register_api(fc::api<login_api>(login));
@@ -66,9 +71,10 @@ int main( int argc, char** argv )
          try { 
             fc::http::websocket_client client;
             auto con  = client.connect( "ws://localhost:8090" );
-            auto apic = std::make_shared<websocket_api_connection>(con);
+            auto apic = std::make_shared<websocket_api_connection>(*con);
             auto remote_login_api = apic->get_remote_api<login_api>();
             auto remote_calc = remote_login_api->get_calc();
+            remote_calc->on_result( []( uint32_t r ) { elog( "callback result ${r}", ("r",r) ); } );
             wdump((remote_calc->add( 4, 5 )));
          } catch ( const fc::exception& e )
          {
@@ -76,6 +82,10 @@ int main( int argc, char** argv )
          }
       }
       wlog( "exit scope" );
+   } 
+   catch( const fc::exception& e )
+   {
+      edump((e.to_detail_string()));
    }
    wlog( "returning now..." );
    
