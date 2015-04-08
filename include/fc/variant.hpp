@@ -115,6 +115,8 @@ namespace fc
 
    #ifdef __APPLE__
    void to_variant( size_t s, variant& v );
+   #elif defined(_MSC_VER)
+   void to_variant( unsigned long s, variant& v);
    #elif !defined(_MSC_VER)
    void to_variant( long long int s, variant& v );
    void to_variant( unsigned long long int s, variant& v );
@@ -487,6 +489,11 @@ namespace fc
    #ifdef __APPLE__
    inline void to_variant( size_t s, variant& v ) { v = variant(uint64_t(s)); }
    #endif
+
+   #ifdef _MSC_VER
+   inline void to_variant( unsigned long s, variant& v) { v = variant(uint64_t(s)); }
+   #endif
+
    template<typename T>
    void to_variant( const std::shared_ptr<T>& var,  variant& vo )
    {
