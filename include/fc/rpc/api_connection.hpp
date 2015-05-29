@@ -91,7 +91,7 @@ namespace fc {
             return _methods[method_id](args);
          }
 
-         fc::api_connection&  get_connection(){ return *_api_connection; }
+         fc::api_connection&  get_connection(){ auto tmp = _api_connection.lock(); FC_ASSERT( tmp, "connection closed"); return *tmp; }
 
 
       private:
@@ -112,14 +112,14 @@ namespace fc {
          template<typename R, typename Signature, typename ... Args>
          R call_generic( const std::function<R(std::function<Signature>,Args...)>& f, variants::const_iterator a0, variants::const_iterator e )
          {
-            FC_ASSERT( a0 != e );
-            detail::callback_functor<Signature> arg0( *this, a0->as<uint64_t>() );
+            FC_ASSERT( a0 != e, "too few arguments passed to method" );
+            detail::callback_functor<Signature> arg0( get_connection(), a0->as<uint64_t>() );
             return  call_generic<R,Args...>( this->bind_first_arg<R,std::function<Signature>,Args...>( f, std::function<Signature>(arg0) ), a0+1, e );
          }
          template<typename R, typename Signature, typename ... Args>
          R call_generic( const std::function<R(const std::function<Signature>&,Args...)>& f, variants::const_iterator a0, variants::const_iterator e )
          {
-            FC_ASSERT( a0 != e );
+            FC_ASSERT( a0 != e, "too few arguments passed to method" );
             detail::callback_functor<Signature> arg0( get_connection(), a0->as<uint64_t>() );
             return  call_generic<R,Args...>( this->bind_first_arg<R,const std::function<Signature>&,Args...>( f, arg0 ), a0+1, e );
          }
@@ -127,13 +127,13 @@ namespace fc {
          template<typename R, typename Arg0, typename ... Args>
          R call_generic( const std::function<R(Arg0,Args...)>& f, variants::const_iterator a0, variants::const_iterator e )
          {
-            FC_ASSERT( a0 != e );
+            FC_ASSERT( a0 != e, "too few arguments passed to method" );
             return  call_generic<R,Args...>( this->bind_first_arg<R,Arg0,Args...>( f, a0->as< typename std::decay<Arg0>::type >() ), a0+1, e );
          }
 
          struct api_visitor
          {
-            api_visitor( generic_api& a, const std::shared_ptr<fc::api_connection>& s ):api(a),_api_con(s){ }
+            api_visitor( generic_api& a, const std::weak_ptr<fc::api_connection>& s ):api(a),_api_con(s){ }
 
             template<typename Interface, typename Adaptor, typename ... Args>
             std::function<variant(const fc::variants&)> to_generic( const std::function<api<Interface,Adaptor>(Args...)>& f )const;
@@ -154,11 +154,11 @@ namespace fc {
             }
 
             generic_api&  api;
-            const std::shared_ptr<fc::api_connection>& _api_con;
+            const std::weak_ptr<fc::api_connection>& _api_con;
          };
 
 
-         std::shared_ptr<fc::api_connection>                     _api_connection;
+         std::weak_ptr<fc::api_connection>                       _api_connection;
          fc::any                                                 _api;
          std::map< std::string, uint32_t >                       _by_name;
          std::vector< std::function<variant(const variants&)> >  _methods;
@@ -325,7 +325,7 @@ namespace fc {
    generic_api::generic_api( const Api& a, const std::shared_ptr<fc::api_connection>& c )
    :_api_connection(c),_api(a)
    {
-      boost::any_cast<const Api&>(a)->visit( api_visitor( *this, _api_connection ) );
+      boost::any_cast<const Api&>(a)->visit( api_visitor( *this, c ) );
    }
 
    template<typename Interface, typename Adaptor, typename ... Args>
@@ -335,8 +335,11 @@ namespace fc {
       auto api_con = _api_con;
       auto gapi = &api;
       return [=]( const variants& args ) { 
+         auto con = api_con.lock();
+         FC_ASSERT( con, "not connected" );
+
          auto api_result = gapi->call_generic( f, args.begin(), args.end() ); 
-         return api_con->register_api( api_result );
+         return con->register_api( api_result );
       };
    }
    template<typename Interface, typename Adaptor, typename ... Args>
@@ -346,9 +349,12 @@ namespace fc {
       auto api_con = _api_con;
       auto gapi = &api;
       return [=]( const variants& args )-> fc::variant { 
+         auto con = api_con.lock();
+         FC_ASSERT( con, "not connected" );
+
          auto api_result = gapi->call_generic( f, args.begin(), args.end() ); 
          if( api_result )
-            return api_con->register_api( *api_result );
+            return con->register_api( *api_result );
          return variant();
       };
    }

@@ -3,7 +3,10 @@
 #include <fc/io/json.hpp>
 #include <fc/io/buffered_iostream.hpp>
 #include <fc/io/sstream.hpp>
+#include <fc/rpc/api_connection.hpp>
 #include <fc/thread/thread.hpp>
+
+#include <iostream>
 
 namespace fc { namespace rpc {
 
@@ -47,16 +50,26 @@ namespace fc { namespace rpc {
          {
             _result_formatters[method] = formatter;
          }
+
+         virtual void getline( const fc::string& prompt, fc::string& line );
+
+         void set_prompt( const string& prompt ) { _prompt = prompt; }
+
       private:
          void run()
          {
-               while( !fc::cin.eof() && !_run_complete.canceled() )
-               {
-                  try {
-                     std::cout << ">>> ";
-                     std::cout.flush();
+             while( !_run_complete.canceled() )
+             {
+                try {
                      std::string line;
-                     fc::getline( fc::cin, line );
+                     try
+                     {
+                        getline( _prompt.c_str(), line );
+                     }
+                     catch ( const fc::eof_exception& e )
+                     {
+                        break;
+                     }
                      std::cout << line << "\n";
                      line += char(EOF);
                      fc::variants args = fc::json::variants_from_string(line);;
@@ -77,8 +90,9 @@ namespace fc { namespace rpc {
                 {
                    std::cout << e.to_detail_string() << "\n";
                 }
-            } 
+             } 
          }
+         std::string      _prompt = ">>>";
          std::map<string,std::function<string(variant,const variants&)> > _result_formatters;
          fc::future<void> _run_complete;
    };

@@ -24,6 +24,7 @@ SET( DEFAULT_LIBRARY_INSTALL_DIR lib/ )
 SET( DEFAULT_EXECUTABLE_INSTALL_DIR bin/ )
 SET( CMAKE_DEBUG_POSTFIX _debug )
 SET( BUILD_SHARED_LIBS NO )
+SET( ECC_IMPL openssl CACHE STRING "openssl or secp256k1 or mixed" )
 
 set(platformBitness 32)
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -34,6 +35,19 @@ SET (ORIGINAL_LIB_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
 SET(BOOST_COMPONENTS)
 LIST(APPEND BOOST_COMPONENTS thread date_time system filesystem program_options signals serialization chrono unit_test_framework context locale iostreams)
+SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
+
+
+IF( ECC_IMPL STREQUAL openssl )
+SET( ECC_REST src/crypto/elliptic_impl_pub.cpp )
+ELSE( ECC_IMPL STREQUAL openssl )
+SET( ECC_LIB secp256k1 )
+IF( ECC_IMPL STREQUAL mixed )
+SET( ECC_REST src/crypto/elliptic_impl_priv.cpp src/crypto/elliptic_impl_pub.cpp )
+ELSE( ECC_IMPL STREQUAL mixed )
+SET( ECC_REST src/crypto/elliptic_impl_priv.cpp )
+ENDIF( ECC_IMPL STREQUAL mixed )
+ENDIF( ECC_IMPL STREQUAL openssl )
 
 IF( WIN32 )
   MESSAGE(STATUS "Configuring fc to build on Win32")
@@ -44,7 +58,6 @@ IF( WIN32 )
   SET(BOOST_ROOT $ENV{BOOST_ROOT})
 #  set(Boost_USE_DEBUG_PYTHON ON)
   set(Boost_USE_MULTITHREADED ON)
-  set(Boost_USE_STATIC_LIBS ON)
   set(BOOST_ALL_DYN_LINK OFF) # force dynamic linking for all libraries
 
   FIND_PACKAGE(Boost 1.53 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
@@ -62,7 +75,6 @@ IF( WIN32 )
 ELSE(WIN32)
   MESSAGE(STATUS "Configuring fc to build on Unix/Apple")
 
-  SET(Boost_USE_STATIC_LIBS ON)
   LIST(APPEND BOOST_COMPONENTS coroutine)
 
   FIND_PACKAGE(Boost 1.53 REQUIRED COMPONENTS ${BOOST_COMPONENTS}) 
@@ -76,6 +88,8 @@ ELSE(WIN32)
     SET(pthread_library pthread)
   ENDIF(NOT APPLE)
 ENDIF(WIN32)
+
+
 
 IF(NOT "$ENV{OPENSSL_ROOT_DIR}" STREQUAL "")
   set(OPENSSL_ROOT_DIR $ENV{OPENSSL_ROOT_DIR} )
@@ -124,6 +138,7 @@ set( fc_sources
      src/interprocess/file_mapping.cpp
      src/interprocess/mmap_struct.cpp
      src/rpc/json_connection.cpp
+     src/rpc/cli.cpp
      src/log/log_message.cpp 
      src/log/logger.cpp
      src/log/appender.cpp
@@ -148,7 +163,9 @@ set( fc_sources
      src/crypto/sha512.cpp
      src/crypto/dh.cpp
      src/crypto/blowfish.cpp
-     src/crypto/elliptic.cpp
+     src/crypto/elliptic_common.cpp
+     ${ECC_REST}
+     src/crypto/elliptic_${ECC_IMPL}.cpp
      src/crypto/rand.cpp
      src/crypto/salsa20.cpp
      #src/crypto/scrypt.cpp
@@ -196,6 +213,25 @@ add_subdirectory( vendor/udt4 )
 
 setup_library( fc SOURCES ${sources} LIBRARY_TYPE STATIC DONT_INSTALL_LIBRARY )
 
+# begin readline stuff
+find_package(Curses)
+find_package(Readline)
+
+file(GLOB HEADERS "include/bts/cli/*.hpp")
+
+if (READLINE_FOUND)
+  target_compile_definitions (fc PRIVATE HAVE_READLINE)
+  set(readline_libraries ${Readline_LIBRARY})
+  if (CURSES_FOUND)
+    list(APPEND readline_libraries ${CURSES_LIBRARY})
+  endif()
+  set(readline_includes ${Readline_INCLUDE_DIR})
+endif()
+if(WIN32)
+  target_compile_definitions( fc PRIVATE _CRT_NONSTDC_NO_DEPRECATE )
+endif(WIN32)
+# end readline stuff
+
 IF(WIN32)
   target_compile_definitions(fc PUBLIC WIN32 NOMINMAX _WIN32_WINNT=0x0501 _CRT_SECURE_NO_WARNINGS
     _SCL_SERCURE_NO_WARNINGS 
@@ -222,6 +258,7 @@ target_include_directories(fc
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${Boost_INCLUDE_DIR}
     ${OPENSSL_INCLUDE_DIR}
+    "${readline_includes}"
 
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
   #${CMAKE_CURRENT_SOURCE_DIR}/vendor/scrypt-jane
@@ -233,8 +270,21 @@ target_include_directories(fc
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/websocketpp
   )
 
-#target_link_libraries( fc PUBLIC easylzma_static scrypt udt ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library})
-target_link_libraries( fc PUBLIC easylzma_static udt ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library})
+#target_link_libraries( fc PUBLIC easylzma_static scrypt udt ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${ECC_LIB} )
+target_link_libraries( fc PUBLIC -L/usr/local/lib easylzma_static udt ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${readline_libraries} ${ECC_LIB} )
+
+if(MSVC)
+  set_source_files_properties( src/network/http/websocket.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
+endif(MSVC)
+
+
+IF(NOT Boost_UNIT_TEST_FRAMEWORK_LIBRARY MATCHES "\\.(a|lib)$")
+IF(WIN32)
+add_definitions(/DBOOST_TEST_DYN_LINK)
+ELSE(WIN32)
+add_definitions(-DBOOST_TEST_DYN_LINK)
+ENDIF(WIN32)
+ENDIF()
 
 add_executable( api tests/api.cpp )
 target_link_libraries( api fc )
@@ -247,6 +297,9 @@ target_link_libraries( ntp_test fc )
 add_executable( task_cancel_test tests/task_cancel.cpp )
 target_link_libraries( task_cancel_test fc )
 
+
+add_executable( bloom_test tests/bloom_test.cpp )
+target_link_libraries( bloom_test fc )
 
 add_executable( real128_test tests/real128_test.cpp )
 target_link_libraries( real128_test fc )
