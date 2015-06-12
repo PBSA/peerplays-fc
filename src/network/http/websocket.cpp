@@ -193,7 +193,7 @@ namespace fc { namespace http {
                     _server_thread.async( [&](){
                        auto current_con = _connections.find(hdl);
                        assert( current_con != _connections.end() );
-                       wdump(("server")(msg->get_payload()));
+                       idump(("server")(msg->get_payload()));
                        //std::cerr<<"recv: "<<msg->get_payload()<<"\n";
                        auto payload = msg->get_payload();
                        fc::async([=](){ current_con->second->on_message( payload ); });
@@ -207,7 +207,7 @@ namespace fc { namespace http {
                        _on_connection( current_con );
 
                        auto con = _server.get_con_from_hdl(hdl);
-                       wdump(("server")(con->get_request_body()));
+                       idump(("server")(con->get_request_body()));
                        auto response = current_con->on_http( con->get_request_body() );
 
                        con->set_body( response );
@@ -305,7 +305,7 @@ namespace fc { namespace http {
                        auto current_con = _connections.find(hdl);
                        assert( current_con != _connections.end() );
                        auto received = msg->get_payload();
-                       wdump((received));
+                       idump((received));
                        fc::async([=](){ current_con->second->on_message( received ); });
                     }).wait();
                });
@@ -318,7 +318,7 @@ namespace fc { namespace http {
                           _on_connection( current_con );
 
                           auto con = _server.get_con_from_hdl(hdl);
-                          wdump(("server")(con->get_request_body()));
+                          idump(("server")(con->get_request_body()));
                           auto response = current_con->on_http( con->get_request_body() );
 
                           con->set_body( response );
@@ -399,7 +399,7 @@ namespace fc { namespace http {
                 _client.clear_access_channels( websocketpp::log::alevel::all );
                 _client.set_message_handler( [&]( connection_hdl hdl, message_ptr msg ){
                    _client_thread.async( [&](){
-                        wdump((msg->get_payload()));
+                        idump((msg->get_payload()));
                         //std::cerr<<"recv: "<<msg->get_payload()<<"\n";
                         auto received = msg->get_payload();
                         fc::async( [=](){
@@ -454,7 +454,7 @@ namespace fc { namespace http {
                 _client.clear_access_channels( websocketpp::log::alevel::all );
                 _client.set_message_handler( [&]( connection_hdl hdl, message_ptr msg ){
                    _client_thread.async( [&](){
-                        wdump((msg->get_payload()));
+                        idump((msg->get_payload()));
                       _connection->on_message( msg->get_payload() );
                    }).wait();
                 });
@@ -463,7 +463,7 @@ namespace fc { namespace http {
                    {
                       try {
                          _client_thread.async( [&](){
-                                 wlog(". ${p}", ("p",uint64_t(_connection.get())));
+                                 ilog(". ${p}", ("p",uint64_t(_connection.get())));
                                  if( !_shutting_down && !_closed && _connection )
                                     _connection->closed();
                                  _connection.reset();
@@ -507,7 +507,7 @@ namespace fc { namespace http {
             {
                if(_connection )
                {
-                  wlog(".");
+                  ilog(".");
                   _shutting_down = true;
                   _connection->close(0, "client closed");
                   _closed->wait();
