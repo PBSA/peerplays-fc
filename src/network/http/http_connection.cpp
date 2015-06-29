@@ -45,6 +45,8 @@ class fc::http::connection::impl
         rep.status = static_cast<int>(to_int64(fc::string(line.data())));
         s = read_until( line.data(), line.data()+line.size(), '\n' ); // DESCRIPTION
         
+        fc::optional<size_t> content_length;
+        bool is_chunked = false;
         while( (s = read_until( line.data(), line.data()+line.size(), '\n' )) > 1 ) {
           fc::http::header h;
           char* end = line.data();
@@ -56,13 +58,50 @@ class fc::http::connection::impl
           while( *end != '\r' ) ++end;
           h.val = fc::string(skey,end);
           rep.headers.push_back(h);
-          if( boost::iequals(h.key, "Content-Length") ) {
-             rep.body.resize( static_cast<size_t>(to_uint64( fc::string(h.val) ) ));
+          if( boost::iequals(h.key, "Content-Length") )
+            content_length = static_cast<size_t>(to_uint64( fc::string(h.val) ));
+          if( boost::iequals(h.key, "Transfer-Encoding") && 
+              boost::iequals(fc::string(h.val), "chunked") )
+            is_chunked = true;
+        }
+
+        if (is_chunked)
+        {
+          // Chunked means we get a hexadecimal number of bytes on a line, followed by the content
+          s = read_until( line.data(), line.data()+line.size(), '\n' ); // DESCRIPTION
+          if (line[strlen(line.data())] == '\r')
+            line[strlen(line.data())] = 0;
+          unsigned length;
+          if (sscanf(line.data(), "%x", &length) != 1)
+            FC_THROW("Invalid content length: ${length}", ("length", fc::string(line.data())));
+          content_length = length;
+        }
+
+        if (content_length)
+        {
+          if (*content_length)
+          {
+            rep.body.resize(*content_length);
+            sock.read( rep.body.data(), *content_length );
           }
         }
-        if( rep.body.size() ) {
-          sock.read( rep.body.data(), rep.body.size() );
+        else
+        {
+          std::shared_ptr<char> buf(new char);
+          while (true)
+          {
+            try
+            {
+              sock.read(buf, sizeof(buf), 0);
+              rep.body.push_back(*buf);
+            }
+            catch (const fc::eof_exception&)
+            {
+              break;
+            }
+          }
         }
+
         return rep;
       } catch ( fc::exception& e ) {
         elog( "${exception}", ("exception",e.to_detail_string() ) );
@@ -89,8 +128,10 @@ void       connection::connect_to( const fc::ip::endpoint& ep ) {
 }
 
 http::reply connection::request( const fc::string& method, 
-                                const fc::string& url, 
-                                const fc::string& body, const headers& he ) {
+                                 const fc::string& url, 
+                                 const fc::string& body, 
+                                 const headers& he,
+                                 const fc::string& content_type ) {
 	
   fc::url parsed_url(url);
   if( !my->sock.is_open() ) {
@@ -101,7 +142,7 @@ http::reply connection::request( const fc::string& method,
       fc::stringstream req;
       req << method <<" "<<parsed_url.path()->generic_string()<<" HTTP/1.1\r\n";
       req << "Host: "<<*parsed_url.host()<<"\r\n";
-      req << "Content-Type: application/json\r\n";
+      req << "Content-Type: " << content_type << "\r\n";
       for( auto i = he.begin(); i != he.end(); ++i )
       {
           req << i->key <<": " << i->val<<"\r\n";
