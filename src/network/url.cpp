@@ -60,9 +60,22 @@ namespace fc
            _path = fc::path( "/" ) / _lpath;
 #endif
            std::getline( ss, _largs );
-           if( _args.valid() && _args->size() ) 
+           if( _largs.size() ) 
            {
-             // TODO: args = fc::move(_args);
+             mutable_variant_object new_args;
+             std::istringstream args_stream(_largs);
+             std::string _larg;
+             while (std::getline(args_stream, _larg, '&'))
+             {
+               std::string::size_type equals_pos = _larg.find('=');
+               if (equals_pos != std::string::npos)
+               {
+                 std::string key = _larg.substr(0, equals_pos);
+                 std::string value = _larg.substr(equals_pos + 1);
+                 new_args[key] = value;
+               }
+             } 
+             _args = new_args;
            }
          }
 
@@ -88,18 +101,21 @@ namespace fc
   url::operator string()const
   {
       std::stringstream ss;
-      ss<<my->_proto<<"://";
-      if( my->_user.valid() ) {
+      ss << my->_proto << "://";
+      if( my->_user.valid() ) 
+      {
         ss << *my->_user;
-        if( my->_pass.valid() ) {
-          ss<<":"<<*my->_pass;
-        }
-        ss<<"@";
+        if( my->_pass.valid() )
+          ss << ":" << *my->_pass;
+        ss << "@";
       }
-      if( my->_host.valid() ) ss<<*my->_host;
-      if( my->_port.valid() ) ss<<":"<<*my->_port;
-      if( my->_path.valid() ) ss<<my->_path->generic_string();
-    //  if( my->_args ) ss<<"?"<<*my->_args;
+      if( my->_host.valid() ) 
+        ss << *my->_host;
+      if( my->_port.valid() ) 
+        ss << ":" << *my->_port;
+      if( my->_path.valid() ) 
+        ss << my->_path->generic_string();
+      ss << args_as_string();
       return ss.str();
   }
 
@@ -188,6 +204,21 @@ namespace fc
   ovariant_object           url::args()const
   {
     return my->_args;
+  }
+  std::string               url::args_as_string()const
+  {
+    std::ostringstream ss;
+    if( my->_args ) 
+    {
+      bool first = true;
+      for (auto iter = my->_args->begin(); iter != my->_args->end(); ++iter)
+      {
+        ss << (first ? "?" : "&");
+        first = false;
+        ss << iter->key() << "=" << iter->value().as_string();
+      }
+    }
+    return ss.str();
   }
   fc::optional<uint16_t>    url::port()const
   {

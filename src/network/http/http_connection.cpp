@@ -9,7 +9,7 @@
 #include <fc/io/stdio.hpp>
 #include <fc/network/url.hpp>
 #include <boost/algorithm/string.hpp>
-
+#include <boost/range/algorithm_ext/push_back.hpp>
 
 class fc::http::connection::impl 
 {
@@ -67,14 +67,25 @@ class fc::http::connection::impl
 
         if (is_chunked)
         {
-          // Chunked means we get a hexadecimal number of bytes on a line, followed by the content
-          s = read_until( line.data(), line.data()+line.size(), '\n' ); // DESCRIPTION
-          if (line[strlen(line.data())] == '\r')
-            line[strlen(line.data())] = 0;
-          unsigned length;
-          if (sscanf(line.data(), "%x", &length) != 1)
-            FC_THROW("Invalid content length: ${length}", ("length", fc::string(line.data())));
-          content_length = length;
+          do
+          {
+            // Chunked means we get a hexadecimal number of bytes on a line, followed by the content
+            s = read_until( line.data(), line.data()+line.size(), '\n' ); //read chunk length 
+            if (line[strlen(line.data())] == '\r')
+              line[strlen(line.data())] = 0;
+            unsigned length;
+            if (sscanf(line.data(), "%x", &length) != 1)
+              FC_THROW("Invalid content length: ${length}", ("length", fc::string(line.data())));
+            content_length = length;
+            if (*content_length)
+            {
+              std::vector<char> temp_data(*content_length);
+              sock.read( temp_data.data(), *content_length );
+              boost::push_back(rep.body, temp_data);
+              read_until( line.data(), line.data()+line.size(), '\n' ); //discard cr/lf after each chunk 
+            }
+          }
+          while (*content_length != 0);
         }
 
         if (content_length)
@@ -85,7 +96,7 @@ class fc::http::connection::impl
             sock.read( rep.body.data(), *content_length );
           }
         }
-        else
+        else //just read until closed if no content length or chunking
         {
           std::shared_ptr<char> buf(new char);
           while (true)
@@ -140,7 +151,7 @@ http::reply connection::request( const fc::string& method,
   }
   try {
       fc::stringstream req;
-      req << method <<" "<<parsed_url.path()->generic_string()<<" HTTP/1.1\r\n";
+      req << method << " " << parsed_url.path()->generic_string() << parsed_url.args_as_string() << " HTTP/1.1\r\n";
       req << "Host: "<<*parsed_url.host()<<"\r\n";
       req << "Content-Type: " << content_type << "\r\n";
       for( auto i = he.begin(); i != he.end(); ++i )
@@ -152,10 +163,12 @@ http::reply connection::request( const fc::string& method,
       fc::string head = req.str();
 
       my->sock.write( head.c_str(), head.size() );
+      //elog("Sending header ${head}", ("head", head));
     //  fc::cerr.write( head.c_str() );
 
       if( body.size() )  {
           my->sock.write( body.c_str(), body.size() );
+          //elog("Sending body ${body}", ("body", body));
     //      fc::cerr.write( body.c_str() );
       }
     //  fc::cerr.flush();

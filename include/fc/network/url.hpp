@@ -48,6 +48,7 @@ namespace fc {
       ostring                   pass()const;
       opath                     path()const;
       ovariant_object           args()const;
+      std::string               args_as_string()const;
       fc::optional<uint16_t>    port()const;
 
     private:
