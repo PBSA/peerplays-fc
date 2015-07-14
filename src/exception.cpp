@@ -4,6 +4,8 @@
 #include <fc/log/logger.hpp>
 #include <fc/io/json.hpp>
 
+#include <iostream>
+
 namespace fc
 {
    FC_REGISTER_EXCEPTIONS( (timeout_exception)
@@ -23,6 +25,7 @@ namespace fc
                            (aes_exception)
                            (overflow_exception)
                            (underflow_exception)
+                           (divide_by_zero_exception)
                          )
 
    namespace detail
@@ -37,7 +40,7 @@ namespace fc
       };
    }
    exception::exception( log_messages&& msgs, int64_t code,
-                                    const std::string& name_value, 
+                                    const std::string& name_value,
                                     const std::string& what_value )
    :my( new detail::exception_impl() )
    {
@@ -47,18 +50,18 @@ namespace fc
       my->_elog = fc::move(msgs);
    }
 
-   unhandled_exception::unhandled_exception( log_message&& m, std::exception_ptr e ) 
-   :exception( fc::move(m) ) 
-   { 
+   unhandled_exception::unhandled_exception( log_message&& m, std::exception_ptr e )
+   :exception( fc::move(m) )
+   {
       _inner = e;
-   } 
+   }
    unhandled_exception::unhandled_exception( const exception& r )
    :exception(r)
    {
    }
-   unhandled_exception::unhandled_exception( log_messages m )  
-   :exception() 
-   { my->_elog = fc::move(m); } 
+   unhandled_exception::unhandled_exception( log_messages m )
+   :exception()
+   { my->_elog = fc::move(m); }
 
    std::exception_ptr unhandled_exception::get_inner_exception()const { return _inner; }
 
@@ -75,9 +78,9 @@ namespace fc
       return e;
    }
 
-   exception::exception( int64_t code, 
+   exception::exception( int64_t code,
                          const std::string& name_value,
-                         const std::string& what_value ) 
+                         const std::string& what_value )
    :my( new detail::exception_impl() )
    {
       my->_code = code;
@@ -85,8 +88,8 @@ namespace fc
       my->_name = name_value;
    }
 
-   exception::exception( log_message&& msg, 
-                         int64_t code, 
+   exception::exception( log_message&& msg,
+                         int64_t code,
                          const std::string& name_value,
                          const std::string& what_value )
    :my( new detail::exception_impl() )
@@ -114,7 +117,7 @@ namespace fc
                                 ( "name", e.name() )
                                 ( "message", e.what() )
                                 ( "stack", e.get_log() );
-                                
+
    }
    void          from_variant( const variant& v, exception& ll )
    {
@@ -134,7 +137,7 @@ namespace fc
    {
       my->_elog.emplace_back( fc::move(m) );
    }
-   
+
    /**
     *   Generates a detailed string including file, line, method,
     *   and other information that is generally only useful for
@@ -187,26 +190,26 @@ namespace fc
       exception_factory::instance().rethrow( *this );
    }
 
-   exception_ptr exception::dynamic_copy_exception()const 
+   exception_ptr exception::dynamic_copy_exception()const
    {
        return std::make_shared<exception>(*this);
    }
-   
+
    fc::string except_str()
    {
-       return boost::current_exception_diagnostic_information(); 
+       return boost::current_exception_diagnostic_information();
    }
 
    void throw_bad_enum_cast( int64_t i, const char* e )
    {
-      FC_THROW_EXCEPTION( bad_cast_exception, 
-                          "invalid index '${key}' in enum '${enum}'", 
+      FC_THROW_EXCEPTION( bad_cast_exception,
+                          "invalid index '${key}' in enum '${enum}'",
                           ("key",i)("enum",e) );
    }
    void throw_bad_enum_cast( const char* k, const char* e )
    {
-      FC_THROW_EXCEPTION( bad_cast_exception, 
-                          "invalid name '${key}' in enum '${enum}'", 
+      FC_THROW_EXCEPTION( bad_cast_exception,
+                          "invalid name '${key}' in enum '${enum}'",
                           ("key",k)("enum",e) );
    }
 
@@ -227,5 +230,25 @@ namespace fc
       my = std::move(copy.my);
       return *this;
    }
+
+   void record_assert_trip(
+      const char* filename,
+      uint32_t lineno,
+      const char* expr
+      )
+   {
+      fc::mutable_variant_object assert_trip_info =
+         fc::mutable_variant_object()
+         ("source_file", filename)
+         ("source_lineno", lineno)
+         ("expr", expr)
+         ;
+      std::cout
+         << "FC_ASSERT triggered:  "
+         << fc::json::to_string( assert_trip_info ) << "\n";
+      return;
+   }
+
+   bool enable_record_assert_trip = false;
 
 } // fc
