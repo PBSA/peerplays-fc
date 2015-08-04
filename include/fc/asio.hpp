@@ -39,17 +39,8 @@ namespace asio {
           std::shared_ptr<const char> _buffer;
         };
 
-        //void read_write_handler( const promise<size_t>::ptr& p, 
-        //                         const boost::system::error_code& ec, 
-        //                         size_t bytes_transferred );
-        void read_write_handler_ec( promise<size_t>* p, 
-                                    boost::system::error_code* oec, 
-                                    const boost::system::error_code& ec, 
-                                    size_t bytes_transferred );
         void error_handler( const promise<void>::ptr& p, 
-                              const boost::system::error_code& ec );
-        void error_handler_ec( promise<boost::system::error_code>* p, 
-                              const boost::system::error_code& ec ); 
+                            const boost::system::error_code& ec );
 
         template<typename C>
         struct non_blocking { 
@@ -57,14 +48,14 @@ namespace asio {
           bool operator()( C& c, bool s ) { c.non_blocking(s); return true; } 
         };
 
-        #if WIN32  // windows stream handles do not support non blocking!
-	       template<>
-         struct non_blocking<boost::asio::windows::stream_handle> { 
-	          typedef boost::asio::windows::stream_handle C;
-            bool operator()( C& ) { return false; } 
-            bool operator()( C&, bool ) { return false; } 
+#if WIN32  // windows stream handles do not support non blocking!
+        template<>
+        struct non_blocking<boost::asio::windows::stream_handle> { 
+	  typedef boost::asio::windows::stream_handle C;
+          bool operator()( C& ) { return false; } 
+          bool operator()( C&, bool ) { return false; } 
         };
-        #endif 
+#endif 
     }
     /**
      * @return the default boost::asio::io_service for use with fc::asio
