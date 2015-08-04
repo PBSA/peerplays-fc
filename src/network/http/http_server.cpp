@@ -16,24 +16,38 @@ namespace fc { namespace http {
       :body_bytes_sent(0),body_length(0),con(c),handle_next_req(cont)
       {}
 
-      void send_header() {
+      void send_header() 
+      {
          //ilog( "sending header..." );
          fc::stringstream ss;
          ss << "HTTP/1.1 " << rep.status << " ";
-         switch( rep.status ) {
-            case fc::http::reply::OK: ss << "OK\r\n"; break;
-            case fc::http::reply::RecordCreated: ss << "Record Created\r\n"; break;
-            case fc::http::reply::NotFound: ss << "Not Found\r\n"; break;
-            case fc::http::reply::Found: ss << "Found\r\n"; break;
-            default: ss << "Internal Server Error\r\n"; break;
+         switch( rep.status ) 
+         {
+            case fc::http::reply::OK: 
+              ss << "OK\r\n"; 
+              break;
+            case fc::http::reply::RecordCreated: 
+              ss << "Record Created\r\n"; 
+              break;
+            case fc::http::reply::NotFound: 
+              ss << "Not Found\r\n"; 
+              break;
+            case fc::http::reply::Found: 
+              ss << "Found\r\n"; 
+              break;
+            default: 
+              ss << "Internal Server Error\r\n"; 
+              break;
          }
-         for( uint32_t i = 0; i < rep.headers.size(); ++i ) {
-            ss << rep.headers[i].key <<": "<<rep.headers[i].val <<"\r\n";
-         }
-         ss << "Content-Length: "<<body_length<<"\r\n\r\n";
-         auto s = ss.str();
+         for( uint32_t i = 0; i < rep.headers.size(); ++i ) 
+            ss << rep.headers[i].key << ": " << rep.headers[i].val << "\r\n";
+         ss << "Content-Length: " << body_length << "\r\n\r\n";
+         std::string s = ss.str();
+         std::shared_ptr<char> write_buffer(new char[s.size()], [](char* p){ delete[] p; });
+         std::copy(s.begin(), s.end(), write_buffer.get());
+         
          //fc::cerr<<s<<"\n";
-         con->get_socket().write( s.c_str(), s.size() );
+         con->get_socket().write(write_buffer, s.size(), 0);
       }
 
       http::reply           rep;
@@ -184,7 +198,9 @@ namespace fc { namespace http {
       my->send_header();
     }
     my->body_bytes_sent += len;
-    my->con->get_socket().write( data, static_cast<size_t>(len) ); 
+    std::shared_ptr<char> write_buffer(new char[len], [](char* p){ delete[] p; });
+    std::copy(data, data + len, write_buffer.get());
+    my->con->get_socket().write(write_buffer, static_cast<size_t>(len), 0); 
     if( my->body_bytes_sent == int64_t(my->body_length) ) {
       if( false || my->handle_next_req ) {
         ilog( "handle next request..." );
