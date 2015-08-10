@@ -87,10 +87,10 @@ namespace fc
    template<typename K, typename T>
    void from_variant( const variant& var, fc::flat_map<K,T>& vo );
 
-   template<typename K, typename T>
-   void to_variant( const std::map<K,T>& var,  variant& vo );
-   template<typename K, typename T>
-   void from_variant( const variant& var,  std::map<K,T>& vo );
+   template<typename K, typename T, typename C>
+   void to_variant( const std::map<K,T, C>& var,  variant& vo );
+   template<typename K, typename T, typename C>
+   void from_variant( const variant& var,  std::map<K,T,C>& vo );
    template<typename K, typename T>
    void to_variant( const std::multimap<K,T>& var,  variant& vo );
    template<typename K, typename T>
@@ -392,8 +392,8 @@ namespace fc
          vo.insert( itr->as< std::pair<K,T> >() );
 
    }
-   template<typename K, typename T>
-   void to_variant( const std::map<K, T>& var,  variant& vo )
+   template<typename K, typename T, typename C>
+   void to_variant( const std::map<K, T, C>& var,  variant& vo )
    {
        std::vector< variant > vars(var.size());
        size_t i = 0;
@@ -401,8 +401,8 @@ namespace fc
           vars[i] = fc::variant(*itr);
        vo = vars;
    }
-   template<typename K, typename T>
-   void from_variant( const variant& var,  std::map<K, T>& vo )
+   template<typename K, typename T, typename C>
+   void from_variant( const variant& var,  std::map<K, T, C>& vo )
    {
       const variants& vars = var.get_array();
       vo.clear();
