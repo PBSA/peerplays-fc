@@ -157,7 +157,7 @@ namespace fc {
       time_point timestamp = m.get_context().get_timestamp();
       line << string(timestamp);
       uint64_t milliseconds = (timestamp.time_since_epoch().count() % 1000000) / 1000;
-      line << "." << std::setw(3) << std::setfill('0') << milliseconds << " ";
+      line << "." << std::setw(3) << std::setfill('0') << milliseconds << std::setfill(' ') << " ";
       line << std::setw( 21 ) << (m.get_context().get_thread_name().substr(0,9) + string(":") + m.get_context().get_task_name()).c_str() << " ";
 
       string method_name = m.get_context().get_method();
