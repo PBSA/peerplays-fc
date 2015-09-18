@@ -16,7 +16,7 @@ namespace fc {
       void read_write_handler::operator()(const boost::system::error_code& ec, size_t bytes_transferred)
       {
         //assert(false); // to detect anywhere we're not passing in a shared buffer
-        if( !ec ) 
+        if( !ec )
           _completion_promise->set_value(bytes_transferred);
         else if( ec == boost::asio::error::eof  )
           _completion_promise->set_exception( fc::exception_ptr( new fc::eof_exception( FC_LOG_MESSAGE( error, "${message} ", ("message", boost::system::system_error(ec).what())) ) ) );
@@ -32,7 +32,7 @@ namespace fc {
 
       void read_write_handler_with_buffer::operator()(const boost::system::error_code& ec, size_t bytes_transferred)
       {
-        if( !ec ) 
+        if( !ec )
           _completion_promise->set_value(bytes_transferred);
         else if( ec == boost::asio::error::eof  )
           _completion_promise->set_exception( fc::exception_ptr( new fc::eof_exception( FC_LOG_MESSAGE( error, "${message} ", ("message", boost::system::system_error(ec).what())) ) ) );
@@ -40,7 +40,7 @@ namespace fc {
           _completion_promise->set_exception( fc::exception_ptr( new fc::exception( FC_LOG_MESSAGE( error, "${message} ", ("message", boost::system::system_error(ec).what())) ) ) );
       }
 
-      void error_handler( const promise<void>::ptr& p, 
+        void error_handler( const promise<void>::ptr& p,
                           const boost::system::error_code& ec ) 
       {
         if( !ec )
@@ -49,13 +49,13 @@ namespace fc {
         {
           if( ec == boost::asio::error::eof  )
           {
-            p->set_exception( fc::exception_ptr( new fc::eof_exception( 
+                  p->set_exception( fc::exception_ptr( new fc::eof_exception(
                     FC_LOG_MESSAGE( error, "${message} ", ("message", boost::system::system_error(ec).what())) ) ) );
           }
           else
           {
             //elog( "${message} ", ("message", boost::system::system_error(ec).what()));
-            p->set_exception( fc::exception_ptr( new fc::exception( 
+                  p->set_exception( fc::exception_ptr( new fc::exception(
                     FC_LOG_MESSAGE( error, "${message} ", ("message", boost::system::system_error(ec).what())) ) ) );
           }
         }
@@ -80,9 +80,9 @@ namespace fc {
         {
           //elog( "%s", boost::system::system_error(ec).what() );
           //p->set_exception( fc::copy_exception( boost::system::system_error(ec) ) );
-          p->set_exception( 
-              fc::exception_ptr( new fc::exception( 
-                  FC_LOG_MESSAGE( error, "process exited with: ${message} ", 
+                p->set_exception(
+                    fc::exception_ptr( new fc::exception(
+                        FC_LOG_MESSAGE( error, "process exited with: ${message} ",
                     ("message", boost::system::system_error(ec).what())) ) ) );
         }
       }
@@ -99,13 +99,13 @@ namespace fc {
             io           = new boost::asio::io_service();
             the_work     = new boost::asio::io_service::work(*io);
             asio_thread  = new boost::thread( [=]()
-            { 
+            {
               fc::thread::current().set_name("asio");
-              io->run(); 
+              io->run();
             });
        }
 
-       ~default_io_service_scope()
+       void cleanup()
        {
           delete the_work;
           io->stop();
@@ -113,20 +113,27 @@ namespace fc {
           delete io;
           delete asio_thread;
        }
+
+       ~default_io_service_scope()
+       {}
     };
+
+    /// If cleanup is true, do not use the return value; it is a null reference
     boost::asio::io_service& default_io_service(bool cleanup) {
         static default_io_service_scope fc_asio_service;
+        if (cleanup)
+           fc_asio_service.cleanup();
         return *fc_asio_service.io;
     }
 
     namespace tcp {
-      std::vector<boost::asio::ip::tcp::endpoint> resolve( const std::string& hostname, const std::string& port) 
+      std::vector<boost::asio::ip::tcp::endpoint> resolve( const std::string& hostname, const std::string& port)
       {
-        try 
+        try
         {
           resolver res( fc::asio::default_io_service() );
           promise<std::vector<boost::asio::ip::tcp::endpoint> >::ptr p( new promise<std::vector<boost::asio::ip::tcp::endpoint> >("tcp::resolve completion") );
-          res.async_resolve( boost::asio::ip::tcp::resolver::query(hostname,port), 
+          res.async_resolve( boost::asio::ip::tcp::resolver::query(hostname,port),
                             boost::bind( detail::resolve_handler<boost::asio::ip::tcp::endpoint,resolver_iterator>, p, _1, _2 ) );
           return p->wait();;
         }
@@ -134,18 +141,18 @@ namespace fc {
       }
     }
     namespace udp {
-      std::vector<udp::endpoint> resolve( resolver& r, const std::string& hostname, const std::string& port) 
+      std::vector<udp::endpoint> resolve( resolver& r, const std::string& hostname, const std::string& port)
       {
-        try 
+        try
         {
           resolver res( fc::asio::default_io_service() );
           promise<std::vector<endpoint> >::ptr p( new promise<std::vector<endpoint> >("udp::resolve completion") );
-          res.async_resolve( resolver::query(hostname,port), 
+          res.async_resolve( resolver::query(hostname,port),
                               boost::bind( detail::resolve_handler<endpoint,resolver_iterator>, p, _1, _2 ) );
           return p->wait();
         }
         FC_RETHROW_EXCEPTIONS(warn, "")
       }
     }
-  
+
 } } // namespace fc::asio
