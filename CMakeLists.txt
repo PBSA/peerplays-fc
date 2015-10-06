@@ -305,7 +305,10 @@ target_include_directories(fc
   )
 
 #target_link_libraries( fc PUBLIC udt ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${ECC_LIB} )
-target_link_libraries( fc PUBLIC -L/usr/local/lib udt ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${readline_libraries} ${ECC_LIB} )
+IF(NOT WIN32)
+  set(LINK_USR_LOCAL_LIB -L/usr/local/lib)
+ENDIF()
+target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} udt ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${readline_libraries} ${ECC_LIB} )
 
 if(MSVC)
   set_source_files_properties( src/network/http/websocket.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
@@ -342,6 +345,12 @@ target_link_libraries( bloom_test fc )
 
 add_executable( real128_test tests/all_tests.cpp tests/real128_test.cpp )
 target_link_libraries( real128_test fc )
+
+add_executable( hmac_test tests/hmac_test.cpp )
+target_link_libraries( hmac_test fc )
+
+add_executable( blinding_test tests/blinding_test.cpp )
+target_link_libraries( blinding_test fc )
 
 
 add_executable( udt_server tests/udts.cpp )
