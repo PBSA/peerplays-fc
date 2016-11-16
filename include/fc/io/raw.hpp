@@ -324,13 +324,13 @@ namespace fc {
       struct if_enum<fc::true_type> {
         template<typename Stream, typename T>
         static inline void pack( Stream& s, const T& v ) {
-          fc::raw::pack(s, (int64_t)v);
+          fc::raw::pack(s, signed_int((int32_t)v));
         }
         template<typename Stream, typename T>
         static inline void unpack( Stream& s, T& v ) {
-          int64_t temp;
+          signed_int temp;
           fc::raw::unpack(s, temp);
-          v = (T)temp;
+          v = (T)temp.value;
         }
       };
 
