@@ -8,7 +8,7 @@
 #include <fc/exception/exception.hpp>
 
 #if defined _WIN32 || defined WIN32 || defined OS_WIN64 || defined _WIN64 || defined WIN64 || defined WINNT
-# include <MSTcpIP.h>
+# include <mstcpip.h>
 #endif
 
 namespace fc {
@@ -154,12 +154,12 @@ namespace fc {
   {
     try
     {
-      my->_sock.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v4(local_endpoint.get_address()), 
+      my->_sock.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v4(local_endpoint.get_address()),
                                                                                 local_endpoint.port()));
     }
     catch (const std::exception& except)
     {
-      elog("Exception binding outgoing connection to desired local endpoint: ${what}", ("what", except.what()));
+      elog("Exception binding outgoing connection to desired local endpoint ${endpoint}: ${what}", ("endpoint", local_endpoint)("what", except.what()));
       FC_THROW("error binding to ${endpoint}: ${what}", ("endpoint", local_endpoint)("what", except.what()));
     }
   }
@@ -309,7 +309,7 @@ namespace fc {
     try
     {
       my->_accept.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v4(), port));
-      my->_accept.listen();
+      my->_accept.listen(256);
     } 
     FC_RETHROW_EXCEPTIONS(warn, "error listening on socket");
   }
