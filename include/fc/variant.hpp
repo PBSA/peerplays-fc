@@ -93,17 +93,10 @@ namespace fc
    template<typename K, typename... T>
    void from_variant( const variant& var, fc::flat_map<K,T...>& vo );
 
-   template<typename T>
-   void to_variant( const std::map<string,T>& var,  variant& vo );
-   template<typename T>
-   void from_variant( const variant& var,  std::map<string,T>& vo );
-
    template<typename K, typename T>
    void to_variant( const std::map<K,T>& var,  variant& vo );
    template<typename K, typename T>
    void from_variant( const variant& var,  std::map<K,T>& vo );
-
-
    template<typename K, typename T>
    void to_variant( const std::multimap<K,T>& var,  variant& vo );
    template<typename K, typename T>
@@ -414,8 +407,6 @@ namespace fc
          vo.insert( itr->as< std::pair<K,T> >() );
 
    }
-
-
    template<typename K, typename T>
    void to_variant( const std::map<K, T>& var,  variant& vo )
    {
