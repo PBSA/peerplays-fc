@@ -16,9 +16,7 @@ websocket_api_connection::websocket_api_connection( fc::http::websocket_connecti
       api_id_type api_id;
       if( args[0].is_string() )
       {
-         variants subargs;
-         subargs.push_back( args[0] );
-         variant subresult = this->receive_call( 1, "get_api_by_name", subargs );
+         variant subresult = this->receive_call( 1, args[0].as_string() );
          api_id = subresult.as_uint64();
       }
       else
