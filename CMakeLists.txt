@@ -234,7 +234,6 @@ set( fc_sources
      src/network/rate_limiting.cpp
      src/network/resolve.cpp
      src/network/url.cpp
-     src/network/gntp.cpp
      src/compress/smaz.cpp
      src/compress/zlib.cpp
      vendor/cyoencode-1.0.2/src/CyoDecode.c
