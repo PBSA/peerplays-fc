@@ -10,9 +10,6 @@ if( ECC_IMPL STREQUAL secp256k1 )
     target_link_libraries( blind fc )
 endif()
 
-add_executable( ntp_test all_tests.cpp network/ntp_test.cpp )
-target_link_libraries( ntp_test fc )
-
 add_executable( task_cancel_test all_tests.cpp thread/task_cancel.cpp )
 target_link_libraries( task_cancel_test fc )
 
@@ -52,7 +49,6 @@ add_executable( all_tests all_tests.cpp
                           crypto/dh_test.cpp
                           crypto/rand_test.cpp
                           crypto/sha_tests.cpp
-                          network/ntp_test.cpp
                           network/http/websocket_test.cpp
                           thread/task_cancel.cpp
                           bloom_test.cpp
