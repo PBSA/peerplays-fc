@@ -218,8 +218,8 @@ namespace fc {
 
      struct range_proof_info
      {
-         int          exp;
-         int          mantissa;
+         int64_t      exp;
+         int64_t      mantissa;
          uint64_t     min_value;
          uint64_t     max_value;
      };
