@@ -306,6 +306,12 @@ ELSE()
       target_compile_options(fc PUBLIC ${CPP_STANDARD} -Wall -fnon-call-exceptions)
     endif()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CPP_STANDARD} -Wall -fnon-call-exceptions")
+
+    if( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" )
+        if( CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 3 )
+            set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-invalid-partial-specialization" )
+        endif()
+    endif()
   ENDIF()
 ENDIF()
 
