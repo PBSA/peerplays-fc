@@ -308,7 +308,7 @@ ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CPP_STANDARD} -Wall -fnon-call-exceptions")
 
     if( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" )
-        if( CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 3 )
+        if( CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 4.0.0 OR CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.0.0 )
             set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-invalid-partial-specialization" )
         endif()
     endif()
