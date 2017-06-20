@@ -55,7 +55,7 @@ ELSE( ECC_IMPL STREQUAL openssl )
 ENDIF( ECC_IMPL STREQUAL openssl )
 
 # Configure secp256k1-zkp
-if ( WIN32 )
+if ( MSVC )
     # autoconf won't work here, hard code the defines
     set( SECP256K1_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp" )
 
@@ -71,8 +71,18 @@ if ( WIN32 )
         USE_SCALAR_8X32
         USE_SCALAR_INV_BUILTIN )
     set_target_properties( secp256k1 PROPERTIES COMPILE_DEFINITIONS "${SECP256K1_BUILD_DEFINES}" LINKER_LANGUAGE C )
-else ( WIN32 )
+else ( MSVC )
     include(ExternalProject)
+    if ( MINGW )
+    ExternalProject_Add( project_secp256k1
+     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp
+     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
+     CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --with-bignum=no  --host=x86_64-w64-mingw32
+     BUILD_COMMAND make
+     INSTALL_COMMAND true
+     BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp/src/project_secp256k1-build/.libs/libsecp256k1.a
+    )
+    else ( MINGW )
     ExternalProject_Add( project_secp256k1
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp
      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
@@ -81,6 +91,7 @@ else ( WIN32 )
      INSTALL_COMMAND true
      BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp/src/project_secp256k1-build/.libs/libsecp256k1.a
     )
+    endif ( MINGW )
     ExternalProject_Add_Step(project_secp256k1 autogen
      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
      COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/autogen.sh
@@ -93,13 +104,14 @@ else ( WIN32 )
     set_property(TARGET secp256k1 PROPERTY IMPORTED_LOCATION ${binary_dir}/.libs/libsecp256k1${CMAKE_STATIC_LIBRARY_SUFFIX})
     set_property(TARGET secp256k1 PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/include)
     add_dependencies(secp256k1 project_secp256k1)
-endif ( WIN32 )
+    install( FILES ${binary_dir}/.libs/libsecp256k1${CMAKE_STATIC_LIBRARY_SUFFIX} DESTINATION lib/cryptonomex )
+endif ( MSVC )
 # End configure secp256k1-zkp
 
 IF( WIN32 )
   MESSAGE(STATUS "Configuring fc to build on Win32")
 
-  set( RPCRT4 Rpcrt4 )
+  set( RPCRT4 rpcrt4 )
 
   #boost
   SET(BOOST_ROOT $ENV{BOOST_ROOT})
@@ -116,7 +128,7 @@ IF( WIN32 )
     SET(Boost_LIBRARIES ${BOOST_LIBRARIES_TEMP} ${Boost_LIBRARIES})
   ENDIF()
 
-  set( PLATFORM_SPECIFIC_LIBS WS2_32.lib Userenv.lib)
+  set( PLATFORM_SPECIFIC_LIBS wsock32.lib ws2_32.lib userenv.lib)
   # iphlpapi.lib
 
 ELSE(WIN32)
@@ -147,17 +159,6 @@ ENDIF()
 find_package(OpenSSL REQUIRED)
 
 set( CMAKE_FIND_LIBRARY_SUFFIXES ${ORIGINAL_LIB_SUFFIXES} )
-
-# We are now building in support for deflate compression into our websockets layer by default,
-# which requires zlib.  Aside from that, all of fc compiles without zlib, so this could be
-# made optional without much effort
-# (important exception, apple: as of 10.10 yosemite, the OpenSSL static libraries shipped with 
-# os x have a dependency on zlib)
-# On a side note, fc's fc::zlib_compress() function uses a separate implementation of zlib
-# from the miniz library.  If we're comfortable requiring an external zlib, we can 
-# reimplement fc::zlib_compress() to call the real zlib, and remove miniz.c from our
-# repository.
-find_package( ZLIB REQUIRED )
 
 option( UNITY_BUILD OFF )
 
@@ -193,10 +194,12 @@ set( fc_sources
      src/interprocess/signals.cpp
      src/interprocess/file_mapping.cpp
      src/interprocess/mmap_struct.cpp
+     src/interprocess/file_mutex.cpp
      src/rpc/cli.cpp
      src/rpc/http_api.cpp
      src/rpc/json_connection.cpp
      src/rpc/state.cpp
+     src/rpc/bstate.cpp
      src/rpc/websocket_api.cpp
      src/log/log_message.cpp
      src/log/logger.cpp
@@ -225,12 +228,12 @@ set( fc_sources
      src/crypto/dh.cpp
      src/crypto/blowfish.cpp
      src/crypto/elliptic_common.cpp
+     src/crypto/equihash.cpp
      ${ECC_REST}
      src/crypto/elliptic_${ECC_IMPL}.cpp
      src/crypto/rand.cpp
      src/network/tcp_socket.cpp
      src/network/udp_socket.cpp
-     src/network/udt_socket.cpp
      src/network/http/http_connection.cpp
      src/network/http/http_server.cpp
      src/network/http/websocket.cpp
@@ -257,7 +260,7 @@ list(APPEND sources "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp")
 list(APPEND sources ${fc_headers})
 
 add_subdirectory( vendor/websocketpp EXCLUDE_FROM_ALL )
-add_subdirectory( vendor/udt4 )
+add_subdirectory( vendor/equihash )
 
 setup_library( fc SOURCES ${sources} LIBRARY_TYPE STATIC )
 install( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" DESTINATION include )
@@ -281,6 +284,10 @@ if(WIN32)
 endif(WIN32)
 # end readline stuff
 
+if( NOT CPP_STANDARD )
+  set( CPP_STANDARD, "-std=c++11" )
+endif()
+
 IF(WIN32)
   target_compile_definitions(fc PUBLIC WIN32 NOMINMAX _WIN32_WINNT=0x0501 _CRT_SECURE_NO_WARNINGS
     _SCL_SERCURE_NO_WARNINGS
@@ -291,21 +298,52 @@ IF(WIN32)
     # autodetecting code to do the right thing.
     _WEBSOCKETPP_CPP11_CHRONO_
   )
-  # Activate C++ exception handling, assume extern C calls don't throw
-  # Add /U options to be sure settings specific to dynamic boost link are ineffective
-  target_compile_options(fc PUBLIC /EHsc /UBOOST_ALL_DYN_LINK /UBOOST_LINKING_PYTHON /UBOOST_DEBUG_PYTHON)
+  if( MSVC )
+    # Activate C++ exception handling, assume extern C calls don't throw
+    # Add /U options to be sure settings specific to dynamic boost link are ineffective
+    target_compile_options(fc PUBLIC /EHsc /UBOOST_ALL_DYN_LINK /UBOOST_LINKING_PYTHON /UBOOST_DEBUG_PYTHON)
+  elseif( MINGW )
+     # Put MinGW specific compiler settings here
+  endif()
 ELSE()
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -Wall")
 
   IF(APPLE)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Wall")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CPP_STANDARD} -stdlib=libc++ -Wall")
   ELSE()
     if( NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" )
-      target_compile_options(fc PUBLIC -std=c++11 -Wall -fnon-call-exceptions)
+      target_compile_options(fc PUBLIC ${CPP_STANDARD} -Wall -fnon-call-exceptions)
     endif()
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -fnon-call-exceptions")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CPP_STANDARD} -Wall -fnon-call-exceptions")
   ENDIF()
 ENDIF()
+
+IF(APPLE)
+  # As of 10.10 yosemite, the OpenSSL static libraries shipped with os x have a dependency
+  # on zlib, so any time you link in openssl you also need to link zlib.  .  We really want to detect whether openssl was configured with the --no-zlib
+  # option or not when it was built, but that's difficult to do in practice, so we
+  # just always try to link it in on mac.
+  find_package( ZLIB REQUIRED )
+ELSE(APPLE)
+  find_package( ZLIB )
+ENDIF(APPLE)
+
+if( ZLIB_FOUND )
+  MESSAGE( STATUS "zlib found" )
+  add_definitions( -DHAS_ZLIB )
+else()
+  MESSAGE( STATUS "zlib not found" )
+  set( ZLIB_LIBRARIES "" )
+endif( ZLIB_FOUND )
+
+find_package( BZip2 )
+if( BZIP2_FOUND )
+   MESSAGE( STATUS "bzip2 found" )
+   add_definitions( -DHAS_BZIP2 )
+else()
+   MESSAGE( STATUS "bzip2 not found" )
+   set( BZIP2_LIBRARIES "" )
+endif( BZIP2_FOUND )
 
 # This will become unnecessary once we update to websocketpp which fixes upstream issue #395
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWEBSOCKETPP_STRICT_MASKING")
@@ -316,22 +354,22 @@ target_include_directories(fc
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${Boost_INCLUDE_DIR}
     ${OPENSSL_INCLUDE_DIR}
+    "vendor/diff-match-patch-cpp-stl"
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/websocketpp
     "${readline_includes}"
 
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/boost_1.51/include
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/cyoencode-1.0.2/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/udt4/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/websocketpp
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
-    ${ZLIB_INCLUDE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/equihash
   )
 
-#target_link_libraries( fc PUBLIC udt ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${ECC_LIB} )
+#target_link_libraries( fc PUBLIC ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${ECC_LIB} )
 IF(NOT WIN32)
   set(LINK_USR_LOCAL_LIB -L/usr/local/lib)
 ENDIF()
-target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} udt ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${readline_libraries} ${ECC_LIB} )
+target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} equihash ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${readline_libraries} ${ECC_LIB} )
 
 if(MSVC)
   set_source_files_properties( src/network/http/websocket.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
@@ -339,77 +377,17 @@ endif(MSVC)
 
 
 IF(NOT Boost_UNIT_TEST_FRAMEWORK_LIBRARY MATCHES "\\.(a|lib)$")
-IF(WIN32)
+IF(MSVC)
 add_definitions(/DBOOST_TEST_DYN_LINK)
-ELSE(WIN32)
+ELSE(MSVC)
 add_definitions(-DBOOST_TEST_DYN_LINK)
-ENDIF(WIN32)
+ENDIF(MSVC)
 ENDIF()
 
-add_executable( api tests/api.cpp )
-target_link_libraries( api fc )
-
-if( ECC_IMPL STREQUAL secp256k1 )
-    add_executable( blind tests/all_tests.cpp tests/crypto/blind.cpp )
-    target_link_libraries( blind fc )
-endif()
-
 include_directories( vendor/websocketpp )
+include_directories( vendor/equihash )
 
-add_executable( ntp_test tests/all_tests.cpp tests/network/ntp_test.cpp )
-target_link_libraries( ntp_test fc )
-
-add_executable( task_cancel_test tests/all_tests.cpp tests/thread/task_cancel.cpp )
-target_link_libraries( task_cancel_test fc )
-
-
-add_executable( bloom_test tests/all_tests.cpp tests/bloom_test.cpp )
-target_link_libraries( bloom_test fc )
-
-add_executable( real128_test tests/all_tests.cpp tests/real128_test.cpp )
-target_link_libraries( real128_test fc )
-
-add_executable( hmac_test tests/hmac_test.cpp )
-target_link_libraries( hmac_test fc )
-
-add_executable( blinding_test tests/blinding_test.cpp )
-target_link_libraries( blinding_test fc )
-
-
-add_executable( udt_server tests/udts.cpp )
-target_link_libraries( udt_server fc udt )
-
-add_executable( udt_client tests/udtc.cpp )
-target_link_libraries( udt_client fc udt )
-
-add_executable( ecc_test tests/crypto/ecc_test.cpp )
-target_link_libraries( ecc_test fc )
-
-#add_executable( test_aes tests/aes_test.cpp )
-#target_link_libraries( test_aes fc ${rt_library} ${pthread_library} )
-#add_executable( test_sleep tests/sleep.cpp )
-#target_link_libraries( test_sleep fc )
-#add_executable( test_rate_limiting tests/rate_limiting.cpp )
-#target_link_libraries( test_rate_limiting fc )
-
-add_executable( all_tests tests/all_tests.cpp
-                          tests/compress/compress.cpp
-                          tests/crypto/aes_test.cpp
-                          tests/crypto/base_n_tests.cpp
-                          tests/crypto/bigint_test.cpp
-                          tests/crypto/blind.cpp
-                          tests/crypto/blowfish_test.cpp
-                          tests/crypto/dh_test.cpp
-                          tests/crypto/rand_test.cpp
-                          tests/crypto/sha_tests.cpp
-                          tests/network/ntp_test.cpp
-                          tests/network/http/websocket_test.cpp
-                          tests/thread/task_cancel.cpp
-                          tests/bloom_test.cpp
-                          tests/real128_test.cpp
-                          tests/utf8_test.cpp
-                          )
-target_link_libraries( all_tests fc )
+add_subdirectory(tests)
 
 if(WIN32)
    # add addtional import library on windows platform
@@ -501,8 +479,15 @@ ELSE()
 ENDIF()
 
     IF(WIN32)
-SET(POST_BUILD_STEP_COMMANDS ${POST_BUILD_STEP_COMMANDS}
-     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENSSL_ROOT_DIR}/ssl/openssl.cnf" "${OPENSSL_CONF_TARGET}/openssl.cnf")
+       IF("${OPENSSL_ROOT_DIR}" STREQUAL "")
+          get_filename_component(OPENSSL_ROOT_DIR "${OPENSSL_INCLUDE_DIR}/.." REALPATH)
+       ENDIF()
+       SET(OPENSSL_CONF_SOURCE "${OPENSSL_ROOT_DIR}/ssl/openssl.cnf")
+       IF(MINGW)
+          SET(OPENSSL_CONF_SOURCE "${OPENSSL_ROOT_DIR}/openssl.cnf")
+       ENDIF(MINGW)
+       SET(POST_BUILD_STEP_COMMANDS ${POST_BUILD_STEP_COMMANDS}
+           COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENSSL_CONF_SOURCE}" "${OPENSSL_CONF_TARGET}/openssl.cnf")
     ENDIF(WIN32)
 
 ADD_CUSTOM_COMMAND(TARGET fc POST_BUILD ${POST_BUILD_STEP_COMMANDS}

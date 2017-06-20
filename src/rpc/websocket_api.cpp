@@ -13,8 +13,17 @@ websocket_api_connection::websocket_api_connection( fc::http::websocket_connecti
    _rpc_state.add_method( "call", [this]( const variants& args ) -> variant
    {
       FC_ASSERT( args.size() == 3 && args[2].is_array() );
+      api_id_type api_id;
+      if( args[0].is_string() )
+      {
+         variant subresult = this->receive_call( 1, args[0].as_string() );
+         api_id = subresult.as_uint64();
+      }
+      else
+         api_id = args[0].as_uint64();
+
       return this->receive_call(
-         args[0].as_uint64(),
+         api_id,
          args[1].as_string(),
          args[2].get_array() );
    } );
@@ -84,14 +93,18 @@ std::string websocket_api_connection::on_message(
          exception_ptr optexcept;
          try
          {
-            auto result = _rpc_state.local_call( call.method, call.params );
-            if( call.id )
+            try
             {
-               auto reply = fc::json::to_string( response( *call.id, result ) );
-               if( send_message )
-                  _connection.send_message( reply );
-               return reply;
+               auto result = _rpc_state.local_call( call.method, call.params );
+               if( call.id )
+               {
+                  auto reply = fc::json::to_string( response( *call.id, result ) );
+                  if( send_message )
+                     _connection.send_message( reply );
+                  return reply;
+               }
             }
+            FC_CAPTURE_AND_RETHROW( (call.method)(call.params) )
          }
          catch ( const fc::exception& e )
          {
