@@ -6,7 +6,8 @@
 
 #include <boost/version.hpp>
 
-#define BOOST_COROUTINES_NO_DEPRECATION_WARNING
+#define BOOST_COROUTINES_NO_DEPRECATION_WARNING // Boost 1.61
+#define BOOST_COROUTINE_NO_DEPRECATION_WARNING // Boost 1.62
 
 #if BOOST_VERSION >= 106100
   #include <boost/coroutine/stack_allocator.hpp>
