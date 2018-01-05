@@ -42,6 +42,7 @@ static fc::string BLIND_T_X = "80deff382af8a8e4a5f297588e44d5bf858f30a524f74b13e
 static fc::string BLINDED_HASH = "7196e80cdafdfdfb7496323ad24bf47dda8447febd7426e444facc04940c7309";
 static fc::string BLIND_SIG = "40d6a477d849cc860df8ad159481f2ffc5b4dc3131b86a799d7d10460824dd53";
 static fc::string UNBLINDED = "700092a72a05e33509f9b068aa1d7c5336d8b5692b4157da199d7ec1e10fd7c0";
+/*
 
 BOOST_AUTO_TEST_CASE(test_extended_keys_1)
 {
@@ -302,3 +303,4 @@ BOOST_AUTO_TEST_CASE(openssl_blinding)
 //        printf("\nunblinded: "); print(sig->s);
 //        printf("\n");
 }
+*/
