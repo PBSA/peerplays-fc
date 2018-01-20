@@ -327,6 +327,7 @@ public:
 
     static int count() { return impl::type_info<Types...>::count; }
     void set_which( int w ) {
+      FC_ASSERT( w >= 0 );
       FC_ASSERT( w < count() );
       this->~static_variant();
       _tag = w;
