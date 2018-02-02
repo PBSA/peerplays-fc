@@ -75,7 +75,7 @@ void test_big( const std::string& expected ) {
 
 template<typename H>
 void test_stream( ) {
-    H hash( TEST1 );
+    H hash = H::hash( TEST1 );
     std::stringstream stream;
     stream << hash;
 

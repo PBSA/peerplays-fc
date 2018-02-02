@@ -181,7 +181,7 @@ class static_variant {
     static_assert(impl::type_info<Types...>::no_reference_types, "Reference types are not permitted in static_variant.");
     static_assert(impl::type_info<Types...>::no_duplicates, "static_variant type arguments contain duplicate types.");
 
-    int _tag;
+    size_t _tag;
     char storage[impl::type_info<Types...>::size];
 
     template<typename X>
@@ -326,15 +326,14 @@ public:
     }
 
     static int count() { return impl::type_info<Types...>::count; }
-    void set_which( int w ) {
-      FC_ASSERT( w >= 0 );
+    void set_which( size_t w ) {
       FC_ASSERT( w < count() );
       this->~static_variant();
       _tag = w;
       impl::storage_ops<0, Types...>::con(_tag, storage);
     }
 
-    int which() const {return _tag;}
+    size_t which() const {return _tag;}
 };
 
 template<typename Result>

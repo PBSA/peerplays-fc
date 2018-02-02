@@ -136,7 +136,7 @@ char * dupstr (const char* s) {
 
 char* my_generator(const char* text, int state)
 {
-   static int list_index, len;
+   static size_t list_index, len;
    const char *name;
 
    if (!state) {
@@ -160,20 +160,20 @@ char* my_generator(const char* text, int state)
 }
 
 
+#ifdef HAVE_READLINE
 static char** cli_completion( const char * text , int start, int end)
 {
    char **matches;
    matches = (char **)NULL;
 
-#ifdef HAVE_READLINE
    if (start == 0)
       matches = rl_completion_matches ((char*)text, &my_generator);
    else
       rl_bind_key('\t',rl_abort);
-#endif
 
    return (matches);
 }
+#endif
 
 
 void cli::getline( const fc::string& prompt, fc::string& line)

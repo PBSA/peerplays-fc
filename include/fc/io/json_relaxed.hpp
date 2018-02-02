@@ -231,6 +231,8 @@ namespace fc { namespace json_relaxed
          }
 
        } FC_RETHROW_EXCEPTIONS( warn, "while parsing string" );
+
+       return {};
    }
    
    struct CharValueTable

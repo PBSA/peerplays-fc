@@ -15,7 +15,7 @@ namespace fc {
   mutex::~mutex() {
     if( m_blist ) 
     {
-      context* c = m_blist;
+//      context* c = m_blist;
       fc::thread::current().debug("~mutex");
 #if 0
       while( c )  {
