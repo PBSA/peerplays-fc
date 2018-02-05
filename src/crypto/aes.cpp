@@ -29,7 +29,8 @@ struct aes_encoder::impl
 
 aes_encoder::aes_encoder()
 {
-  static __attribute__((unused)) int init = init_openssl();
+  static int init = init_openssl();
+  (void)init;
 }
 
 aes_encoder::~aes_encoder()
@@ -97,7 +98,8 @@ struct aes_decoder::impl
 
 aes_decoder::aes_decoder()
 {
-  static __attribute__((unused)) int init = init_openssl();
+  static int init = init_openssl();
+  (void)init;
 }
 
 void aes_decoder::init( const fc::sha256& key, const fc::uint128& init_value )

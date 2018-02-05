@@ -29,8 +29,10 @@ namespace fc { namespace ecc {
         }
 
         void _init_lib() {
-            static __attribute__((unused)) const secp256k1_context_t* ctx = _get_context();
-            static __attribute__((unused)) int init_o = init_openssl();
+            static const secp256k1_context_t* ctx = _get_context();
+            (void)ctx;
+            static int init_o = init_openssl();
+            (void)init_o;
         }
 
         class public_key_impl

@@ -8,7 +8,8 @@ namespace fc {
 
 void rand_bytes(char* buf, int count)
 {
-  static __attribute__((unused)) int init = init_openssl();
+  static int init = init_openssl();
+  (void)init;
 
   int result = RAND_bytes((unsigned char*)buf, count);
   if (result != 1)
@@ -17,7 +18,8 @@ void rand_bytes(char* buf, int count)
 
 void rand_pseudo_bytes(char* buf, int count)
 {
-  static __attribute__((unused)) int init = init_openssl();
+  static int init = init_openssl();
+  (void)init;
 
   int result = RAND_pseudo_bytes((unsigned char*)buf, count);
   if (result == -1)
