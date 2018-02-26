@@ -111,15 +111,6 @@ void cli::run()
    }
 }
 
-
-char * dupstr (const char* s) {
-   char *r;
-
-   r = (char*) malloc ((strlen (s) + 1));
-   strcpy (r, s);
-   return (r);
-}
-
 /****
  * @brief loop through list of commands, attempting to find a match
  * @param token what the user typed
@@ -133,11 +124,11 @@ static char *my_rl_complete(char *token, int *match)
     const char* method_name;
 
     auto& cmd = cli_commands();
-    for (auto it = cmd.begin(); it != cmd.end(); it++) {
+    for (auto it : cmd) {
     	int partlen = strlen (token); /* Part of token */
 
-    	if (!strncmp ((*it).c_str(), token, partlen)) {
-    		method_name = (*it).c_str();
+    	if (!strncmp (it.c_str(), token, partlen)) {
+    		method_name = it.c_str();
     		matchlen = partlen;
     		count ++;
     	}
@@ -166,9 +157,9 @@ static int cli_completion(char *token, char ***av)
     num = cmd.size();
 
     copy = (char **) malloc (num * sizeof(char *));
-    for (auto it = cmd.begin(); it != cmd.end(); ++it) {
-    	if (!strncmp ((*it).c_str(), token, strlen (token))) {
-    		copy[total] = strdup ( (*it).c_str() );
+    for (auto it : cmd) {
+    	if (!strncmp (it.c_str(), token, strlen (token))) {
+    		copy[total] = strdup ( it.c_str() );
     		total ++;
     	}
     }
@@ -209,7 +200,6 @@ void cli::getline( const fc::string& prompt, fc::string& line)
          line_read = readline(prompt.c_str());
          if( line_read == nullptr )
             FC_THROW_EXCEPTION( fc::eof_exception, "" );
-         //el_bind_key( '\t', rl_complete );
          if( *line_read )
             add_history(line_read);
          line = line_read;

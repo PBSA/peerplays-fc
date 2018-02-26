@@ -8,5 +8,5 @@
     path = vendor/websocketpp
     url = https://github.com/zaphoyd/websocketpp.git
 [submodule "vendor/editline"]
-	path = vendor/editline
-	url = https://github.com/troglobit/editline.git
+    path = vendor/editline
+    url = https://github.com/troglobit/editline.git
