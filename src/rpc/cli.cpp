@@ -188,9 +188,8 @@ void cli::getline( const fc::string& prompt, fc::string& line)
    if( _isatty( _fileno( stdin ) ) )
 #endif
    {
-      //rl_attempted_completion_function = cli_completion;
-	   rl_set_complete_func(my_rl_complete);
-	   rl_set_list_possib_func(cli_completion);
+      rl_set_complete_func(my_rl_complete);
+      rl_set_list_possib_func(cli_completion);
 
       static fc::thread getline_thread("getline");
       getline_thread.async( [&](){
