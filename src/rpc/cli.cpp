@@ -124,9 +124,8 @@ static char *my_rl_complete(char *token, int *match)
     const char* method_name;
 
     auto& cmd = cli_commands();
+    int partlen = strlen (token); /* Part of token */
     for (auto it : cmd) {
-    	int partlen = strlen (token); /* Part of token */
-
     	if (!strncmp (it.c_str(), token, partlen)) {
     		method_name = it.c_str();
     		matchlen = partlen;
