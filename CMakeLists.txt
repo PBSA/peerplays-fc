@@ -251,24 +251,25 @@ add_subdirectory( vendor/websocketpp EXCLUDE_FROM_ALL )
 setup_library( fc SOURCES ${sources} LIBRARY_TYPE STATIC )
 install( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" DESTINATION include )
 
-# begin readline stuff
-find_package(Curses)
-find_package(Readline)
+# begin editline stuff
+#find_package(Curses)
+set(EDITLINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline" )
+find_package(Editline)
 
 file(GLOB HEADERS "include/bts/cli/*.hpp")
 
-if (READLINE_FOUND)
-  target_compile_definitions (fc PRIVATE HAVE_READLINE)
-  set(readline_libraries ${Readline_LIBRARY})
-  if (CURSES_FOUND)
-    list(APPEND readline_libraries ${CURSES_LIBRARY})
-  endif()
-  set(readline_includes ${Readline_INCLUDE_DIR})
+if (EDITLINE_FOUND)
+  target_compile_definitions (fc PRIVATE HAVE_EDITLINE)
+  set(editline_libraries ${Editline_LIBRARY})
+  #if (CURSES_FOUND)
+  #  list(APPEND editline_libraries ${CURSES_LIBRARY})
+  #endif()
+  set(editline_includes ${Editline_INCLUDE_DIR})
 endif()
 if(WIN32)
   target_compile_definitions( fc PRIVATE _CRT_NONSTDC_NO_DEPRECATE )
 endif(WIN32)
-# end readline stuff
+# end editline stuff
 
 if( NOT CPP_STANDARD )
   set( CPP_STANDARD, "-std=c++11" )
@@ -362,7 +363,7 @@ target_include_directories(fc
     ${OPENSSL_INCLUDE_DIR}
     "vendor/diff-match-patch-cpp-stl"
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/websocketpp
-    "${readline_includes}"
+    "${editline_includes}"
 
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/boost_1.51/include
