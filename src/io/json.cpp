@@ -798,23 +798,9 @@ namespace fc
    }
    variant json::from_file( const fc::path& p, parse_type ptype )
    {
-      //auto tmp = std::make_shared<fc::ifstream>( p, ifstream::binary );
-      //auto tmp = std::make_shared<std::ifstream>( p.generic_string().c_str(), std::ios::binary );
-      //buffered_istream bi( tmp );
-      boost::filesystem::ifstream bi( p, std::ios::binary );
-      switch( ptype )
-      {
-          case legacy_parser:
-              return variant_from_stream<boost::filesystem::ifstream, legacy_parser>( bi );
-          case legacy_parser_with_string_doubles:
-              return variant_from_stream<boost::filesystem::ifstream, legacy_parser_with_string_doubles>( bi );
-          case strict_parser:
-              return json_relaxed::variant_from_stream<boost::filesystem::ifstream, true>( bi );
-          case relaxed_parser:
-              return json_relaxed::variant_from_stream<boost::filesystem::ifstream, false>( bi );
-          default:
-              FC_ASSERT( false, "Unknown JSON parser type {ptype}", ("ptype", ptype) );
-      }
+      fc::istream_ptr in( new fc::ifstream( p ) );
+      fc::buffered_istream bin( in );
+      return from_stream( bin, ptype );
    }
    variant json::from_stream( buffered_istream& in, parse_type ptype )
    {
