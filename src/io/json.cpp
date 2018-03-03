@@ -461,21 +461,9 @@ namespace fc
    { try {
       check_string_depth( utf8_str );
 
-      fc::stringstream in( utf8_str );
-      //in.exceptions( std::ifstream::eofbit );
-      switch( ptype )
-      {
-          case legacy_parser:
-              return variant_from_stream<fc::stringstream, legacy_parser>( in );
-          case legacy_parser_with_string_doubles:
-              return variant_from_stream<fc::stringstream, legacy_parser_with_string_doubles>( in );
-          case strict_parser:
-              return json_relaxed::variant_from_stream<fc::stringstream, true>( in );
-          case relaxed_parser:
-              return json_relaxed::variant_from_stream<fc::stringstream, false>( in );
-          default:
-              FC_ASSERT( false, "Unknown JSON parser type {ptype}", ("ptype", ptype) );
-      }
+      fc::istream_ptr in( new fc::stringstream( utf8_str ) );
+      fc::buffered_istream bin( in );
+      return from_stream( bin, ptype );
    } FC_RETHROW_EXCEPTIONS( warn, "", ("str",utf8_str) ) }
 
    variants json::variants_from_string( const std::string& utf8_str, parse_type ptype )
@@ -838,25 +826,10 @@ namespace fc
    bool json::is_valid( const std::string& utf8_str, parse_type ptype )
    {
       if( utf8_str.size() == 0 ) return false;
-      fc::stringstream in( utf8_str );
-      switch( ptype )
-      {
-          case legacy_parser:
-              variant_from_stream<fc::stringstream, legacy_parser>( in );
-              break;
-          case legacy_parser_with_string_doubles:
-              variant_from_stream<fc::stringstream, legacy_parser_with_string_doubles>( in );
-              break;
-          case strict_parser:
-              json_relaxed::variant_from_stream<fc::stringstream, true>( in );
-              break;
-          case relaxed_parser:
-              json_relaxed::variant_from_stream<fc::stringstream, false>( in );
-              break;
-          default:
-              FC_ASSERT( false, "Unknown JSON parser type {ptype}", ("ptype", ptype) );
-      }
-      try { in.peek(); } catch ( const eof_exception& e ) { return true; }
+      fc::istream_ptr in( new fc::stringstream( utf8_str ) );
+      fc::buffered_istream bin( in );
+      from_stream( bin, ptype );
+      try { bin.peek(); } catch ( const eof_exception& e ) { return true; }
       return false;
    }
 
