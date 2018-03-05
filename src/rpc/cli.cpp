@@ -114,20 +114,20 @@ void cli::run()
 /****
  * @brief loop through list of commands, attempting to find a match
  * @param token what the user typed
- * @param match
- * @returns the full name of the command or NULL if no matches found
+ * @param match sets to 1 if only 1 match was found
+ * @returns the remaining letters of the name of the command or NULL if 1 match not found
  */
 static char *my_rl_complete(char *token, int *match)
 {
     int matchlen = 0;
     int count = 0;
-    const char* method_name;
+    std::string method_name;
 
     auto& cmd = cli_commands();
     int partlen = strlen (token); /* Part of token */
-    for (auto it : cmd) {
-    	if (!strncmp (it.c_str(), token, partlen)) {
-    		method_name = it.c_str();
+    for (std::string it : cmd) {
+    	if (!strncmp ( it.c_str(), token, partlen)) {
+    		method_name = it;
     		matchlen = partlen;
     		count ++;
     	}
@@ -135,7 +135,7 @@ static char *my_rl_complete(char *token, int *match)
 
     if (count == 1) {
     	*match = 1;
-    	return strdup (method_name + matchlen);
+    	return strdup (method_name.c_str() + matchlen);
     }
 
     return NULL;
