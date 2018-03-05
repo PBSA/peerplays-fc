@@ -5,7 +5,6 @@
 #include <fc/io/fstream.hpp>
 #include <fc/io/sstream.hpp>
 #include <fc/log/logger.hpp>
-//#include <utfcpp/utf8.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -179,7 +178,6 @@ namespace fc
                                      "Expected '{', but read '${char}'",
                                      ("char",string(&c, &c + 1)) );
          in.get();
-         skip_white_space(in);
          while( in.peek() != '}' )
          {
             if( in.peek() == ',' )
@@ -199,7 +197,6 @@ namespace fc
             auto val = variant_from_stream<T, parser_type>( in );
 
             obj(std::move(key),std::move(val));
-            skip_white_space(in);
          }
          if( in.peek() == '}' )
          {
@@ -227,7 +224,6 @@ namespace fc
         if( in.peek() != '[' )
            FC_THROW_EXCEPTION( parse_error_exception, "Expected '['" );
         in.get();
-        skip_white_space(in);
 
         while( in.peek() != ']' )
         {
@@ -238,7 +234,6 @@ namespace fc
            }
            if( skip_white_space(in) ) continue;
            ar.push_back( variant_from_stream<T, parser_type>(in) );
-           skip_white_space(in);
         }
         if( in.peek() != ']' )
            FC_THROW_EXCEPTION( parse_error_exception, "Expected ']' after parsing ${variant}",
@@ -276,6 +271,7 @@ namespace fc
                  if (dot)
                     FC_THROW_EXCEPTION(parse_error_exception, "Can't parse a number with two decimal places");
                  dot = true;
+                 [[fallthrough]];
               case '0':
               case '1':
               case '2':
@@ -299,10 +295,10 @@ namespace fc
         }
       }
       catch (fc::eof_exception&)
-      {
+      { // EOF ends the loop
       }
       catch (const std::ios_base::failure&)
-      {
+      { // read error ends the loop
       }
       fc::string str = ss.str();
       if (str == "-." || str == ".") // check the obviously wrong things we could have encountered
@@ -379,7 +375,7 @@ namespace fc
           // make out ("falfe")
           // A strict JSON parser would signal this as an error, but we
           // will just treat the malformed token as an un-quoted string.
-          return str + stringFromToken(in);;
+          return str + stringFromToken(in);
         }
       }
    }
@@ -389,53 +385,42 @@ namespace fc
    variant variant_from_stream( T& in )
    {
       skip_white_space(in);
-      variant var;
-      while( true )
+      signed char c = in.peek();
+      switch( c )
       {
-         signed char c = in.peek();
-         switch( c )
-         {
-            case ' ':
-            case '\t':
-            case '\n':
-            case '\r':
-              in.get();
-              continue;
-            case '"':
-              return stringFromStream( in );
-            case '{':
-              return objectFromStream<T, parser_type>( in );
-            case '[':
-              return arrayFromStream<T, parser_type>( in );
-            case '-':
-            case '.':
-            case '0':
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
-              return number_from_stream<T, parser_type>( in );
-            // null, true, false, or 'warning' / string
-            case 'n':
-            case 't':
-            case 'f':
-              return token_from_stream( in );
-            case 0x04: // ^D end of transmission
-            case EOF:
-            case 0:
-              FC_THROW_EXCEPTION( eof_exception, "unexpected end of file" );
-            default:
-              FC_THROW_EXCEPTION( parse_error_exception, "Unexpected char '${c}' in \"${s}\"",
-                                 ("c", c)("s", stringFromToken(in)) );
-         }
+         case '"':
+            return stringFromStream( in );
+         case '{':
+            return objectFromStream<T, parser_type>( in );
+         case '[':
+            return arrayFromStream<T, parser_type>( in );
+         case '-':
+         case '.':
+         case '0':
+         case '1':
+         case '2':
+         case '3':
+         case '4':
+         case '5':
+         case '6':
+         case '7':
+         case '8':
+         case '9':
+            return number_from_stream<T, parser_type>( in );
+         // null, true, false, or 'warning' / string
+         case 'n':
+         case 't':
+         case 'f':
+            return token_from_stream( in );
+         case 0x04: // ^D end of transmission
+         case EOF:
+            FC_THROW_EXCEPTION( eof_exception, "unexpected end of file" );
+         case 0:
+         default:
+            FC_THROW_EXCEPTION( parse_error_exception, "Unexpected char '${c}' in \"${s}\"",
+                                ("c", c)("s", stringFromToken(in)) );
       }
-	  return variant();
-   }
+  }
 
 
    /** the purpose of this check is to verify that we will not get a stack overflow in the recursive descent parser */
@@ -467,32 +452,17 @@ namespace fc
    } FC_RETHROW_EXCEPTIONS( warn, "", ("str",utf8_str) ) }
 
    variants json::variants_from_string( const std::string& utf8_str, parse_type ptype )
-   { try {
-      check_string_depth( utf8_str );
+   {
       variants result;
-      fc::stringstream in( utf8_str );
-      //in.exceptions( std::ifstream::eofbit );
       try {
+         check_string_depth( utf8_str );
+         fc::stringstream in( utf8_str );
          while( true )
-         {
-           // result.push_back( variant_from_stream( in ));
-           result.push_back(json_relaxed::variant_from_stream<fc::stringstream, false>( in ));
-         }
-      } catch ( const fc::eof_exception& ){}
-      return result;
-   } FC_RETHROW_EXCEPTIONS( warn, "", ("str",utf8_str) ) }
-   /*
-   void toUTF8( const char str, ostream& os )
-   {
-      // validate str == valid utf8
-      utf8::replace_invalid( &str, &str + 1, ostream_iterator<char>(os) );
+            result.push_back(json_relaxed::variant_from_stream<fc::stringstream, false>( in ));
+      } catch ( const fc::eof_exception& ) {
+         return result;
+      } FC_RETHROW_EXCEPTIONS( warn, "", ("str",utf8_str) )
    }
-
-   void toUTF8( const wchar_t c, ostream& os )
-   {
-      utf8::utf16to8( &c, (&c)+1, ostream_iterator<char>(os) );
-   }
-   */
 
    /**
     *  Convert '\t', '\a', '\n', '\\' and '"'  to "\t\a\n\\\""
@@ -563,7 +533,6 @@ namespace fc
 
             default:
                os << *itr;
-               //toUTF8( *itr, os );
          }
       }
       os << '"';
@@ -616,27 +585,19 @@ namespace fc
               os << "null";
               return;
          case variant::int64_type:
-         {
-              int64_t i = v.as_int64();
               if( format == json::stringify_large_ints_and_doubles &&
-                  i > 0xffffffff )
+                  v.as_int64() > 0xffffffff )
                  os << '"'<<v.as_string()<<'"';
               else
-                 os << i;
-
+                 os << v.as_int64();
               return;
-         }
          case variant::uint64_type:
-         {
-              uint64_t i = v.as_uint64();
               if( format == json::stringify_large_ints_and_doubles &&
-                  i > 0xffffffff )
+                  v.as_uint64() > 0xffffffff )
                  os << '"'<<v.as_string()<<'"';
               else
-                 os << i;
-
+                 os << v.as_uint64();
               return;
-         }
          case variant::double_type:
               if (format == json::stringify_large_ints_and_doubles)
                  os << '"'<<v.as_string()<<'"';
@@ -653,17 +614,13 @@ namespace fc
               escape_string( v.as_string(), os );
               return;
          case variant::array_type:
-           {
-              const variants&  a = v.get_array();
-              to_stream( os, a, format );
+              to_stream( os, v.get_array(), format );
               return;
-           }
          case variant::object_type:
-           {
-              const variant_object& o =  v.get_object();
-              to_stream(os, o, format );
+              to_stream(os, v.get_object(), format );
               return;
-           }
+         default:
+            FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Unsupported variant type: " + v.get_type() );
       }
    }
 
@@ -750,7 +707,7 @@ namespace fc
               //If we're in quotes and see a \n, just print it literally but unset the escape flag.
               if( quote && escape )
                 escape = false;
-              //No break; fall through to default case
+              [[fallthrough]];
             default:
               if( first ) {
                  ss<<'\n';
