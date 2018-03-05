@@ -19,7 +19,9 @@ namespace fc
     template<typename T> fc::string stringFromStream( T& in );
     template<typename T> bool skip_white_space( T& in );
     template<typename T> fc::string stringFromToken( T& in );
+    template<typename T> variant_object objectFromStreamBase( T& in, std::function<std::string(T&)>& get_key, std::function<variant(T&)>& get_value );
     template<typename T, json::parse_type parser_type> variant_object objectFromStream( T& in );
+    template<typename T> variants arrayFromStreamBase( T& in, std::function<variant(T&)>& get_value );
     template<typename T, json::parse_type parser_type> variants arrayFromStream( T& in );
     template<typename T, json::parse_type parser_type> variant number_from_stream( T& in );
     template<typename T> variant token_from_stream( T& in );
@@ -166,8 +168,8 @@ namespace fc
                                           ("token", token.str() ) );
    }
 
-   template<typename T, json::parse_type parser_type>
-   variant_object objectFromStream( T& in )
+   template<typename T>
+   variant_object objectFromStreamBase( T& in, std::string (*get_key)(T&), variant (*get_value)(T&) )
    {
       mutable_variant_object obj;
       try
@@ -186,7 +188,7 @@ namespace fc
                continue;
             }
             if( skip_white_space(in) ) continue;
-            string key = stringFromStream( in );
+            string key = get_key( in );
             skip_white_space(in);
             if( in.peek() != ':' )
             {
@@ -194,7 +196,7 @@ namespace fc
                                         ("key", key) );
             }
             in.get();
-            auto val = variant_from_stream<T, parser_type>( in );
+            auto val = get_value( in );
 
             obj(std::move(key),std::move(val));
          }
@@ -216,7 +218,14 @@ namespace fc
    }
 
    template<typename T, json::parse_type parser_type>
-   variants arrayFromStream( T& in )
+   variant_object objectFromStream( T& in )
+   {
+      return objectFromStreamBase<T>( in, []( T& in ){ return stringFromStream( in ); },
+                                      []( T& in ){ return variant_from_stream<T, parser_type>( in ); } );
+   }
+
+   template<typename T>
+   variants arrayFromStreamBase( T& in, variant (*get_value)(T&)  )
    {
       variants ar;
       try
@@ -233,7 +242,7 @@ namespace fc
               continue;
            }
            if( skip_white_space(in) ) continue;
-           ar.push_back( variant_from_stream<T, parser_type>(in) );
+           ar.push_back( get_value(in) );
         }
         if( in.peek() != ']' )
            FC_THROW_EXCEPTION( parse_error_exception, "Expected ']' after parsing ${variant}",
@@ -243,6 +252,12 @@ namespace fc
       } FC_RETHROW_EXCEPTIONS( warn, "Attempting to parse array ${array}",
                                          ("array", ar ) );
       return ar;
+   }
+
+   template<typename T, json::parse_type parser_type>
+   variants arrayFromStream( T& in )
+   {
+       return arrayFromStreamBase<T>( in, []( T& in ){ return variant_from_stream<T, parser_type>( in ); } );
    }
 
    template<typename T, json::parse_type parser_type>

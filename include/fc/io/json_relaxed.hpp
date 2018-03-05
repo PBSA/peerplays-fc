@@ -564,84 +564,14 @@ namespace fc { namespace json_relaxed
    template<typename T, bool strict>
    variant_object objectFromStream( T& in )
    {
-      mutable_variant_object obj;
-      try
-      {
-         char c = in.peek();
-         if( c != '{' )
-            FC_THROW_EXCEPTION( parse_error_exception,
-                                     "Expected '{', but read '${char}'",
-                                     ("char",string(&c, &c + 1)) );
-         in.get();
-         skip_white_space(in);
-         while( in.peek() != '}' )
-         {
-            if( in.peek() == ',' )
-            {
-               in.get();
-               continue;
-            }
-            if( skip_white_space(in) ) continue;
-            string key = json_relaxed::stringFromStream<T, strict>( in );
-            skip_white_space(in);
-            if( in.peek() != ':' )
-            {
-               FC_THROW_EXCEPTION( parse_error_exception, "Expected ':' after key \"${key}\"",
-                                        ("key", key) );
-            }
-            in.get();
-            auto val = json_relaxed::variant_from_stream<T, strict>( in );
-
-            obj(std::move(key),std::move(val));
-            skip_white_space(in);
-         }
-         if( in.peek() == '}' )
-         {
-            in.get();
-            return obj;
-         }
-         FC_THROW_EXCEPTION( parse_error_exception, "Expected '}' after ${variant}", ("variant", obj ) );
-      }
-      catch( const fc::eof_exception& e )
-      {
-         FC_THROW_EXCEPTION( parse_error_exception, "Unexpected EOF: ${e}", ("e", e.to_detail_string() ) );
-      }
-      catch( const std::ios_base::failure& e )
-      {
-         FC_THROW_EXCEPTION( parse_error_exception, "Unexpected EOF: ${e}", ("e", e.what() ) );
-      } FC_RETHROW_EXCEPTIONS( warn, "Error parsing object" );
+      return objectFromStreamBase<T>( in, []( T& in ){ return json_relaxed::stringFromStream<T, strict>( in ); },
+                                      []( T& in ){ return json_relaxed::variant_from_stream<T, strict>( in ); } );
    }
 
    template<typename T, bool strict>
    variants arrayFromStream( T& in )
    {
-      variants ar;
-      try
-      {
-        if( in.peek() != '[' )
-           FC_THROW_EXCEPTION( parse_error_exception, "Expected '['" );
-        in.get();
-        skip_white_space(in);
-
-        while( in.peek() != ']' )
-        {
-           if( in.peek() == ',' )
-           {
-              in.get();
-              continue;
-           }
-           if( skip_white_space(in) ) continue;
-           ar.push_back( json_relaxed::variant_from_stream<T, strict>(in) );
-           skip_white_space(in);
-        }
-        if( in.peek() != ']' )
-           FC_THROW_EXCEPTION( parse_error_exception, "Expected ']' after parsing ${variant}",
-                                    ("variant", ar) );
-
-        in.get();
-      } FC_RETHROW_EXCEPTIONS( warn, "Attempting to parse array ${array}",
-                                         ("array", ar ) );
-      return ar;
+       return arrayFromStreamBase<T>( in, []( T& in ){ return json_relaxed::variant_from_stream<T, strict>( in ); } );
    }
 
    template<typename T, bool strict>
