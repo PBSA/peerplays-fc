@@ -626,56 +626,48 @@ namespace fc { namespace json_relaxed
    variant variant_from_stream( T& in )
    {
       skip_white_space(in);
-      variant var;
-      while( signed char c = in.peek() )
+      signed char c = in.peek();
+      switch( c )
       {
-         switch( c )
-         {
-            case ' ':
-            case '\t':
-            case '\n':
-            case '\r':
-              in.get();
-              continue;
-            case '"':
-              return json_relaxed::stringFromStream<T, strict>( in );
-            case '{':
-              return json_relaxed::objectFromStream<T, strict>( in );
-            case '[':
-              return json_relaxed::arrayFromStream<T, strict>( in );
-            case '-':
-            case '+':
-            case '.':
-            case '0':
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
-              return json_relaxed::numberFromStream<T, strict>( in );
-            // null, true, false, or 'warning' / string
-            case 'a': case 'b': case 'c': case 'd': case 'e': case 'f': case 'g': case 'h':
-            case 'i': case 'j': case 'k': case 'l': case 'm': case 'n': case 'o': case 'p':
-            case 'q': case 'r': case 's': case 't': case 'u': case 'v': case 'w': case 'x':
-            case 'y': case 'z':
-            case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': case 'G': case 'H':
-            case 'I': case 'J': case 'K': case 'L': case 'M': case 'N': case 'O': case 'P':
-            case 'Q': case 'R': case 'S': case 'T': case 'U': case 'V': case 'W': case 'X':
-            case 'Y': case 'Z':
-            case '_':                               case '/':
-              return json_relaxed::wordFromStream<T, strict>( in );
-            case 0x04: // ^D end of transmission
-            case EOF:
-              FC_THROW_EXCEPTION( eof_exception, "unexpected end of file" );
-            default:
-              FC_THROW_EXCEPTION( parse_error_exception, "Unexpected char '${c}' in \"${s}\"",
-                                 ("c", c)("s", stringFromToken(in)) );
-         }
+         case '"':
+            return json_relaxed::stringFromStream<T, strict>( in );
+         case '{':
+            return json_relaxed::objectFromStream<T, strict>( in );
+         case '[':
+            return json_relaxed::arrayFromStream<T, strict>( in );
+         case '-':
+         case '+':
+         case '.':
+         case '0':
+         case '1':
+         case '2':
+         case '3':
+         case '4':
+         case '5':
+         case '6':
+         case '7':
+         case '8':
+         case '9':
+            return json_relaxed::numberFromStream<T, strict>( in );
+         // null, true, false, or 'warning' / string
+         case 'a': case 'b': case 'c': case 'd': case 'e': case 'f': case 'g': case 'h':
+         case 'i': case 'j': case 'k': case 'l': case 'm': case 'n': case 'o': case 'p':
+         case 'q': case 'r': case 's': case 't': case 'u': case 'v': case 'w': case 'x':
+         case 'y': case 'z':
+         case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': case 'G': case 'H':
+         case 'I': case 'J': case 'K': case 'L': case 'M': case 'N': case 'O': case 'P':
+         case 'Q': case 'R': case 'S': case 'T': case 'U': case 'V': case 'W': case 'X':
+         case 'Y': case 'Z':
+         case '_':                               case '/':
+            return json_relaxed::wordFromStream<T, strict>( in );
+         case 0x04: // ^D end of transmission
+         case EOF:
+            FC_THROW_EXCEPTION( eof_exception, "unexpected end of file" );
+         case 0:
+         default:
+            FC_THROW_EXCEPTION( parse_error_exception, "Unexpected char '${c}' in \"${s}\"",
+                                ("c", c)("s", stringFromToken(in)) );
       }
-	  return variant();
    }
+
 } } // fc::json_relaxed
