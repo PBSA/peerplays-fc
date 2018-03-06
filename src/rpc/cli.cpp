@@ -119,27 +119,30 @@ void cli::run()
  */
 static char *my_rl_complete(char *token, int *match)
 {
-    int matchlen = 0;
-    int count = 0;
-    std::string method_name;
+	int matchlen = 0;
+	int count = 0;
+	std::string method_name;
 
-    auto& cmd = cli_commands();
-    int partlen = strlen (token); /* Part of token */
-    for (std::string it : cmd) {
-        if (!strncmp ( it.c_str(), token, partlen)) {
-            method_name = it;
-            matchlen = partlen;
-            count ++;
-        }
-    }
+	auto& cmd = cli_commands();
+	int partlen = strlen (token); /* Part of token */
+	for (const std::string it : cmd)
+	{
+		if (it.compare(0, partlen, token) == 0)
+		{
+			method_name = it;
+			matchlen = partlen;
+			count ++;
+		}
+	}
 
-    if (count == 1) {
-        *match = 1;
-        method_name += " ";
-        return strdup (method_name.c_str() + matchlen);
-    }
+	if (count == 1)
+	{
+		*match = 1;
+		method_name += " ";
+		return strdup (method_name.c_str() + matchlen);
+	}
 
-    return NULL;
+	return NULL;
 }
 
 /***
