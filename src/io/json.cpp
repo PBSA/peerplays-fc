@@ -319,7 +319,11 @@ namespace fc
       if (str == "-." || str == ".") // check the obviously wrong things we could have encountered
         FC_THROW_EXCEPTION(parse_error_exception, "Can't parse token \"${token}\" as a JSON numeric constant", ("token", str));
       if( dot )
-        return parser_type == json::legacy_parser_with_string_doubles ? variant(str) : variant(to_double(str));
+        return
+#ifdef WITH_EXOTIC_JSON_PARSERS
+              parser_type == json::legacy_parser_with_string_doubles ? variant(str) :
+#endif
+                  variant(to_double(str));
       if( neg )
         return to_int64(str);
       return to_uint64(str);
@@ -768,12 +772,14 @@ namespace fc
       {
           case legacy_parser:
               return variant_from_stream<fc::buffered_istream, legacy_parser>( in );
+#ifdef WITH_EXOTIC_JSON_PARSERS
           case legacy_parser_with_string_doubles:
               return variant_from_stream<fc::buffered_istream, legacy_parser_with_string_doubles>( in );
           case strict_parser:
               return json_relaxed::variant_from_stream<buffered_istream, true>( in );
           case relaxed_parser:
               return json_relaxed::variant_from_stream<buffered_istream, false>( in );
+#endif
           default:
               FC_ASSERT( false, "Unknown JSON parser type {ptype}", ("ptype", ptype) );
       }

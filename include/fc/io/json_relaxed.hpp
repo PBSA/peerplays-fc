@@ -671,5 +671,4 @@ namespace fc { namespace json_relaxed
       }
 	  return variant();
    }
-
 } } // fc::json_relaxed
