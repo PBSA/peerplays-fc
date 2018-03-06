@@ -153,22 +153,22 @@ static char *my_rl_complete(char *token, int *match)
  */
 static int cli_completion(char *token, char ***av)
 {
-    int num, total = 0;
-    char **copy;
+   int num, total = 0;
+   char **copy;
 
-    auto& cmd = cli_commands();
-    num = cmd.size();
+   auto& cmd = cli_commands();
+   num = cmd.size();
 
-    copy = (char **) malloc (num * sizeof(char *));
-    for (auto it : cmd) {
-    	if (!strncmp (it.c_str(), token, strlen (token))) {
-    		copy[total] = strdup ( it.c_str() );
-    		total ++;
-    	}
-    }
-    *av = copy;
+   copy = (char **) malloc (num * sizeof(char *));
+   for (auto it : cmd) {
+      if (!strncmp (it.c_str(), token, strlen (token))) {
+         copy[total] = strdup ( it.c_str() );
+         total ++;
+      }
+   }
+   *av = copy;
 
-    return total;
+   return total;
 }
 
 /***
