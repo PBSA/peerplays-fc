@@ -112,20 +112,14 @@ if ( MSVC )
 
     target_include_directories( editline PRIVATE "${EDITLINE_DIR}" PUBLIC "${EDITLINE_DIR}/include" )
 
-    set( EDITLINE_BUILD_DEFINES
-        USE_FIELD_10X26
-        USE_FIELD_INV_BUILTIN
-        USE_NUM_NONE
-        USE_SCALAR_8X32
-        USE_SCALAR_INV_BUILTIN )
-    set_target_properties( editline PROPERTIES COMPILE_DEFINITIONS "${EDITLINE_BUILD_DEFINES}" LINKER_LANGUAGE C )
+    set_target_properties( editline PROPERTIES COMPILE_DEFINITIONS LINKER_LANGUAGE C )
 else ( MSVC )
     include(ExternalProject)
     if ( MINGW )
     ExternalProject_Add( project_editline
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/editline
      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline
-     CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/editline --with-bignum=no  --host=x86_64-w64-mingw32
+     CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/editline --host=x86_64-w64-mingw32
      BUILD_COMMAND make
      INSTALL_COMMAND true
      BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/editline/src/project_editline-build/.libs/libeditline.a
@@ -134,7 +128,7 @@ else ( MSVC )
     ExternalProject_Add( project_editline
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/editline
      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline
-     CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/editline --with-bignum=no
+     CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/editline
      BUILD_COMMAND make
      INSTALL_COMMAND true
      BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/editline/src/project_editline-build/.libs/libeditline.a
@@ -307,7 +301,6 @@ install( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" DESTINATION include )
 
 # begin editline stuff
 set(EDITLINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline" )
-file(GLOB HEADERS "include/bts/cli/*.hpp")
 target_compile_definitions (fc PRIVATE HAVE_EDITLINE)
 set(editline_libraries editline)
 if(WIN32)
