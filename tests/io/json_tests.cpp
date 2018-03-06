@@ -126,7 +126,15 @@ static bool equal( const fc::variant& a, const fc::variant& b )
        a_type = fc::variant::type_id::uint64_type;
    if( b_type == fc::variant::type_id::int64_type && b.as<int64_t>() > 0 )
        b_type = fc::variant::type_id::uint64_type;
-   if( a_type != b_type ) return false;
+   if( a_type != b_type )
+   {
+      if( ( a_type == fc::variant::type_id::double_type
+            && b_type == fc::variant::type_id::string_type )
+          || ( a_type == fc::variant::type_id::string_type
+               && b_type == fc::variant::type_id::double_type ) )
+         return a.as<double>() == b.as<double>();
+      return false;
+   }
    switch( a_type )
    {
       case fc::variant::type_id::null_type: return true;
@@ -163,16 +171,16 @@ static bool equal( const fc::variant& a, const fc::variant& b )
 
 static void test_recursive( const fc::variant& v )
 { try {
-   const std::string json = fc::json::to_string( v, fc::json::output_formatting::legacy_generator );
+   const std::string json = fc::json::to_string( v );
    BOOST_CHECK( fc::json::is_valid( json ) );
    BOOST_CHECK( !fc::json::is_valid( json + " " ) );
 
-   const std::string pretty = fc::json::to_pretty_string( v, fc::json::output_formatting::legacy_generator );
+   const std::string pretty = fc::json::to_pretty_string( v );
    BOOST_CHECK( fc::json::is_valid( pretty ) );
    BOOST_CHECK( !fc::json::is_valid( pretty + " " ) );
 
    fc::temp_file file( fc::temp_directory_path(), true );
-   fc::json::save_to_file( v, file.path(), false, fc::json::output_formatting::legacy_generator );
+   fc::json::save_to_file( v, file.path(), false );
 
    BOOST_CHECK( equal( v, fc::json::from_string( json + " " ) ) );
    BOOST_CHECK( equal( v, fc::json::from_string( pretty + " " ) ) );
