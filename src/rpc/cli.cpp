@@ -126,16 +126,17 @@ static char *my_rl_complete(char *token, int *match)
     auto& cmd = cli_commands();
     int partlen = strlen (token); /* Part of token */
     for (std::string it : cmd) {
-    	if (!strncmp ( it.c_str(), token, partlen)) {
-    		method_name = it;
-    		matchlen = partlen;
-    		count ++;
-    	}
+        if (!strncmp ( it.c_str(), token, partlen)) {
+            method_name = it;
+            matchlen = partlen;
+            count ++;
+        }
     }
 
     if (count == 1) {
-    	*match = 1;
-    	return strdup (method_name.c_str() + matchlen);
+        *match = 1;
+        method_name += " ";
+        return strdup (method_name.c_str() + matchlen);
     }
 
     return NULL;
