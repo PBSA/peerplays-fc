@@ -300,7 +300,6 @@ setup_library( fc SOURCES ${sources} LIBRARY_TYPE STATIC )
 install( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" DESTINATION include )
 
 # begin editline stuff
-set(EDITLINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline" )
 target_compile_definitions (fc PRIVATE HAVE_EDITLINE)
 set(editline_libraries editline)
 if(WIN32)
@@ -400,7 +399,6 @@ target_include_directories(fc
     ${OPENSSL_INCLUDE_DIR}
     "vendor/diff-match-patch-cpp-stl"
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/websocketpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline
 
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/boost_1.51/include
