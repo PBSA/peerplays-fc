@@ -104,8 +104,15 @@ namespace fc { namespace json_relaxed
            if( in.peek() == q )
            {
                in.get();
-               if( in.peek() != q )
-                   return fc::string();
+               try
+               {
+                  if( in.peek() != q )
+                     return fc::string();
+               }
+               catch( const fc::eof_exception& e )
+               {
+                  return fc::string();
+               }
 
                // triple quote processing
                if( strict )
