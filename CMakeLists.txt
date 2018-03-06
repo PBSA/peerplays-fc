@@ -272,7 +272,7 @@ endif(WIN32)
 # end editline stuff
 
 if( NOT CPP_STANDARD )
-  set( CPP_STANDARD, "-std=c++11" )
+  set( CPP_STANDARD "-std=c++11" )
 endif()
 
 IF(WIN32)
