@@ -125,7 +125,7 @@ static char *my_rl_complete(char *token, int *match)
    auto& cmd = cli_commands();
    int partlen = strlen (token); /* Part of token */
 
-   for (const std::string it : cmd)
+   for (const std::string& it : cmd)
    {
       if (it.compare(0, partlen, token) == 0)
       {
@@ -172,7 +172,7 @@ static int cli_completion(char *token, char ***array)
 
    int partlen = strlen(token);
 
-   for (const std::string it : cmd)
+   for (const std::string& it : cmd)
    {
       if ( it.compare(0, partlen, token) == 0)
       {
