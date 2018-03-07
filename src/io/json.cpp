@@ -14,15 +14,15 @@
 namespace fc
 {
     // forward declarations of provided functions
-    template<typename T, json::parse_type parser_type> variant variant_from_stream( T& in );
+    template<typename T, json::parse_type parser_type> variant variant_from_stream( T& in, uint32_t depth = 0 );
     template<typename T> char parseEscape( T& in );
     template<typename T> fc::string stringFromStream( T& in );
     template<typename T> bool skip_white_space( T& in );
     template<typename T> fc::string stringFromToken( T& in );
     template<typename T> variant_object objectFromStreamBase( T& in, std::function<std::string(T&)>& get_key, std::function<variant(T&)>& get_value );
-    template<typename T, json::parse_type parser_type> variant_object objectFromStream( T& in );
+    template<typename T, json::parse_type parser_type> variant_object objectFromStream( T& in, uint32_t depth );
     template<typename T> variants arrayFromStreamBase( T& in, std::function<variant(T&)>& get_value );
-    template<typename T, json::parse_type parser_type> variants arrayFromStream( T& in );
+    template<typename T, json::parse_type parser_type> variants arrayFromStream( T& in, uint32_t depth );
     template<typename T, json::parse_type parser_type> variant number_from_stream( T& in );
     template<typename T> variant token_from_stream( T& in );
     void escape_string( const string& str, ostream& os );
@@ -31,6 +31,8 @@ namespace fc
     template<typename T> void to_stream( T& os, const variant& v, json::output_formatting format );
     fc::string pretty_print( const fc::string& v, uint8_t indent );
 }
+
+#define MAX_RECURSION_DEPTH 200
 
 #include <fc/io/json_relaxed.hpp>
 
@@ -169,7 +171,7 @@ namespace fc
    }
 
    template<typename T>
-   variant_object objectFromStreamBase( T& in, std::string (*get_key)(T&), variant (*get_value)(T&) )
+   variant_object objectFromStreamBase( T& in, std::function<std::string(T&)>& get_key, std::function<variant(T&)>& get_value )
    {
       mutable_variant_object obj;
       try
@@ -218,14 +220,15 @@ namespace fc
    }
 
    template<typename T, json::parse_type parser_type>
-   variant_object objectFromStream( T& in )
+   variant_object objectFromStream( T& in, uint32_t depth )
    {
-      return objectFromStreamBase<T>( in, []( T& in ){ return stringFromStream( in ); },
-                                      []( T& in ){ return variant_from_stream<T, parser_type>( in ); } );
+      std::function<std::string(T&)> get_key = []( T& in ){ return stringFromStream( in ); };
+      std::function<variant(T&)> get_value = [depth]( T& in ){ return variant_from_stream<T, parser_type>( in, depth ); };
+      return objectFromStreamBase<T>( in, get_key, get_value );
    }
 
    template<typename T>
-   variants arrayFromStreamBase( T& in, variant (*get_value)(T&)  )
+   variants arrayFromStreamBase( T& in, std::function<variant(T&)>& get_value  )
    {
       variants ar;
       try
@@ -255,9 +258,10 @@ namespace fc
    }
 
    template<typename T, json::parse_type parser_type>
-   variants arrayFromStream( T& in )
+   variants arrayFromStream( T& in, uint32_t depth )
    {
-       return arrayFromStreamBase<T>( in, []( T& in ){ return variant_from_stream<T, parser_type>( in ); } );
+      std::function<variant(T&)> get_value = [depth]( T& in ){ return variant_from_stream<T, parser_type>( in, depth ); };
+      return arrayFromStreamBase<T>( in, get_value );
    }
 
    template<typename T, json::parse_type parser_type>
@@ -401,8 +405,10 @@ namespace fc
 
 
    template<typename T, json::parse_type parser_type>
-   variant variant_from_stream( T& in )
+   variant variant_from_stream( T& in, uint32_t depth )
    {
+      if( depth > MAX_RECURSION_DEPTH )
+          FC_THROW_EXCEPTION( parse_error_exception, "Too many nested items in JSON input!" );
       skip_white_space(in);
       signed char c = in.peek();
       switch( c )
@@ -410,9 +416,9 @@ namespace fc
          case '"':
             return stringFromStream( in );
          case '{':
-            return objectFromStream<T, parser_type>( in );
+            return objectFromStream<T, parser_type>( in, depth + 1 );
          case '[':
-            return arrayFromStream<T, parser_type>( in );
+            return arrayFromStream<T, parser_type>( in, depth + 1 );
          case '-':
          case '.':
          case '0':
@@ -441,30 +447,8 @@ namespace fc
       }
   }
 
-
-   /** the purpose of this check is to verify that we will not get a stack overflow in the recursive descent parser */
-   void check_string_depth( const string& utf8_str  )
-   {
-      int32_t open_object = 0;
-      int32_t open_array  = 0;
-      for( auto c : utf8_str )
-      {
-         switch( c )
-         {
-            case '{': open_object++; break;
-            case '}': open_object--; break;
-            case '[': open_array++; break;
-            case ']': open_array--; break;
-            default: break;
-         }
-         FC_ASSERT( open_object < 100 && open_array < 100, "object graph too deep", ("object depth",open_object)("array depth", open_array) );
-      }
-   }
-   
    variant json::from_string( const std::string& utf8_str, parse_type ptype )
    { try {
-      check_string_depth( utf8_str );
-
       fc::istream_ptr in( new fc::stringstream( utf8_str ) );
       fc::buffered_istream bin( in );
       return from_stream( bin, ptype );
@@ -474,10 +458,9 @@ namespace fc
    {
       variants result;
       try {
-         check_string_depth( utf8_str );
          fc::stringstream in( utf8_str );
          while( true )
-            result.push_back(json_relaxed::variant_from_stream<fc::stringstream, false>( in ));
+            result.push_back(json_relaxed::variant_from_stream<fc::stringstream, false>( in, 0 ));
       } catch ( const fc::eof_exception& ) {
          return result;
       } FC_RETHROW_EXCEPTIONS( warn, "", ("str",utf8_str) )
