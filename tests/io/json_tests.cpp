@@ -75,6 +75,10 @@ static void test_fail_file( const std::string& str )
 
 BOOST_AUTO_TEST_CASE(imbalanced_test)
 {
+   std::string open40("[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[");
+   std::string close40("]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]");
+   std::string open80 = open40 + open40;
+   std::string close80 = close40 + close40;
    std::vector<std::string> tests
    { // for easier handling and better readability, in the following test
      // strings ' is used instead of " and \1 instead of \0
@@ -106,7 +110,9 @@ BOOST_AUTO_TEST_CASE(imbalanced_test)
       "['\1]",
       "[ 13\1",
       "[ 13\1]",
-      "' end\1"
+      "' end\1",
+      open80 + "'" + close80 + close80 + "'," + open80 + open80
+             + close80 + close80 + close80
    };
 
    for( std::string test : tests )
