@@ -32,6 +32,12 @@ namespace fc
     fc::string pretty_print( const fc::string& v, uint8_t indent );
 }
 
+#if __cplusplus > 201402L
+#define FALLTHROUGH      [[fallthrough]];
+#else
+#define FALLTHROUGH
+#endif
+
 #define MAX_RECURSION_DEPTH 200
 
 #include <fc/io/json_relaxed.hpp>
@@ -290,7 +296,7 @@ namespace fc
                  if (dot)
                     FC_THROW_EXCEPTION(parse_error_exception, "Can't parse a number with two decimal places");
                  dot = true;
-                 [[fallthrough]];
+                 FALLTHROUGH
               case '0':
               case '1':
               case '2':
@@ -320,7 +326,7 @@ namespace fc
       { // read error ends the loop
       }
       fc::string str = ss.str();
-      if (str == "-." || str == ".") // check the obviously wrong things we could have encountered
+      if (str == "-." || str == "." || str == "-") // check the obviously wrong things we could have encountered
         FC_THROW_EXCEPTION(parse_error_exception, "Can't parse token \"${token}\" as a JSON numeric constant", ("token", str));
       if( dot )
         return
@@ -443,7 +449,7 @@ namespace fc
          case 0:
             if( parser_type == fc::json::broken_nul_parser )
                return variant();
-            [[fallthrough]];
+            FALLTHROUGH
          default:
             FC_THROW_EXCEPTION( parse_error_exception, "Unexpected char '${c}' in \"${s}\"",
                                 ("c", c)("s", stringFromToken(in)) );
@@ -591,7 +597,7 @@ namespace fc
               return;
          case variant::int64_type:
               if( format == json::stringify_large_ints_and_doubles &&
-                  v.as_int64() > 0xffffffff )
+                  ( v.as_int64() > 0xffffffff || v.as_int64() < -int64_t(0xffffffff) ) )
                  os << '"'<<v.as_string()<<'"';
               else
                  os << v.as_int64();
@@ -712,7 +718,7 @@ namespace fc
               //If we're in quotes and see a \n, just print it literally but unset the escape flag.
               if( quote && escape )
                 escape = false;
-              [[fallthrough]];
+              FALLTHROUGH
             default:
               if( first ) {
                  ss<<'\n';

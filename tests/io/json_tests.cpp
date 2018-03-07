@@ -309,4 +309,16 @@ BOOST_AUTO_TEST_CASE(structured_test)
    test_recursive( v_big_array );
 }
 
+BOOST_AUTO_TEST_CASE(precision_test)
+{
+   BOOST_CHECK_EQUAL( "\"4294967296\"", fc::json::to_string( fc::variant( 0x100000000LL ) ) );
+   BOOST_CHECK_EQUAL( "\"-4294967296\"", fc::json::to_string( fc::variant( -0x100000000LL ) ) );
+   std::string half = fc::json::to_string( fc::variant( 0.5 ) );
+   BOOST_CHECK_EQUAL( '"', half.front() );
+   BOOST_CHECK_EQUAL( '"', half.back() );
+   half = half.substr( 1, half.length() - 2 );
+   while( '0' == half.back() ) half.erase( half.length() - 1, 1 );
+   BOOST_CHECK_EQUAL( "0.5", half );
+}
+
 BOOST_AUTO_TEST_SUITE_END()
