@@ -441,6 +441,9 @@ namespace fc
          case EOF:
             FC_THROW_EXCEPTION( eof_exception, "unexpected end of file" );
          case 0:
+            if( parser_type == fc::json::broken_nul_parser )
+               return variant();
+            [[fallthrough]];
          default:
             FC_THROW_EXCEPTION( parse_error_exception, "Unexpected char '${c}' in \"${s}\"",
                                 ("c", c)("s", stringFromToken(in)) );
