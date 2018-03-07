@@ -119,27 +119,33 @@ void cli::run()
  */
 static char *my_rl_complete(char *token, int *match)
 {
-   int matchlen = 0;
-   int count = 0;
+   bool have_one = false;
    std::string method_name;
 
    auto& cmd = cli_commands();
    int partlen = strlen (token); /* Part of token */
+
    for (const std::string it : cmd)
    {
       if (it.compare(0, partlen, token) == 0)
       {
-         method_name = it;
-         matchlen = partlen;
-         count ++;
+         if (have_one) {
+            // we can only have 1, but we found a second
+            return NULL;
+         }
+         else
+         {
+            method_name = it;
+            have_one = true;
+         }
       }
    }
 
-   if (count == 1)
+   if (have_one)
    {
       *match = 1;
       method_name += " ";
-      return strdup (method_name.c_str() + matchlen);
+      return strdup (method_name.c_str() + partlen);
    }
 
    return NULL;
@@ -148,27 +154,35 @@ static char *my_rl_complete(char *token, int *match)
 /***
  * @brief return an array of matching commands
  * @param token the incoming text
- * @param av the resultant array of possible matches
+ * @param array the resultant array of possible matches
  * @returns the number of matches
  */
-static int cli_completion(char *token, char ***av)
+static int cli_completion(char *token, char ***array)
 {
-   int num, total = 0;
-   char **copy;
-
    auto& cmd = cli_commands();
-   num = cmd.size();
+   int num_commands = cmd.size();
 
-   copy = (char **) malloc (num * sizeof(char *));
-   for (auto it : cmd) {
-      if (!strncmp (it.c_str(), token, strlen (token))) {
-         copy[total] = strdup ( it.c_str() );
-         total ++;
+   char **copy = (char **) malloc (num_commands * sizeof(char *));
+   if (copy == NULL)
+   {
+      // possible out of memory
+      return 0;
+   }
+   int total_matches = 0;
+
+   int partlen = strlen(token);
+
+   for (const std::string it : cmd)
+   {
+      if ( it.compare(0, partlen, token) == 0)
+      {
+         copy[total_matches] = strdup ( it.c_str() );
+         ++total_matches;
       }
    }
-   *av = copy;
+   *array = copy;
 
-   return total;
+   return total_matches;
 }
 
 /***
