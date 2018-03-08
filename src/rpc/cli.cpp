@@ -217,18 +217,16 @@ void cli::getline( const fc::string& prompt, fc::string& line)
          if( line_read == nullptr )
             FC_THROW_EXCEPTION( fc::eof_exception, "" );
          line = line_read;
-         if (*line_read)
+         try
          {
-            try
-            {
+            if (*line_read)
                add_history(line_read);
-               free(line_read);
-            }
-            catch(...)
-            {
-               free(line_read);
-               throw;
-            }
+            free(line_read);
+         }
+         catch(...)
+         {
+            free(line_read);
+            throw;
          }
       }).wait();
    }
