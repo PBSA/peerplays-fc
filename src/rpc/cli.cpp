@@ -216,10 +216,20 @@ void cli::getline( const fc::string& prompt, fc::string& line)
          line_read = readline(prompt.c_str());
          if( line_read == nullptr )
             FC_THROW_EXCEPTION( fc::eof_exception, "" );
-         if( *line_read )
-            add_history(line_read);
          line = line_read;
-         free(line_read);
+         if (*line_read)
+         {
+            try
+            {
+               add_history(line_read);
+               free(line_read);
+            }
+            catch(...)
+            {
+               free(line_read);
+               throw;
+            }
+         }
       }).wait();
    }
    else
