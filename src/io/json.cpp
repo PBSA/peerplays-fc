@@ -772,6 +772,8 @@ namespace fc
           case relaxed_parser:
               return json_relaxed::variant_from_stream<buffered_istream, false>( in );
 #endif
+          case broken_nul_parser:
+              return variant_from_stream<fc::buffered_istream, broken_nul_parser>( in );
           default:
               FC_ASSERT( false, "Unknown JSON parser type {ptype}", ("ptype", ptype) );
       }
