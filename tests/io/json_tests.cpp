@@ -321,4 +321,15 @@ BOOST_AUTO_TEST_CASE(precision_test)
    BOOST_CHECK_EQUAL( "0.5", half );
 }
 
+BOOST_AUTO_TEST_CASE(recursion_test)
+{
+   std::string ten_levels = "[[[[[[[[[[]]]]]]]]]]";
+   fc::variant nested = fc::json::from_string( ten_levels );
+   BOOST_CHECK_THROW( fc::json::from_string( ten_levels, fc::json::legacy_parser, 9 ), fc::parse_error_exception );
+
+   std::string back = fc::json::to_string( nested );
+   BOOST_CHECK_EQUAL( ten_levels, back );
+   BOOST_CHECK_THROW( fc::json::to_string( nested, fc::json::stringify_large_ints_and_doubles, 9 ), fc::assert_exception );
+}
+
 BOOST_AUTO_TEST_SUITE_END()

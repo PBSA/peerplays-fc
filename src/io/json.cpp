@@ -14,21 +14,21 @@
 namespace fc
 {
     // forward declarations of provided functions
-    template<typename T, json::parse_type parser_type> variant variant_from_stream( T& in, uint32_t depth = 0 );
+    template<typename T, json::parse_type parser_type> variant variant_from_stream( T& in, uint32_t max_depth );
     template<typename T> char parseEscape( T& in );
     template<typename T> fc::string stringFromStream( T& in );
     template<typename T> bool skip_white_space( T& in );
     template<typename T> fc::string stringFromToken( T& in );
     template<typename T> variant_object objectFromStreamBase( T& in, std::function<std::string(T&)>& get_key, std::function<variant(T&)>& get_value );
-    template<typename T, json::parse_type parser_type> variant_object objectFromStream( T& in, uint32_t depth );
+    template<typename T, json::parse_type parser_type> variant_object objectFromStream( T& in, uint32_t max_depth );
     template<typename T> variants arrayFromStreamBase( T& in, std::function<variant(T&)>& get_value );
-    template<typename T, json::parse_type parser_type> variants arrayFromStream( T& in, uint32_t depth );
+    template<typename T, json::parse_type parser_type> variants arrayFromStream( T& in, uint32_t max_depth );
     template<typename T, json::parse_type parser_type> variant number_from_stream( T& in );
     template<typename T> variant token_from_stream( T& in );
     void escape_string( const string& str, ostream& os );
-    template<typename T> void to_stream( T& os, const variants& a, json::output_formatting format );
-    template<typename T> void to_stream( T& os, const variant_object& o, json::output_formatting format );
-    template<typename T> void to_stream( T& os, const variant& v, json::output_formatting format );
+    template<typename T> void to_stream( T& os, const variants& a, json::output_formatting format, uint32_t max_depth );
+    template<typename T> void to_stream( T& os, const variant_object& o, json::output_formatting format, uint32_t max_depth );
+    template<typename T> void to_stream( T& os, const variant& v, json::output_formatting format, uint32_t max_depth );
     fc::string pretty_print( const fc::string& v, uint8_t indent );
 }
 
@@ -37,8 +37,6 @@ namespace fc
 #else
 #define FALLTHROUGH
 #endif
-
-#define MAX_RECURSION_DEPTH 200
 
 #include <fc/io/json_relaxed.hpp>
 
@@ -226,10 +224,10 @@ namespace fc
    }
 
    template<typename T, json::parse_type parser_type>
-   variant_object objectFromStream( T& in, uint32_t depth )
+   variant_object objectFromStream( T& in, uint32_t max_depth )
    {
       std::function<std::string(T&)> get_key = []( T& in ){ return stringFromStream( in ); };
-      std::function<variant(T&)> get_value = [depth]( T& in ){ return variant_from_stream<T, parser_type>( in, depth ); };
+      std::function<variant(T&)> get_value = [max_depth]( T& in ){ return variant_from_stream<T, parser_type>( in, max_depth ); };
       return objectFromStreamBase<T>( in, get_key, get_value );
    }
 
@@ -264,9 +262,9 @@ namespace fc
    }
 
    template<typename T, json::parse_type parser_type>
-   variants arrayFromStream( T& in, uint32_t depth )
+   variants arrayFromStream( T& in, uint32_t max_depth )
    {
-      std::function<variant(T&)> get_value = [depth]( T& in ){ return variant_from_stream<T, parser_type>( in, depth ); };
+      std::function<variant(T&)> get_value = [max_depth]( T& in ){ return variant_from_stream<T, parser_type>( in, max_depth ); };
       return arrayFromStreamBase<T>( in, get_value );
    }
 
@@ -411,9 +409,9 @@ namespace fc
 
 
    template<typename T, json::parse_type parser_type>
-   variant variant_from_stream( T& in, uint32_t depth )
+   variant variant_from_stream( T& in, uint32_t max_depth )
    {
-      if( depth > MAX_RECURSION_DEPTH )
+      if( max_depth == 0 )
           FC_THROW_EXCEPTION( parse_error_exception, "Too many nested items in JSON input!" );
       skip_white_space(in);
       signed char c = in.peek();
@@ -422,9 +420,9 @@ namespace fc
          case '"':
             return stringFromStream( in );
          case '{':
-            return objectFromStream<T, parser_type>( in, depth + 1 );
+            return objectFromStream<T, parser_type>( in, max_depth - 1 );
          case '[':
-            return arrayFromStream<T, parser_type>( in, depth + 1 );
+            return arrayFromStream<T, parser_type>( in, max_depth - 1 );
          case '-':
          case '.':
          case '0':
@@ -456,20 +454,20 @@ namespace fc
       }
   }
 
-   variant json::from_string( const std::string& utf8_str, parse_type ptype )
+   variant json::from_string( const std::string& utf8_str, parse_type ptype, uint32_t max_depth )
    { try {
       fc::istream_ptr in( new fc::stringstream( utf8_str ) );
       fc::buffered_istream bin( in );
-      return from_stream( bin, ptype );
+      return from_stream( bin, ptype, max_depth );
    } FC_RETHROW_EXCEPTIONS( warn, "", ("str",utf8_str) ) }
 
-   variants json::variants_from_string( const std::string& utf8_str, parse_type ptype )
+   variants json::variants_from_string( const std::string& utf8_str, parse_type ptype, uint32_t max_depth )
    {
       variants result;
       try {
          fc::stringstream in( utf8_str );
          while( true )
-            result.push_back(json_relaxed::variant_from_stream<fc::stringstream, false>( in, 0 ));
+            result.push_back(json_relaxed::variant_from_stream<fc::stringstream, false>( in, max_depth ));
       } catch ( const fc::eof_exception& ) {
          return result;
       } FC_RETHROW_EXCEPTIONS( warn, "", ("str",utf8_str) )
@@ -555,14 +553,14 @@ namespace fc
    }
 
    template<typename T>
-   void to_stream( T& os, const variants& a, json::output_formatting format )
+   void to_stream( T& os, const variants& a, json::output_formatting format, uint32_t max_depth )
    {
       os << '[';
       auto itr = a.begin();
 
       while( itr != a.end() )
       {
-         to_stream( os, *itr, format );
+         to_stream( os, *itr, format, max_depth );
          ++itr;
          if( itr != a.end() )
             os << ',';
@@ -570,7 +568,7 @@ namespace fc
       os << ']';
    }
    template<typename T>
-   void to_stream( T& os, const variant_object& o, json::output_formatting format )
+   void to_stream( T& os, const variant_object& o, json::output_formatting format, uint32_t max_depth )
    {
        os << '{';
        auto itr = o.begin();
@@ -579,7 +577,7 @@ namespace fc
        {
           escape_string( itr->key(), os );
           os << ':';
-          to_stream( os, itr->value(), format );
+          to_stream( os, itr->value(), format, max_depth );
           ++itr;
           if( itr != o.end() )
              os << ',';
@@ -588,8 +586,9 @@ namespace fc
    }
 
    template<typename T>
-   void to_stream( T& os, const variant& v, json::output_formatting format )
+   void to_stream( T& os, const variant& v, json::output_formatting format, uint32_t max_depth )
    {
+      FC_ASSERT( max_depth > 0, "Too many nested objects!" );
       switch( v.get_type() )
       {
          case variant::null_type:
@@ -625,20 +624,20 @@ namespace fc
               escape_string( v.as_string(), os );
               return;
          case variant::array_type:
-              to_stream( os, v.get_array(), format );
+              to_stream( os, v.get_array(), format, max_depth - 1 );
               return;
          case variant::object_type:
-              to_stream(os, v.get_object(), format );
+              to_stream(os, v.get_object(), format, max_depth - 1 );
               return;
          default:
             FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Unsupported variant type: " + v.get_type() );
       }
    }
 
-   fc::string   json::to_string( const variant& v, output_formatting format /* = stringify_large_ints_and_doubles */ )
+   fc::string   json::to_string( const variant& v, output_formatting format, uint32_t max_depth )
    {
       fc::stringstream ss;
-      fc::to_stream( ss, v, format );
+      fc::to_stream( ss, v, format, max_depth );
       return ss.str();
    }
 
@@ -733,74 +732,74 @@ namespace fc
 
 
 
-   fc::string json::to_pretty_string( const variant& v, output_formatting format /* = stringify_large_ints_and_doubles */ )
+   fc::string json::to_pretty_string( const variant& v, output_formatting format, uint32_t max_depth )
    {
-	   return pretty_print(to_string(v, format), 2);
+	   return pretty_print(to_string(v, format, max_depth), 2);
    }
 
-   void json::save_to_file( const variant& v, const fc::path& fi, bool pretty, output_formatting format /* = stringify_large_ints_and_doubles */ )
+   void json::save_to_file( const variant& v, const fc::path& fi, bool pretty, output_formatting format, uint32_t max_depth )
    {
       if( pretty )
       {
-        auto str = json::to_pretty_string( v, format );
+        auto str = json::to_pretty_string( v, format, max_depth );
         fc::ofstream o(fi);
         o.write( str.c_str(), str.size() );
       }
       else
       {
        fc::ofstream o(fi);
-       fc::to_stream( o, v, format );
+       fc::to_stream( o, v, format, max_depth );
       }
    }
-   variant json::from_file( const fc::path& p, parse_type ptype )
+   variant json::from_file( const fc::path& p, parse_type ptype, uint32_t max_depth )
    {
       fc::istream_ptr in( new fc::ifstream( p ) );
       fc::buffered_istream bin( in );
-      return from_stream( bin, ptype );
+      return from_stream( bin, ptype, max_depth );
    }
-   variant json::from_stream( buffered_istream& in, parse_type ptype )
+   variant json::from_stream( buffered_istream& in, parse_type ptype, uint32_t max_depth )
    {
       switch( ptype )
       {
           case legacy_parser:
-              return variant_from_stream<fc::buffered_istream, legacy_parser>( in );
+              return variant_from_stream<fc::buffered_istream, legacy_parser>( in, max_depth );
 #ifdef WITH_EXOTIC_JSON_PARSERS
           case legacy_parser_with_string_doubles:
-              return variant_from_stream<fc::buffered_istream, legacy_parser_with_string_doubles>( in );
+              return variant_from_stream<fc::buffered_istream, legacy_parser_with_string_doubles>( in, max_depth );
           case strict_parser:
-              return json_relaxed::variant_from_stream<buffered_istream, true>( in );
+              return json_relaxed::variant_from_stream<buffered_istream, true>( in, max_depth );
           case relaxed_parser:
-              return json_relaxed::variant_from_stream<buffered_istream, false>( in );
+              return json_relaxed::variant_from_stream<buffered_istream, false>( in, max_depth );
 #endif
           case broken_nul_parser:
-              return variant_from_stream<fc::buffered_istream, broken_nul_parser>( in );
+              return variant_from_stream<fc::buffered_istream, broken_nul_parser>( in, max_depth );
           default:
               FC_ASSERT( false, "Unknown JSON parser type {ptype}", ("ptype", ptype) );
       }
    }
 
-   ostream& json::to_stream( ostream& out, const variant& v, output_formatting format /* = stringify_large_ints_and_doubles */ )
+   ostream& json::to_stream( ostream& out, const variant& v, output_formatting format, uint32_t max_depth )
    {
-      fc::to_stream( out, v, format );
+      fc::to_stream( out, v, format, max_depth );
       return out;
    }
-   ostream& json::to_stream( ostream& out, const variants& v, output_formatting format /* = stringify_large_ints_and_doubles */ )
+   ostream& json::to_stream( ostream& out, const variants& v, output_formatting format, uint32_t max_depth )
    {
-      fc::to_stream( out, v, format );
+      fc::to_stream( out, v, format, max_depth );
       return out;
    }
-   ostream& json::to_stream( ostream& out, const variant_object& v, output_formatting format /* = stringify_large_ints_and_doubles */ )
+   ostream& json::to_stream( ostream& out, const variant_object& v, output_formatting format, uint32_t max_depth )
    {
-      fc::to_stream( out, v, format );
+      fc::to_stream( out, v, format, max_depth );
       return out;
    }
 
-   bool json::is_valid( const std::string& utf8_str, parse_type ptype )
+   bool json::is_valid( const std::string& utf8_str, parse_type ptype, uint32_t max_depth )
    {
       if( utf8_str.size() == 0 ) return false;
       fc::istream_ptr in( new fc::stringstream( utf8_str ) );
       fc::buffered_istream bin( in );
-      from_stream( bin, ptype );
+      from_stream( bin, ptype, max_depth );
       try { bin.peek(); } catch ( const eof_exception& e ) { return true; }
       return false;
    }
