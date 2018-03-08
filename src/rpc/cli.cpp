@@ -114,57 +114,75 @@ void cli::run()
 /****
  * @brief loop through list of commands, attempting to find a match
  * @param token what the user typed
- * @param match
- * @returns the full name of the command or NULL if no matches found
+ * @param match sets to 1 if only 1 match was found
+ * @returns the remaining letters of the name of the command or NULL if 1 match not found
  */
 static char *my_rl_complete(char *token, int *match)
 {
-    int matchlen = 0;
-    int count = 0;
-    const char* method_name;
+   bool have_one = false;
+   std::string method_name;
 
-    auto& cmd = cli_commands();
-    int partlen = strlen (token); /* Part of token */
-    for (auto it : cmd) {
-    	if (!strncmp (it.c_str(), token, partlen)) {
-    		method_name = it.c_str();
-    		matchlen = partlen;
-    		count ++;
-    	}
-    }
+   auto& cmd = cli_commands();
+   int partlen = strlen (token); /* Part of token */
 
-    if (count == 1) {
-    	*match = 1;
-    	return strdup (method_name + matchlen);
-    }
+   for (const std::string& it : cmd)
+   {
+      if (it.compare(0, partlen, token) == 0)
+      {
+         if (have_one) {
+            // we can only have 1, but we found a second
+            return NULL;
+         }
+         else
+         {
+            method_name = it;
+            have_one = true;
+         }
+      }
+   }
 
-    return NULL;
+   if (have_one)
+   {
+      *match = 1;
+      method_name += " ";
+      return strdup (method_name.c_str() + partlen);
+   }
+
+   return NULL;
 }
 
 /***
  * @brief return an array of matching commands
  * @param token the incoming text
- * @param av the resultant array of possible matches
+ * @param array the resultant array of possible matches
  * @returns the number of matches
  */
-static int cli_completion(char *token, char ***av)
+static int cli_completion(char *token, char ***array)
 {
-    int num, total = 0;
-    char **copy;
+   auto& cmd = cli_commands();
+   int num_commands = cmd.size();
 
-    auto& cmd = cli_commands();
-    num = cmd.size();
+   char **copy = (char **) malloc (num_commands * sizeof(char *));
+   if (copy == NULL)
+   {
+      // possible out of memory
+      return 0;
+   }
+   int total_matches = 0;
 
-    copy = (char **) malloc (num * sizeof(char *));
-    for (auto it : cmd) {
-    	if (!strncmp (it.c_str(), token, strlen (token))) {
-    		copy[total] = strdup ( it.c_str() );
-    		total ++;
-    	}
-    }
-    *av = copy;
+   int partlen = strlen(token);
 
-    return total;
+   for (const std::string& it : cmd)
+   {
+      if ( it.compare(0, partlen, token) == 0)
+      {
+         copy[total_matches] = strdup ( it.c_str() );
+         ++total_matches;
+      }
+   }
+   *array = copy;
+
+   return total_matches;
 }
 
 /***
@@ -198,9 +216,17 @@ void cli::getline( const fc::string& prompt, fc::string& line)
          line_read = readline(prompt.c_str());
          if( line_read == nullptr )
             FC_THROW_EXCEPTION( fc::eof_exception, "" );
-         if( *line_read )
-            add_history(line_read);
          line = line_read;
+         try
+         {
+            if (*line_read)
+               add_history(line_read);
+         }
+         catch(...)
+         {
+            free(line_read);
+            throw;
+         }
          free(line_read);
       }).wait();
    }
