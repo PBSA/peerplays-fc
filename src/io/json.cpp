@@ -5,6 +5,7 @@
 #include <fc/io/fstream.hpp>
 #include <fc/io/sstream.hpp>
 #include <fc/log/logger.hpp>
+#include <cstdint>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -596,7 +597,7 @@ namespace fc
               return;
          case variant::int64_type:
               if( format == json::stringify_large_ints_and_doubles &&
-                  ( v.as_int64() > 0xffffffff || v.as_int64() < -int64_t(0xffffffff) ) )
+                  ( v.as_int64() > INT32_MAX || v.as_int64() < INT32_MIN ) )
                  os << '"'<<v.as_string()<<'"';
               else
                  os << v.as_int64();
