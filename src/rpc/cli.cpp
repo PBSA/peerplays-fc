@@ -221,13 +221,13 @@ void cli::getline( const fc::string& prompt, fc::string& line)
          {
             if (*line_read)
                add_history(line_read);
-            free(line_read);
          }
          catch(...)
          {
             free(line_read);
             throw;
          }
+         free(line_read);
       }).wait();
    }
    else
