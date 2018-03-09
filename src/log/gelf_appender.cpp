@@ -128,8 +128,15 @@ namespace fc
     if (!context.get_task_name().empty())
       gelf_message["_task_name"] = context.get_task_name();
 
-    string gelf_message_as_string = json::to_string(gelf_message);
-    //unsigned uncompressed_size = gelf_message_as_string.size();
+    string gelf_message_as_string;
+    try
+    {
+       gelf_message_as_string = json::to_string(gelf_message);
+    }
+    catch( const fc::assert_exception& e )
+    {
+       gelf_message_as_string = "{\"level\":3,\"short_message\":\"ERROR while generating log message\"}";
+    }
     gelf_message_as_string = zlib_compress(gelf_message_as_string);
     
     // graylog2 expects the zlib header to be 0x78 0x9c
