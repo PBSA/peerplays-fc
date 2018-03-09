@@ -332,4 +332,45 @@ BOOST_AUTO_TEST_CASE(recursion_test)
    BOOST_CHECK_THROW( fc::json::to_string( nested, fc::json::stringify_large_ints_and_doubles, 9 ), fc::assert_exception );
 }
 
+BOOST_AUTO_TEST_CASE(rethrow_test)
+{
+   fc::variants biggie;
+   for( int i = 0; i < 250; i++ )
+   {
+      fc::variant tmp( std::move(biggie) );
+      biggie.reserve(1);
+      biggie.push_back( std::move(tmp) );
+   }
+
+   auto test_r = [&biggie](){
+      try {
+         FC_THROW_EXCEPTION( fc::unknown_host_exception, "WTF?" );
+      } FC_RETHROW_EXCEPTIONS( warn, "Argh! ${biggie}", ("biggie",biggie) ) };
+   BOOST_CHECK_THROW( test_r(), fc::unknown_host_exception );
+
+   auto test_lr = [&biggie](){
+      try {
+         FC_THROW_EXCEPTION( fc::unknown_host_exception, "WTF?" );
+      } FC_LOG_AND_RETHROW() };
+   BOOST_CHECK_THROW( test_lr(), fc::unknown_host_exception );
+
+   auto test_clr = [&biggie](){
+      try {
+         FC_THROW_EXCEPTION( fc::unknown_host_exception, "WTF?" );
+      } FC_CAPTURE_LOG_AND_RETHROW( (biggie) ) };
+   BOOST_CHECK_THROW( test_clr(), fc::unknown_host_exception );
+
+   auto test_cl = [&biggie](){
+      try {
+         FC_THROW_EXCEPTION( fc::unknown_host_exception, "WTF?" );
+      } FC_CAPTURE_AND_LOG( (biggie) ) };
+   test_cl();
+
+   auto test_cr = [&biggie](){
+      try {
+         FC_THROW_EXCEPTION( fc::unknown_host_exception, "WTF?" );
+      } FC_CAPTURE_AND_RETHROW( (biggie) ) };
+   BOOST_CHECK_THROW( test_cr(), fc::unknown_host_exception );
+}
+
 BOOST_AUTO_TEST_SUITE_END()
