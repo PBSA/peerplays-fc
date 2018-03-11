@@ -8,7 +8,6 @@
 #include <functional>
 #include <utility>
 #include <fc/signals.hpp>
-//#include <fc/rpc/json_connection.hpp>
 
 namespace fc {
    class api_connection;
@@ -148,14 +147,14 @@ namespace fc {
          R call_generic( const std::function<R(std::function<Signature>,Args...)>& f, variants::const_iterator a0, variants::const_iterator e )
          {
             FC_ASSERT( a0 != e, "too few arguments passed to method" );
-            detail::callback_functor<Signature> arg0( get_connection(), a0->as<uint64_t>() );
+            detail::callback_functor<Signature> arg0( get_connection(), a0->as<uint64_t>(1) );
             return  call_generic<R,Args...>( this->bind_first_arg<R,std::function<Signature>,Args...>( f, std::function<Signature>(arg0) ), a0+1, e );
          }
          template<typename R, typename Signature, typename ... Args>
          R call_generic( const std::function<R(const std::function<Signature>&,Args...)>& f, variants::const_iterator a0, variants::const_iterator e )
          {
             FC_ASSERT( a0 != e, "too few arguments passed to method" );
-            detail::callback_functor<Signature> arg0( get_connection(), a0->as<uint64_t>() );
+            detail::callback_functor<Signature> arg0( get_connection(), a0->as<uint64_t>(1) );
             return  call_generic<R,Args...>( this->bind_first_arg<R,const std::function<Signature>&,Args...>( f, arg0 ), a0+1, e );
          }
 
@@ -207,7 +206,7 @@ namespace fc {
    class api_connection : public std::enable_shared_from_this<fc::api_connection>
    {
       public:
-         api_connection(){}
+         api_connection(uint32_t max_depth):_max_conversion_depth(max_depth){}
          virtual ~api_connection(){};
 
 
@@ -262,6 +261,8 @@ namespace fc {
          std::vector<std::string> get_method_names( api_id_type local_api_id = 0 )const { return _local_apis[local_api_id]->get_method_names(); }
 
          fc::signal<void()> closed;
+      protected:
+         const uint32_t _max_conversion_depth = 200; // for nested structures, json, variant etc.
       private:
          std::vector< std::unique_ptr<generic_api> >             _local_apis;
          std::map< uint64_t, api_id_type >                       _handle_to_id;

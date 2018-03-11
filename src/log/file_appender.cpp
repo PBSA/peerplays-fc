@@ -138,7 +138,7 @@ namespace fc {
    {}
 
    file_appender::file_appender( const variant& args ) :
-     my( new impl( args.as<config>() ) )
+     my( new impl( args.as<config>(LOG_MAX_OBJECT_DEPTH) ) )
    {
       try
       {
@@ -180,7 +180,7 @@ namespace fc {
       }
 
       line << "] ";
-      fc::string message = fc::format_string( m.get_format(), m.get_data() );
+      fc::string message = fc::format_string( m.get_format(), m.get_data(), my->cfg.max_object_depth );
       line << message.c_str();
 
       //fc::variant lmsg(m);

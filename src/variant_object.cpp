@@ -163,12 +163,12 @@ namespace fc
       return *this;
    }
 
-   void to_variant( const variant_object& var,  variant& vo )
+   void to_variant( const variant_object& var, variant& vo, uint32_t max_depth )
    {
       vo = variant(var);
    }
 
-   void from_variant( const variant& var,  variant_object& vo )
+   void from_variant( const variant& var, variant_object& vo, uint32_t max_depth )
    {
       vo = var.get_object();
    }
@@ -344,7 +344,7 @@ namespace fc
    /** Appends \a key and \a var without checking for duplicates, designed to
     *  simplify construction of dictionaries using (key,val)(key2,val2) syntax 
     */
-   mutable_variant_object& mutable_variant_object::operator()( string key, variant var )
+   mutable_variant_object& mutable_variant_object::operator()( string key, variant var, uint32_t max_depth )
    {
       _key_value->push_back( entry( fc::move(key), fc::move(var) ) );
       return *this;
@@ -365,6 +365,9 @@ namespace fc
          set( e.key(), e.value() );
       return *this;
    }
+
+   limited_mutable_variant_object::limited_mutable_variant_object( uint32_t m )
+         : mutable_variant_object(), _max_depth(m) {}
 
    void to_variant( const mutable_variant_object& var,  variant& vo )
    {

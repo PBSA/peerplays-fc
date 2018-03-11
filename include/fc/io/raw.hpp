@@ -57,15 +57,17 @@ namespace fc {
     inline void pack( Stream& s, const fc::log_message& msg, uint32_t _max_depth )
     {
        FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, variant(msg), _max_depth - 1 ); // TODO check variant depth?
+       --_max_depth;
+       fc::raw::pack( s, variant( msg, _max_depth ), _max_depth );
     }
     template<typename Stream>
     inline void unpack( Stream& s, fc::log_message& msg, uint32_t _max_depth )
     {
        FC_ASSERT( _max_depth > 0 );
        fc::variant vmsg;
-       fc::raw::unpack( s, vmsg, _max_depth - 1 );
-       msg = vmsg.as<log_message>(); // TODO check depth?
+       --_max_depth;
+       fc::raw::unpack( s, vmsg, _max_depth );
+       msg = vmsg.as<log_message>( _max_depth );
     }
 
     template<typename Stream>
