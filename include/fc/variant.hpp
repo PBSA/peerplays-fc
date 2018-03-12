@@ -640,6 +640,7 @@ namespace fc
    template<typename T, typename... Args>
    void from_variant( const variant& v, boost::multi_index_container<T,Args...>& c, uint32_t max_depth )
    {
+      _FC_ASSERT( max_depth > 0, "Recursion depth exceeded!" );
       const variants& vars = v.get_array();
       c.clear();
       for( const auto& item : vars )
