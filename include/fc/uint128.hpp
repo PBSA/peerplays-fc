@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string>
 
+#include <fc/config.hpp>
 #include <fc/exception/exception.hpp>
 #include <fc/crypto/city.hpp>
 
@@ -126,9 +127,9 @@ namespace fc
   namespace raw
   {
     template<typename Stream>
-    inline void pack( Stream& s, const uint128& u ) { s.write( (char*)&u, sizeof(u) ); }
+    inline void pack( Stream& s, const uint128& u, uint32_t _max_depth=FC_PACK_MAX_DEPTH ) { s.write( (char*)&u, sizeof(u) ); }
     template<typename Stream>
-    inline void unpack( Stream& s, uint128& u ) { s.read( (char*)&u, sizeof(u) ); }
+    inline void unpack( Stream& s, uint128& u, uint32_t _max_depth=FC_PACK_MAX_DEPTH ) { s.read( (char*)&u, sizeof(u) ); }
   }
 
   size_t city_hash_size_t(const char *buf, size_t len);
