@@ -101,17 +101,19 @@ namespace fc {
     inline void pack( Stream& s, const ip::endpoint& v, uint32_t _max_depth )
     {
        FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, v.get_address(), _max_depth - 1 );
-       fc::raw::pack( s, v.port(), _max_depth - 1 );
+       --_max_depth;
+       fc::raw::pack( s, v.get_address(), _max_depth );
+       fc::raw::pack( s, v.port(), _max_depth );
     }
     template<typename Stream>
     inline void unpack( Stream& s, ip::endpoint& v, uint32_t _max_depth )
     {
        FC_ASSERT( _max_depth > 0 );
+       --_max_depth;
        ip::address a;
        uint16_t p;
-       fc::raw::unpack( s, a, _max_depth - 1 );
-       fc::raw::unpack( s, p, _max_depth - 1 );
+       fc::raw::unpack( s, a, _max_depth );
+       fc::raw::unpack( s, p, _max_depth );
        v = ip::endpoint(a,p);
     }
 

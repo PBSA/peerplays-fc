@@ -21,31 +21,34 @@ namespace fc {
     template<typename Stream, typename Arg0, typename... Args>
     inline void pack( Stream& s, const Arg0& a0, Args... args, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
-       pack( s, a0, _max_depth - 1 );
-       pack( s, args..., _max_depth - 1 );
+       --_max_depth;
+       pack( s, a0, _max_depth );
+       pack( s, args..., _max_depth );
     }
 
     template<typename Stream>
     inline void pack( Stream& s, const fc::exception& e, uint32_t _max_depth )
     {
        FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, e.code(), _max_depth - 1 );
-       fc::raw::pack( s, std::string(e.name()), _max_depth - 1 );
-       fc::raw::pack( s, std::string(e.what()), _max_depth - 1 );
-       fc::raw::pack( s, e.get_log(), _max_depth - 1 );
+       --_max_depth;
+       fc::raw::pack( s, e.code(), _max_depth );
+       fc::raw::pack( s, std::string(e.name()), _max_depth );
+       fc::raw::pack( s, std::string(e.what()), _max_depth );
+       fc::raw::pack( s, e.get_log(), _max_depth );
     }
     template<typename Stream>
     inline void unpack( Stream& s, fc::exception& e, uint32_t _max_depth )
     {
        FC_ASSERT( _max_depth > 0 );
+       --_max_depth;
        int64_t code;
        std::string name, what;
        log_messages msgs;
 
-       fc::raw::unpack( s, code, _max_depth - 1 );
-       fc::raw::unpack( s, name, _max_depth - 1 );
-       fc::raw::unpack( s, what, _max_depth - 1 );
-       fc::raw::unpack( s, msgs, _max_depth - 1 );
+       fc::raw::unpack( s, code, _max_depth );
+       fc::raw::unpack( s, name, _max_depth );
+       fc::raw::unpack( s, what, _max_depth );
+       fc::raw::unpack( s, msgs, _max_depth );
 
        e = fc::exception( fc::move(msgs), code, name, what );
     }
@@ -54,7 +57,7 @@ namespace fc {
     inline void pack( Stream& s, const fc::log_message& msg, uint32_t _max_depth )
     {
        FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, variant(msg), _max_depth - 1 );
+       fc::raw::pack( s, variant(msg), _max_depth - 1 ); // TODO check variant depth?
     }
     template<typename Stream>
     inline void unpack( Stream& s, fc::log_message& msg, uint32_t _max_depth )
@@ -62,7 +65,7 @@ namespace fc {
        FC_ASSERT( _max_depth > 0 );
        fc::variant vmsg;
        fc::raw::unpack( s, vmsg, _max_depth - 1 );
-       msg = vmsg.as<log_message>();
+       msg = vmsg.as<log_message>(); // TODO check depth?
     }
 
     template<typename Stream>
@@ -250,16 +253,18 @@ namespace fc {
     template<typename Stream, typename T>
     void pack( Stream& s, const fc::optional<T>& v, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, bool(!!v), _max_depth - 1 );
-       if( !!v ) fc::raw::pack( s, *v, _max_depth - 1 );
+       --_max_depth;
+       fc::raw::pack( s, bool(!!v), _max_depth );
+       if( !!v ) fc::raw::pack( s, *v, _max_depth );
     }
 
     template<typename Stream, typename T>
     void unpack( Stream& s, fc::optional<T>& v, uint32_t _max_depth )
     { try {
        FC_ASSERT( _max_depth > 0 );
-       bool b; fc::raw::unpack( s, b, _max_depth - 1 );
-       if( b ) { v = T(); fc::raw::unpack( s, *v, _max_depth - 1 ); }
+       --_max_depth;
+       bool b; fc::raw::unpack( s, b, _max_depth );
+       if( b ) { v = T(); fc::raw::unpack( s, *v, _max_depth ); }
     } FC_RETHROW_EXCEPTIONS( warn, "optional<${type}>", ("type",fc::get_typename<T>::name() ) ) }
 
     // std::vector<char>
@@ -313,24 +318,24 @@ namespace fc {
       template<typename Stream, typename Class>
       struct pack_object_visitor {
         pack_object_visitor( const Class& _c, Stream& _s, uint32_t _max_depth )
-        :c(_c),s(_s),max_depth(_max_depth)
+        :c(_c),s(_s),max_depth(_max_depth - 1)
         {
            FC_ASSERT( _max_depth > 0 );
         }
 
         template<typename T, typename C, T(C::*p)>
         void operator()( const char* name )const {
-          fc::raw::pack( s, c.*p, max_depth - 1 );
+          fc::raw::pack( s, c.*p, max_depth );
         }
         private:
-          const Class& c;
-          Stream&      s;
-          uint32_t     max_depth;
+          const Class&   c;
+          Stream&        s;
+          const uint32_t max_depth;
       };
 
       template<typename Stream, typename Class>
       struct unpack_object_visitor {
-        unpack_object_visitor( Class& _c, Stream& _s, uint32_t _max_depth ) : c(_c),s(_s),max_depth(_max_depth)
+        unpack_object_visitor( Class& _c, Stream& _s, uint32_t _max_depth ) : c(_c),s(_s),max_depth(_max_depth - 1)
         {
            FC_ASSERT( _max_depth > 0 );
         }
@@ -338,12 +343,12 @@ namespace fc {
         template<typename T, typename C, T(C::*p)>
         inline void operator()( const char* name )const
         { try {
-           fc::raw::unpack( s, c.*p, max_depth - 1 );
+           fc::raw::unpack( s, c.*p, max_depth );
         } FC_RETHROW_EXCEPTIONS( warn, "Error unpacking field ${field}", ("field",name) ) }
         private:
           Class&  c;
           Stream& s;
-          uint32_t max_depth;
+          const uint32_t max_depth;
       };
 
       template<typename IsClass=fc::true_type>
@@ -427,25 +432,27 @@ namespace fc {
     template<typename Stream, typename T>
     inline void pack( Stream& s, const std::unordered_set<T>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, unsigned_int((uint32_t)value.size()), _max_depth - 1 );
+       --_max_depth;
+       fc::raw::pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
        auto itr = value.begin();
        auto end = value.end();
        while( itr != end ) {
-          fc::raw::pack( s, *itr, _max_depth - 1 );
+          fc::raw::pack( s, *itr, _max_depth );
           ++itr;
        }
     }
     template<typename Stream, typename T>
     inline void unpack( Stream& s, std::unordered_set<T>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
-       unsigned_int size; fc::raw::unpack( s, size, _max_depth - 1 );
+       --_max_depth;
+       unsigned_int size; fc::raw::unpack( s, size, _max_depth );
        value.clear();
        FC_ASSERT( size.value*sizeof(T) < MAX_ARRAY_ALLOC_SIZE );
        value.reserve(size.value);
        for( uint32_t i = 0; i < size.value; ++i )
        {
           T tmp;
-          fc::raw::unpack( s, tmp, _max_depth - 1 );
+          fc::raw::unpack( s, tmp, _max_depth );
           value.insert( std::move(tmp) );
        }
     }
@@ -454,25 +461,28 @@ namespace fc {
     template<typename Stream, typename K, typename V>
     inline void pack( Stream& s, const std::pair<K,V>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, value.first, _max_depth - 1 );
-       fc::raw::pack( s, value.second, _max_depth - 1 );
+       --_max_depth;
+       fc::raw::pack( s, value.first, _max_depth );
+       fc::raw::pack( s, value.second, _max_depth );
     }
     template<typename Stream, typename K, typename V>
     inline void unpack( Stream& s, std::pair<K,V>& value, uint32_t _max_depth )
     {
        FC_ASSERT( _max_depth > 0 );
-       fc::raw::unpack( s, value.first,  _max_depth - 1 );
-       fc::raw::unpack( s, value.second, _max_depth - 1 );
+       --_max_depth;
+       fc::raw::unpack( s, value.first,  _max_depth );
+       fc::raw::unpack( s, value.second, _max_depth );
     }
 
    template<typename Stream, typename K, typename V>
     inline void pack( Stream& s, const std::unordered_map<K,V>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, unsigned_int((uint32_t)value.size()), _max_depth - 1 );
+       --_max_depth;
+       fc::raw::pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
        auto itr = value.begin();
        auto end = value.end();
        while( itr != end ) {
-          fc::raw::pack( s, *itr, _max_depth - 1 );
+          fc::raw::pack( s, *itr, _max_depth );
           ++itr;
        }
     }
@@ -480,25 +490,27 @@ namespace fc {
     inline void unpack( Stream& s, std::unordered_map<K,V>& value, uint32_t _max_depth )
     {
        FC_ASSERT( _max_depth > 0 );
-       unsigned_int size; fc::raw::unpack( s, size, _max_depth - 1 );
+       --_max_depth;
+       unsigned_int size; fc::raw::unpack( s, size, _max_depth );
        value.clear();
        FC_ASSERT( size.value*(sizeof(K)+sizeof(V)) < MAX_ARRAY_ALLOC_SIZE );
        value.reserve(size.value);
        for( uint32_t i = 0; i < size.value; ++i )
        {
           std::pair<K,V> tmp;
-          fc::raw::unpack( s, tmp, _max_depth - 1 );
+          fc::raw::unpack( s, tmp, _max_depth );
           value.insert( std::move(tmp) );
        }
     }
     template<typename Stream, typename K, typename V>
     inline void pack( Stream& s, const std::map<K,V>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, unsigned_int((uint32_t)value.size()), _max_depth - 1 );
+       --_max_depth;
+       fc::raw::pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
        auto itr = value.begin();
        auto end = value.end();
        while( itr != end ) {
-          fc::raw::pack( s, *itr, _max_depth - 1 );
+          fc::raw::pack( s, *itr, _max_depth );
           ++itr;
        }
     }
@@ -506,13 +518,14 @@ namespace fc {
     inline void unpack( Stream& s, std::map<K,V>& value, uint32_t _max_depth )
     {
        FC_ASSERT( _max_depth > 0 );
-       unsigned_int size; fc::raw::unpack( s, size, _max_depth - 1 );
+       --_max_depth;
+       unsigned_int size; fc::raw::unpack( s, size, _max_depth );
        value.clear();
        FC_ASSERT( size.value*(sizeof(K)+sizeof(V)) < MAX_ARRAY_ALLOC_SIZE );
        for( uint32_t i = 0; i < size.value; ++i )
        {
           std::pair<K,V> tmp;
-          fc::raw::unpack( s, tmp, _max_depth - 1 );
+          fc::raw::unpack( s, tmp, _max_depth );
           value.insert( std::move(tmp) );
        }
     }
@@ -520,11 +533,12 @@ namespace fc {
     template<typename Stream, typename T>
     inline void pack( Stream& s, const std::deque<T>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, unsigned_int((uint32_t)value.size()), _max_depth - 1 );
+       --_max_depth;
+       fc::raw::pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
        auto itr = value.begin();
        auto end = value.end();
        while( itr != end ) {
-          fc::raw::pack( s, *itr, _max_depth - 1 );
+          fc::raw::pack( s, *itr, _max_depth );
           ++itr;
        }
     }
@@ -532,13 +546,14 @@ namespace fc {
     template<typename Stream, typename T>
     inline void unpack( Stream& s, std::deque<T>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
-       unsigned_int size; fc::raw::unpack( s, size, _max_depth - 1 );
+       --_max_depth;
+       unsigned_int size; fc::raw::unpack( s, size, _max_depth );
        FC_ASSERT( size.value*sizeof(T) < MAX_ARRAY_ALLOC_SIZE );
        value.resize(size.value);
        auto itr = value.begin();
        auto end = value.end();
        while( itr != end ) {
-          fc::raw::unpack( s, *itr, _max_depth - 1 );
+          fc::raw::unpack( s, *itr, _max_depth );
           ++itr;
        }
     }
@@ -546,11 +561,12 @@ namespace fc {
     template<typename Stream, typename T>
     inline void pack( Stream& s, const std::vector<T>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, unsigned_int((uint32_t)value.size()), _max_depth - 1 );
+       --_max_depth;
+       fc::raw::pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
        auto itr = value.begin();
        auto end = value.end();
        while( itr != end ) {
-          fc::raw::pack( s, *itr, _max_depth - 1 );
+          fc::raw::pack( s, *itr, _max_depth );
           ++itr;
        }
     }
@@ -558,13 +574,14 @@ namespace fc {
     template<typename Stream, typename T>
     inline void unpack( Stream& s, std::vector<T>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
-       unsigned_int size; fc::raw::unpack( s, size, _max_depth - 1 );
+       --_max_depth;
+       unsigned_int size; fc::raw::unpack( s, size, _max_depth );
        FC_ASSERT( size.value*sizeof(T) < MAX_ARRAY_ALLOC_SIZE );
        value.resize(size.value);
        auto itr = value.begin();
        auto end = value.end();
        while( itr != end ) {
-          fc::raw::unpack( s, *itr, _max_depth - 1 );
+          fc::raw::unpack( s, *itr, _max_depth );
           ++itr;
        }
     }
@@ -572,11 +589,12 @@ namespace fc {
     template<typename Stream, typename T>
     inline void pack( Stream& s, const std::set<T>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, unsigned_int((uint32_t)value.size()), _max_depth - 1 );
+       --_max_depth;
+       fc::raw::pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
        auto itr = value.begin();
        auto end = value.end();
        while( itr != end ) {
-          fc::raw::pack( s, *itr, _max_depth - 1 );
+          fc::raw::pack( s, *itr, _max_depth );
           ++itr;
        }
     }
@@ -584,11 +602,12 @@ namespace fc {
     template<typename Stream, typename T>
     inline void unpack( Stream& s, std::set<T>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
-       unsigned_int size; fc::raw::unpack( s, size, _max_depth - 1 );
+       --_max_depth;
+       unsigned_int size; fc::raw::unpack( s, size, _max_depth );
        for( uint64_t i = 0; i < size.value; ++i )
        {
           T tmp;
-          fc::raw::unpack( s, tmp, _max_depth - 1 );
+          fc::raw::unpack( s, tmp, _max_depth );
           value.insert( std::move(tmp) );
        }
     }
@@ -618,13 +637,14 @@ namespace fc {
     template<typename T>
     inline std::vector<char> pack( const T& v, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
+       --_max_depth;
        datastream<size_t> ps;
-       fc::raw::pack( ps, v, _max_depth - 1 );
+       fc::raw::pack( ps, v, _max_depth );
        std::vector<char> vec(ps.tellp());
 
        if( vec.size() ) {
           datastream<char*>  ds( vec.data(), size_t(vec.size()) );
-          fc::raw::pack( ds, v, _max_depth - 1 );
+          fc::raw::pack( ds, v, _max_depth );
        }
        return vec;
     }
@@ -632,13 +652,14 @@ namespace fc {
     template<typename T, typename... Next>
     inline std::vector<char> pack(  const T& v, Next... next, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
+       --_max_depth;
        datastream<size_t> ps;
-       fc::raw::pack( ps, v, next..., _max_depth - 1 );
+       fc::raw::pack( ps, v, next..., _max_depth );
        std::vector<char> vec(ps.tellp());
 
        if( vec.size() ) {
           datastream<char*>  ds( vec.data(), size_t(vec.size()) );
-          fc::raw::pack( ds, v, next..., _max_depth - 1 );
+          fc::raw::pack( ds, v, next..., _max_depth );
        }
        return vec;
     }
@@ -696,8 +717,8 @@ namespace fc {
    struct pack_static_variant
    {
       Stream& stream;
-      uint32_t max_depth;
-      pack_static_variant( Stream& s, uint32_t _max_depth ):stream(s),max_depth(_max_depth)
+      const uint32_t max_depth;
+      pack_static_variant( Stream& s, uint32_t _max_depth ):stream(s),max_depth(_max_depth - 1)
       {
          FC_ASSERT( _max_depth > 0 );
       }
@@ -705,7 +726,7 @@ namespace fc {
       typedef void result_type;
       template<typename T> void operator()( const T& v )const
       {
-         fc::raw::pack( stream, v, max_depth - 1 );
+         fc::raw::pack( stream, v, max_depth );
       }
    };
 
@@ -713,8 +734,8 @@ namespace fc {
    struct unpack_static_variant
    {
       Stream& stream;
-      uint32_t max_depth;
-      unpack_static_variant( Stream& s, uint32_t _max_depth ) : stream(s),max_depth(_max_depth)
+      const uint32_t max_depth;
+      unpack_static_variant( Stream& s, uint32_t _max_depth ) : stream(s),max_depth(_max_depth - 1)
       {
          FC_ASSERT( _max_depth > 0 );
       }
@@ -722,7 +743,7 @@ namespace fc {
       typedef void result_type;
       template<typename T> void operator()( T& v )const
       {
-         fc::raw::unpack( stream, v, max_depth - 1 );
+         fc::raw::unpack( stream, v, max_depth );
       }
    };
 
@@ -731,17 +752,19 @@ namespace fc {
     void pack( Stream& s, const static_variant<T...>& sv, uint32_t _max_depth )
     {
        FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, unsigned_int(sv.which()), _max_depth - 1 );
-       sv.visit( pack_static_variant<Stream>( s, _max_depth - 1 ) );
+       --_max_depth;
+       fc::raw::pack( s, unsigned_int(sv.which()), _max_depth );
+       sv.visit( pack_static_variant<Stream>( s, _max_depth ) );
     }
 
     template<typename Stream, typename... T> void unpack( Stream& s, static_variant<T...>& sv, uint32_t _max_depth )
     {
        FC_ASSERT( _max_depth > 0 );
+       --_max_depth;
        unsigned_int w;
-       fc::raw::unpack( s, w, _max_depth - 1 );
+       fc::raw::unpack( s, w, _max_depth );
        sv.set_which(w.value);
-       sv.visit( unpack_static_variant<Stream>( s, _max_depth - 1 ) );
+       sv.visit( unpack_static_variant<Stream>( s, _max_depth ) );
     }
 
 } } // namespace fc::raw

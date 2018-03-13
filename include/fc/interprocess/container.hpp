@@ -124,22 +124,24 @@ namespace fc {
        template<typename Stream, typename T, typename... A>
        inline void pack( Stream& s, const bip::vector<T,A...>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH ) {
           FC_ASSERT( _max_depth > 0 );
-          pack( s, unsigned_int((uint32_t)value.size()), _max_depth - 1 );
+          --_max_depth;
+          pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
           auto itr = value.begin();
           auto end = value.end();
           while( itr != end ) {
-             fc::raw::pack( s, *itr, _max_depth - 1 );
+             fc::raw::pack( s, *itr, _max_depth );
              ++itr;
           }
        }
        template<typename Stream, typename T, typename... A>
        inline void unpack( Stream& s, bip::vector<T,A...>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH ) {
           FC_ASSERT( _max_depth > 0 );
+          --_max_depth;
           unsigned_int size;
-          unpack( s, size, _max_depth - 1 );
+          unpack( s, size, _max_depth );
           value.clear(); value.resize(size);
           for( auto& item : value )
-             fc::raw::unpack( s, item, _max_depth - 1 );
+             fc::raw::unpack( s, item, _max_depth );
        }
    }
 }
