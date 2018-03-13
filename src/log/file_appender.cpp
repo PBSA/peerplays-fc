@@ -138,7 +138,7 @@ namespace fc {
    {}
 
    file_appender::file_appender( const variant& args ) :
-     my( new impl( args.as<config>(LOG_MAX_OBJECT_DEPTH) ) )
+     my( new impl( args.as<config>( FC_MAX_LOG_OBJECT_DEPTH ) ) )
    {
       try
       {
@@ -182,10 +182,6 @@ namespace fc {
       line << "] ";
       fc::string message = fc::format_string( m.get_format(), m.get_data(), my->cfg.max_object_depth );
       line << message.c_str();
-
-      //fc::variant lmsg(m);
-
-      // fc::string fmt_str = fc::format_string( my->cfg.format, mutable_variant_object(m.get_context())( "message", message)  );
 
       {
         fc::scoped_lock<boost::mutex> lock( my->slock );

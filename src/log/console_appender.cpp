@@ -31,7 +31,7 @@ namespace fc {
    console_appender::console_appender( const variant& args )
    :my(new impl)
    {
-      configure( args.as<config>(LOG_MAX_OBJECT_DEPTH) );
+      configure( args.as<config>( FC_MAX_LOG_OBJECT_DEPTH ) );
    }
 
    console_appender::console_appender( const config& cfg )
@@ -138,7 +138,7 @@ namespace fc {
       #endif
 
       if( text.size() )
-         fprintf( out, "%s", text.c_str() ); //fmt_str.c_str() );
+         fprintf( out, "%s", text.c_str() );
 
       #ifdef WIN32
       if (my->console_handle != INVALID_HANDLE_VALUE)

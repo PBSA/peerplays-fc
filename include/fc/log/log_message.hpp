@@ -3,6 +3,7 @@
  * @file log_message.hpp
  * @brief Defines types and helper macros necessary for generating log messages.
  */
+#include <fc/config.hpp>
 #include <fc/time.hpp>
 #include <fc/variant_object.hpp>
 #include <fc/shared_ptr.hpp>
@@ -139,8 +140,6 @@ FC_REFLECT_TYPENAME( fc::log_message );
 #define __func__ __FUNCTION__
 #endif
 
-#define LOG_MAX_OBJECT_DEPTH    210
-
 /**
  * @def FC_LOG_CONTEXT(LOG_LEVEL)
  * @brief Automatically captures the File, Line, and Method names and passes them to
@@ -160,5 +159,5 @@ FC_REFLECT_TYPENAME( fc::log_message );
  * @param ...  A set of key/value pairs denoted as ("key",val)("key2",val2)...
  */
 #define FC_LOG_MESSAGE( LOG_LEVEL, FORMAT, ... ) \
-   fc::log_message( FC_LOG_CONTEXT(LOG_LEVEL), FORMAT, fc::limited_mutable_variant_object(LOG_MAX_OBJECT_DEPTH)__VA_ARGS__ )
+   fc::log_message( FC_LOG_CONTEXT(LOG_LEVEL), FORMAT, fc::limited_mutable_variant_object(FC_MAX_LOG_OBJECT_DEPTH)__VA_ARGS__ )
 

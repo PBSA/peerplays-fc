@@ -38,7 +38,7 @@ namespace fc
             {
                config()
                :format( "${timestamp} ${thread_name} ${context} ${file}:${line} ${method} ${level}]  ${message}" ),
-                stream(console_appender::stream::std_error),max_object_depth(LOG_MAX_OBJECT_DEPTH),flush(true){}
+                stream(console_appender::stream::std_error),max_object_depth(FC_MAX_LOG_OBJECT_DEPTH),flush(true){}
 
                fc::string                         format;
                console_appender::stream::type     stream;

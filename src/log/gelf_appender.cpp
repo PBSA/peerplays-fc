@@ -38,7 +38,7 @@ namespace fc
   };
 
   gelf_appender::gelf_appender(const variant& args) :
-    my(new impl(args.as<config>(LOG_MAX_OBJECT_DEPTH)))
+    my( new impl( args.as<config>( FC_MAX_LOG_OBJECT_DEPTH ) ) )
   {
     try
     {
