@@ -669,66 +669,6 @@ void from_variant( const variant& var,  std::vector<char>& vo )
 //   vo = std::vector<char>( b64.c_str(), b64.c_str() + b64.size() );
 }
 
-string      format_string( const string& format, const variant_object& args )
-{
-   stringstream ss;
-   size_t prev = 0;
-   auto next = format.find( '$' );
-   while( prev != size_t(string::npos) && prev < size_t(format.size()) ) 
-   {
-     ss << format.substr( prev, size_t(next-prev) );
-   
-     // if we got to the end, return it.
-     if( next == size_t(string::npos) ) 
-        return ss.str(); 
-   
-     // if we are not at the end, then update the start
-     prev = next + 1;
-   
-     if( format[prev] == '{' ) 
-     { 
-        // if the next char is a open, then find close
-         next = format.find( '}', prev );
-         // if we found close... 
-         if( next != size_t(string::npos) ) 
-         {
-           // the key is between prev and next
-           string key = format.substr( prev+1, (next-prev-1) );
-
-           auto val = args.find( key );
-           if( val != args.end() )
-           {
-              if( val->value().is_object() || val->value().is_array() )
-              {
-                ss << json::to_string( val->value() );
-              } 
-              else 
-              {
-                ss << val->value().as_string();
-              }
-           } 
-           else 
-           {
-              ss << "${"<<key<<"}";
-           }
-           prev = next + 1;
-           // find the next $
-           next = format.find( '$', prev );
-         } 
-         else 
-         {
-           // we didn't find it.. continue to while...
-         }
-     } 
-     else  
-     {
-        ss << format[prev];
-        ++prev;
-        next = format.find( '$', prev );
-     }
-   }
-   return ss.str();
-}
    #ifdef __APPLE__
    #elif !defined(_MSC_VER)
    void to_variant( long long int s, variant& v ) { v = variant( int64_t(s) ); }

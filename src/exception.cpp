@@ -162,7 +162,14 @@ namespace fc
       for( auto itr = my->_elog.begin(); itr != my->_elog.end();  )
       {
          ss << itr->get_message() <<"\n"; //fc::format_string( itr->get_format(), itr->get_data() ) <<"\n";
-         ss << "    " << json::to_string( itr->get_data() )<<"\n";
+         try
+         {
+            ss << "    " << json::to_string( itr->get_data() )<<"\n";
+         }
+         catch( const fc::assert_exception& e )
+         {
+            ss << "ERROR: Failed to convert log data to string!\n";
+         }
          ss << "    " << itr->get_context().to_string();
          ++itr;
          if( itr != my->_elog.end() ) ss<<"\n";
@@ -256,10 +263,16 @@ namespace fc
          ("source_lineno", lineno)
          ("expr", expr)
          ;
-      std::cout
-         << "FC_ASSERT triggered:  "
-         << fc::json::to_string( assert_trip_info ) << "\n";
-      return;
+      try
+      {
+         std::cout
+            << "FC_ASSERT triggered:  "
+            << fc::json::to_string( assert_trip_info ) << "\n";
+      }
+      catch( const fc::assert_exception& e )
+      { // this should never happen. assert_trip_info is flat.
+         std::cout << "ERROR: Failed to convert info to string?!\n";
+      }
    }
 
    bool enable_record_assert_trip = false;
