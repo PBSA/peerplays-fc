@@ -8,61 +8,71 @@
 namespace fc {
    namespace raw {
        template<typename Stream, typename T>
-       inline void pack( Stream& s, const flat_set<T>& value ) {
-         pack( s, unsigned_int((uint32_t)value.size()) );
+       inline void pack( Stream& s, const flat_set<T>& value, uint32_t _max_depth ) {
+         FC_ASSERT( _max_depth > 0 );
+         --_max_depth;
+         pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
          auto itr = value.begin();
          auto end = value.end();
          while( itr != end ) {
-           fc::raw::pack( s, *itr );
+           fc::raw::pack( s, *itr, _max_depth );
            ++itr;
          }
        }
        template<typename Stream, typename T>
-       inline void unpack( Stream& s, flat_set<T>& value ) {
-         unsigned_int size; unpack( s, size );
+       inline void unpack( Stream& s, flat_set<T>& value, uint32_t _max_depth ) {
+         FC_ASSERT( _max_depth > 0 );
+         --_max_depth;
+         unsigned_int size; unpack( s, size, _max_depth );
          value.clear();
          FC_ASSERT( size.value*sizeof(T) < MAX_ARRAY_ALLOC_SIZE );
          value.reserve(size.value);
          for( uint32_t i = 0; i < size.value; ++i )
          {
              T tmp;
-             fc::raw::unpack( s, tmp );
+             fc::raw::unpack( s, tmp, _max_depth );
              value.insert( std::move(tmp) );
          }
        }
        template<typename Stream, typename K, typename... V>
-       inline void pack( Stream& s, const flat_map<K,V...>& value ) {
-         pack( s, unsigned_int((uint32_t)value.size()) );
+       inline void pack( Stream& s, const flat_map<K,V...>& value, uint32_t _max_depth ) {
+         FC_ASSERT( _max_depth > 0 );
+         --_max_depth;
+         pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
          auto itr = value.begin();
          auto end = value.end();
          while( itr != end ) {
-           fc::raw::pack( s, *itr );
+           fc::raw::pack( s, *itr, _max_depth );
            ++itr;
          }
        }
        template<typename Stream, typename K, typename V, typename... A>
-       inline void unpack( Stream& s, flat_map<K,V,A...>& value ) 
+       inline void unpack( Stream& s, flat_map<K,V,A...>& value, uint32_t _max_depth )
        {
-         unsigned_int size; unpack( s, size );
+         FC_ASSERT( _max_depth > 0 );
+         --_max_depth;
+         unsigned_int size; unpack( s, size, _max_depth );
          value.clear();
          FC_ASSERT( size.value*(sizeof(K)+sizeof(V)) < MAX_ARRAY_ALLOC_SIZE );
          value.reserve(size.value);
          for( uint32_t i = 0; i < size.value; ++i )
          {
              std::pair<K,V> tmp;
-             fc::raw::unpack( s, tmp );
+             fc::raw::unpack( s, tmp, _max_depth );
              value.insert( std::move(tmp) );
          }
        }
 
        template<typename Stream, typename T, typename A>
-       void pack( Stream& s, const bip::vector<T,A>& value ) {
-         pack( s, unsigned_int((uint32_t)value.size()) );
+       void pack( Stream& s, const bip::vector<T,A>& value, uint32_t _max_depth ) {
+         FC_ASSERT( _max_depth > 0 );
+         --_max_depth;
+         pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
          if( !std::is_fundamental<T>::value ) {
             auto itr = value.begin();
             auto end = value.end();
             while( itr != end ) {
-              fc::raw::pack( s, *itr );
+              fc::raw::pack( s, *itr, _max_depth );
               ++itr;
             }
          } else {
@@ -71,13 +81,15 @@ namespace fc {
        }
 
        template<typename Stream, typename T, typename A>
-       void unpack( Stream& s, bip::vector<T,A>& value ) {
+       void unpack( Stream& s, bip::vector<T,A>& value, uint32_t _max_depth ) {
+          FC_ASSERT( _max_depth > 0 );
+          --_max_depth;
           unsigned_int size;
-          unpack( s, size );
+          unpack( s, size, _max_depth );
           value.resize( size );
           if( !std::is_fundamental<T>::value ) {
              for( auto& item : value )
-                unpack( s, item );
+                unpack( s, item, _max_depth );
           } else {
              s.read( (char*)value.data(), value.size() );
           }
