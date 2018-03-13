@@ -123,7 +123,7 @@ static char *my_rl_complete(char *token, int *match)
    std::string method_name;
 
    auto& cmd = cli_commands();
-   int partlen = strlen (token); /* Part of token */
+   const size_t partlen = strlen (token); /* Part of token */
 
    for (const std::string& it : cmd)
    {
@@ -170,7 +170,7 @@ static int cli_completion(char *token, char ***array)
    }
    int total_matches = 0;
 
-   int partlen = strlen(token);
+   const size_t partlen = strlen(token);
 
    for (const std::string& it : cmd)
    {

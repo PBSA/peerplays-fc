@@ -632,7 +632,9 @@ size_t from_base58( const std::string& base58_str, char* out_data, size_t out_da
     FC_THROW_EXCEPTION( parse_error_exception, "Unable to decode base58 string ${base58_str}", ("base58_str",base58_str) );
   }
   FC_ASSERT( out.size() <= out_data_len );
-  memcpy( out_data, out.data(), out.size() );
+  if (!out.empty()) {
+     memcpy( out_data, out.data(), out.size() );
+  }
   return out.size();
 }
 }

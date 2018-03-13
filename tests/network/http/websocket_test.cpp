@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE(websocket_test)
         try {
             c_conn->send_message( "again" );
             BOOST_FAIL("expected assertion failure");
-        } catch (const fc::assert_exception& e) {
+        } catch (const fc::exception& e) {
             //std::cerr << e.to_string() << "\n";
         }
 
@@ -55,14 +55,14 @@ BOOST_AUTO_TEST_CASE(websocket_test)
     try {
         c_conn->send_message( "again" );
         BOOST_FAIL("expected assertion failure");
-    } catch (const fc::assert_exception& e) {
+    } catch (const fc::exception& e) {
         std::cerr << e.to_string() << "\n";
     }
 
     try {
         c_conn = client.connect( "ws://localhost:8090" );
         BOOST_FAIL("expected assertion failure");
-    } catch (const fc::assert_exception& e) {
+    } catch (const fc::exception& e) {
         std::cerr << e.to_string() << "\n";
     }
 }

@@ -4,6 +4,8 @@
 PROJECT( fc )
 CMAKE_MINIMUM_REQUIRED( VERSION 2.8.12 )
 
+add_compile_options(-std=c++14)
+
 MESSAGE(STATUS "Configuring project fc located in: ${CMAKE_CURRENT_SOURCE_DIR}")
 SET( CMAKE_AUTOMOC OFF )
 
