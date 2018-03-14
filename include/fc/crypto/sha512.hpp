@@ -66,6 +66,20 @@ class sha512
     uint64_t _hash[8]; 
 };
 
+namespace raw {
+
+   template<typename T>
+   inline void pack( T& ds, const sha512& ep, uint32_t _max_depth ) {
+      ds << ep;
+   }
+
+   template<typename T>
+   inline void unpack( T& ds, sha512& ep, uint32_t _max_depth ) {
+      ds >> ep;
+   }
+
+}
+
   typedef fc::sha512 uint512;
 
   class variant;

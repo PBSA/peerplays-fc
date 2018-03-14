@@ -22,6 +22,11 @@ namespace fc {
    class path;
    template<typename... Types> class static_variant;
 
+   class sha224;
+   class sha256;
+   class sha512;
+   class ripemd160;
+
    template<typename IntType, typename EnumType> class enum_type;
    namespace ip { class endpoint; }
 
@@ -95,6 +100,15 @@ namespace fc {
     template<typename Stream> void pack( Stream& s, const fc::ecc::public_key&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream> void unpack( Stream& s, fc::ecc::private_key&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream> void pack( Stream& s, const fc::ecc::private_key&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+
+    template<typename Stream> inline void unpack( Stream& s, fc::sha224&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream> inline void pack( Stream& s, const fc::sha224&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream> inline void unpack( Stream& s, fc::sha256&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream> inline void pack( Stream& s, const fc::sha256&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream> inline void unpack( Stream& s, fc::sha512&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream> inline void pack( Stream& s, const fc::sha512&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream> inline void unpack( Stream& s, fc::ripemd160&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream> inline void pack( Stream& s, const fc::ripemd160&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
 
     template<typename Stream, typename T> inline void pack( Stream& s, const T& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream, typename T> inline void unpack( Stream& s, T& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );

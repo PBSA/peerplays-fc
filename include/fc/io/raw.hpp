@@ -351,19 +351,10 @@ namespace fc {
           const uint32_t max_depth;
       };
 
+      // Default pack/unpack functions for classes (if_class<fc::true_type>) are removed due to recursion issue.
+      // Classes should implement pack/unpack functions explicitly.
       template<typename IsClass=fc::true_type>
-      struct if_class{
-        template<typename Stream, typename T>
-        static inline void pack( Stream& s, const T& v, uint32_t _max_depth )
-        {
-           FC_ASSERT( false, "Please implement pack(...)" );
-        }
-        template<typename Stream, typename T>
-        static inline void unpack( Stream& s, T& v, uint32_t _max_depth )
-        {
-           FC_ASSERT( false, "Please implement unpack(...)" );
-        }
-      };
+      struct if_class;
 
       template<>
       struct if_class<fc::false_type> {

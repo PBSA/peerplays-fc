@@ -71,6 +71,20 @@ class ripemd160
     uint32_t _hash[5];
 };
 
+namespace raw {
+
+   template<typename T>
+   inline void pack( T& ds, const ripemd160& ep, uint32_t _max_depth ) {
+      ds << ep;
+   }
+
+   template<typename T>
+   inline void unpack( T& ds, ripemd160& ep, uint32_t _max_depth ) {
+      ds >> ep;
+   }
+
+}
+
   class variant;
   void to_variant( const ripemd160& bi, variant& v );
   void from_variant( const variant& v, ripemd160& bi );
