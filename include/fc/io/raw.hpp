@@ -354,9 +354,15 @@ namespace fc {
       template<typename IsClass=fc::true_type>
       struct if_class{
         template<typename Stream, typename T>
-        static inline void pack( Stream& s, const T& v, uint32_t _max_depth ) { s << v; }
+        static inline void pack( Stream& s, const T& v, uint32_t _max_depth )
+        {
+           FC_ASSERT( false, "Please implement pack(...)" );
+        }
         template<typename Stream, typename T>
-        static inline void unpack( Stream& s, T& v, uint32_t _max_depth ) { s >> v; }
+        static inline void unpack( Stream& s, T& v, uint32_t _max_depth )
+        {
+           FC_ASSERT( false, "Please implement unpack(...)" );
+        }
       };
 
       template<>
