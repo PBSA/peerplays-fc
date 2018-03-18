@@ -7,8 +7,8 @@
 namespace fc { namespace test {
 
    struct item;
-   inline bool operator < ( const item& a, const item& b );
    inline bool operator == ( const item& a, const item& b );
+   inline bool operator < ( const item& a, const item& b );
 
    struct item_wrapper
    {
@@ -16,8 +16,11 @@ namespace fc { namespace test {
       item_wrapper(item&& it) { v.reserve(1); v.insert( it ); }
       boost::container::flat_set<struct item> v;
    };
-   inline bool operator < ( const item_wrapper& a, const item_wrapper& b );
-   inline bool operator == ( const item_wrapper& a, const item_wrapper& b );
+
+   inline bool operator == ( const item_wrapper& a, const item_wrapper& b )
+   { return ( std::tie( a.v ) == std::tie( b.v ) ); }
+   inline bool operator < ( const item_wrapper& a, const item_wrapper& b )
+   { return ( std::tie( a.v ) < std::tie( b.v ) ); }
 
    struct item
    {
@@ -29,17 +32,11 @@ namespace fc { namespace test {
 
    inline bool operator == ( const item& a, const item& b )
    { return ( std::tie( a.level, a.w ) == std::tie( b.level, b.w ) ); }
-
    inline bool operator < ( const item& a, const item& b )
    { return ( std::tie( a.level, a.w ) < std::tie( b.level, b.w ) ); }
 
-   inline bool operator == ( const item_wrapper& a, const item_wrapper& b )
-   { return ( std::tie( a.v ) == std::tie( b.v ) ); }
 
-   inline bool operator < ( const item_wrapper& a, const item_wrapper& b )
-   { return ( std::tie( a.v ) < std::tie( b.v ) ); }
-
-} }
+} } // namespace fc::test
 
 FC_REFLECT( fc::test::item_wrapper, (v) );
 FC_REFLECT( fc::test::item, (level)(w) );

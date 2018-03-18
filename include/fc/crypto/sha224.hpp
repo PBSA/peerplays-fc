@@ -70,6 +70,20 @@ class sha224
     uint32_t _hash[7]; 
 };
 
+namespace raw {
+
+   template<typename T>
+   inline void pack( T& ds, const sha224& ep, uint32_t _max_depth ) {
+      ds << ep;
+   }
+
+   template<typename T>
+   inline void unpack( T& ds, sha224& ep, uint32_t _max_depth ) {
+      ds >> ep;
+   }
+
+}
+
   class variant;
   void to_variant( const sha224& bi, variant& v );
   void from_variant( const variant& v, sha224& bi );
