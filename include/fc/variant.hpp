@@ -38,8 +38,8 @@ namespace fc
     * for your Serializable_type
     *
     *  @code 
-    *     void   to_variant( const Serializable_type& e, variant& v );
-    *     void   from_variant( const variant& e, Serializable_type& ll );
+    *     void   to_variant( const Serializable_type& e, variant& v, uint32_t max_depth );
+    *     void   from_variant( const variant& e, Serializable_type& ll, uint32_t max_depth );
     *  @endcode
     */
 
@@ -88,6 +88,9 @@ namespace fc
    void to_variant( const int32_t& var,   variant& vo,  uint32_t max_depth = 1 );
    /** @ingroup Serializable */
    void from_variant( const variant& var, int32_t& vo,  uint32_t max_depth = 1 );
+
+   void to_variant( const uint64_t& var,  variant& vo,  uint32_t max_depth = 1 );
+   void to_variant( const int64_t& var,   variant& vo,  uint32_t max_depth = 1 );
 
    void to_variant( const variant_object& var, variant& vo,        uint32_t max_depth );
    void from_variant( const variant& var,      variant_object& vo, uint32_t max_depth );
@@ -146,7 +149,7 @@ namespace fc
    void from_variant( const variant& input_variant, microseconds& output_microseconds, uint32_t max_depth );
 
    #ifdef __APPLE__
-   void to_variant( size_t s, variant& v );
+   void to_variant( size_t s, variant& v, uint32_t max_depth = 1 );
    #elif !defined(_MSC_VER)
    void to_variant( long long int s,          variant& v, uint32_t max_depth = 1 );
    void to_variant( unsigned long long int s, variant& v, uint32_t max_depth = 1 );
@@ -301,7 +304,7 @@ namespace fc
          *  following method to implement conversion from variant to T.
          *
          *  <code>
-         *  void from_variant( const Variant& var, T& val )
+         *  void from_variant( const Variant& var, T& val, uint32_t max_depth )
          *  </code>
          *
          *  The above form is not always convienant, so the this templated 
@@ -558,7 +561,7 @@ namespace fc
       to_variant( val, *this, max_depth );
    }
    #ifdef __APPLE__
-   inline void to_variant( size_t s, variant& v ) { v = variant(uint64_t(s)); }
+   inline void to_variant( size_t s, variant& v, uint32_t max_depth = 1 ) { v = variant(uint64_t(s)); }
    #endif
    template<typename T>
    void to_variant( const std::shared_ptr<T>& var, variant& vo, uint32_t max_depth )

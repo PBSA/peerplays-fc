@@ -73,11 +73,11 @@ namespace fc {
 
   }
   class variant;
-  void to_variant( const ip::endpoint& var,  variant& vo );
-  void from_variant( const variant& var,  ip::endpoint& vo );
+  void to_variant( const ip::endpoint& var,  variant& vo, uint32_t _max_depth = 2 );
+  void from_variant( const variant& var,  ip::endpoint& vo, uint32_t _max_depth = 2 );
 
-  void to_variant( const ip::address& var,  variant& vo );
-  void from_variant( const variant& var,  ip::address& vo );
+  void to_variant( const ip::address& var,  variant& vo, uint32_t _max_depth = 1 );
+  void from_variant( const variant& var,  ip::address& vo, uint32_t _max_depth = 1 );
 
 
   namespace raw

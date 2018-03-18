@@ -63,22 +63,22 @@ namespace fc
          const uint32_t _max_depth;
    };
 
-   template<typename IsReflected=fc::false_type>
-   struct if_enum 
-   {
-     template<typename T>
-     static inline void to_variant( const T& v, fc::variant& vo, uint32_t max_depth )
-     { 
+   template<typename IsEnum=fc::false_type>
+   struct if_enum
+      {
+      template<typename T>
+      static inline void to_variant( const T& v, fc::variant& vo, uint32_t max_depth )
+      {
          mutable_variant_object mvo;
          fc::reflector<T>::visit( to_variant_visitor<T>( mvo, v, max_depth ) );
          vo = fc::move(mvo);
-     }
-     template<typename T>
-     static inline void from_variant( const fc::variant& v, T& o, uint32_t max_depth )
-     { 
+      }
+      template<typename T>
+      static inline void from_variant( const fc::variant& v, T& o, uint32_t max_depth )
+      {
          const variant_object& vo = v.get_object();
          fc::reflector<T>::visit( from_variant_visitor<T>( vo, o, max_depth ) );
-     }
+      }
    };
 
     template<> 

@@ -103,7 +103,6 @@ namespace fc
    variant_object::variant_object( string key, variant val )
       : _key_value(std::make_shared<std::vector<entry>>())
    {
-       //_key_value->push_back(entry(fc::move(key), fc::move(val)));
        _key_value->emplace_back(entry(fc::move(key), fc::move(val)));
    }
 
@@ -367,14 +366,23 @@ namespace fc
    }
 
    limited_mutable_variant_object::limited_mutable_variant_object( uint32_t m )
-         : mutable_variant_object(), _max_depth(m) {}
+         : mutable_variant_object(), _max_depth(m - 1)
+   {
+      FC_ASSERT( m > 0, "Recursion depth exceeded!" );
+   }
 
-   void to_variant( const mutable_variant_object& var,  variant& vo )
+   limited_mutable_variant_object& limited_mutable_variant_object::operator()( const variant_object& vo )
+   {
+      mutable_variant_object::operator()( vo );
+      return *this;
+   }
+
+   void to_variant( const mutable_variant_object& var, variant& vo, uint32_t max_depth )
    {
       vo = variant(var);
    }
 
-   void from_variant( const variant& var,  mutable_variant_object& vo )
+   void from_variant( const variant& var, mutable_variant_object& vo, uint32_t max_depth )
    {
       vo = var.get_object();
    }

@@ -579,11 +579,6 @@ void from_variant( const variant& var, variants& vo, uint32_t max_depth )
    vo = var.get_array();
 }
 
-//void from_variant( const variant& var,  variant_object& vo )
-//{
-//   vo  = var.get_object();
-//}
-
 void from_variant( const variant& var, variant& vo, uint32_t max_depth ) { vo = var; }
 
 void to_variant( const uint8_t& var, variant& vo, uint32_t max_depth )  { vo = uint64_t(var); }
@@ -614,11 +609,13 @@ void from_variant( const variant& var,int32_t& vo, uint32_t max_depth )
    vo = static_cast<int32_t>(var.as_int64());
 }
 
+void to_variant( const int64_t& var, variant& vo, uint32_t max_depth )  { vo = var; }
 void from_variant( const variant& var, int64_t& vo, uint32_t max_depth )
 {
    vo = var.as_int64();
 }
 
+void to_variant( const uint64_t& var, variant& vo, uint32_t max_depth )  { vo = var; }
 void from_variant( const variant& var, uint64_t& vo, uint32_t max_depth )
 {
    vo = var.as_uint64();

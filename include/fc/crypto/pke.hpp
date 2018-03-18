@@ -108,10 +108,10 @@ namespace fc {
         }
     }
   class variant;
-  void to_variant( const public_key& bi, variant& v );
-  void from_variant( const variant& v, public_key& bi );
-  void to_variant( const private_key& bi, variant& v );
-  void from_variant( const variant& v, private_key& bi );
+  void to_variant( const public_key& bi, variant& v, uint32_t max_depth = 1 );
+  void from_variant( const variant& v, public_key& bi, uint32_t max_depth = 1 );
+  void to_variant( const private_key& bi, variant& v, uint32_t max_depth = 1 );
+  void from_variant( const variant& v, private_key& bi, uint32_t max_depth = 1 );
 
 } // fc
 
