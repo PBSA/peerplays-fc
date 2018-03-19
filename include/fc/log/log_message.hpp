@@ -3,6 +3,7 @@
  * @file log_message.hpp
  * @brief Defines types and helper macros necessary for generating log messages.
  */
+#include <fc/config.hpp>
 #include <fc/time.hpp>
 #include <fc/variant_object.hpp>
 #include <fc/shared_ptr.hpp>
@@ -51,8 +52,8 @@ namespace fc
          values value;
    };
 
-   void to_variant( log_level e, variant& v );
-   void from_variant( const variant& e, log_level& ll );
+   void to_variant( log_level e, variant& v, uint32_t max_depth = 1 );
+   void from_variant( const variant& e, log_level& ll, uint32_t max_depth = 1 );
 
    /**
     *  @brief provides information about where and when a log message was generated.
@@ -69,8 +70,8 @@ namespace fc
                     uint64_t line, 
                     const char* method );
         ~log_context();
-        explicit log_context( const variant& v );
-        variant to_variant()const;
+        explicit log_context( const variant& v, uint32_t max_depth );
+        variant to_variant( uint32_t max_depth )const;
 
         string        get_file()const;
         uint64_t      get_line_number()const;
@@ -89,8 +90,8 @@ namespace fc
         std::shared_ptr<detail::log_context_impl> my;
    };
 
-   void to_variant( const log_context& l, variant& v );
-   void from_variant( const variant& l, log_context& c );
+   void to_variant( const log_context& l, variant& v, uint32_t max_depth );
+   void from_variant( const variant& l, log_context& c, uint32_t max_depth );
 
    /**
     *  @brief aggregates a message along with the context and associated meta-information.
@@ -120,8 +121,8 @@ namespace fc
          log_message( log_context ctx, std::string format, variant_object args = variant_object() );
          ~log_message();
 
-         log_message( const variant& v );
-         variant        to_variant()const;
+         log_message( const variant& v, uint32_t max_depth );
+         variant        to_variant(uint32_t max_depth)const;
                               
          string         get_message()const;
                               
@@ -133,8 +134,8 @@ namespace fc
          std::shared_ptr<detail::log_message_impl> my;
    };
 
-   void    to_variant( const log_message& l, variant& v );
-   void    from_variant( const variant& l, log_message& c );
+   void    to_variant( const log_message& l, variant& v, uint32_t max_depth );
+   void    from_variant( const variant& l, log_message& c, uint32_t max_depth );
 
    typedef std::vector<log_message> log_messages;
 
@@ -165,15 +166,14 @@ FC_REFLECT_TYPENAME( fc::log_message );
  * @param FORMAT A const char* string containing zero or more references to keys as "${key}"
  * @param ...  A set of key/value pairs denoted as ("key",val)("key2",val2)...
  */
-#define FC_LOG_MESSAGE_GENERATE_PARAMETER_NAME(VALUE) BOOST_PP_LPAREN() BOOST_PP_STRINGIZE(VALUE), fc::variant(VALUE) BOOST_PP_RPAREN()
-#define FC_LOG_MESSAGE_DONT_GENERATE_PARAMETER_NAME(NAME, VALUE) BOOST_PP_LPAREN() NAME, fc::variant(VALUE) BOOST_PP_RPAREN()
+#define FC_LOG_MESSAGE_GENERATE_PARAMETER_NAME(VALUE) BOOST_PP_LPAREN() BOOST_PP_STRINGIZE(VALUE), fc::variant(VALUE, FC_MAX_LOG_OBJECT_DEPTH) BOOST_PP_RPAREN()
+#define FC_LOG_MESSAGE_DONT_GENERATE_PARAMETER_NAME(NAME, VALUE) BOOST_PP_LPAREN() NAME, fc::variant(VALUE, FC_MAX_LOG_OBJECT_DEPTH) BOOST_PP_RPAREN()
 #define FC_LOG_MESSAGE_GENERATE_PARAMETER_NAMES_IF_NEEDED(r, data, PARAMETER_AND_MAYBE_NAME) BOOST_PP_IF(BOOST_PP_EQUAL(BOOST_PP_VARIADIC_SIZE PARAMETER_AND_MAYBE_NAME,1),FC_LOG_MESSAGE_GENERATE_PARAMETER_NAME,FC_LOG_MESSAGE_DONT_GENERATE_PARAMETER_NAME)PARAMETER_AND_MAYBE_NAME
 
 #define FC_LOG_MESSAGE_STRING_ONLY(LOG_LEVEL, FORMAT) \
    fc::log_message(FC_LOG_CONTEXT(LOG_LEVEL), FORMAT, fc::variant_object())
 #define FC_LOG_MESSAGE_WITH_SUBSTITUTIONS(LOG_LEVEL, FORMAT, ...) \
    fc::log_message(FC_LOG_CONTEXT(LOG_LEVEL), FORMAT, fc::mutable_variant_object() BOOST_PP_SEQ_FOR_EACH(FC_LOG_MESSAGE_GENERATE_PARAMETER_NAMES_IF_NEEDED, _, BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__)))
-
 
 #define FC_LOG_MESSAGE(LOG_LEVEL, ...) \
    BOOST_PP_EXPAND(BOOST_PP_IF(BOOST_PP_EQUAL(BOOST_PP_VARIADIC_SIZE(__VA_ARGS__),1),FC_LOG_MESSAGE_STRING_ONLY,FC_LOG_MESSAGE_WITH_SUBSTITUTIONS)(LOG_LEVEL,__VA_ARGS__))

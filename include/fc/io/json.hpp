@@ -52,7 +52,7 @@ namespace fc
          template<typename T>
          static void     save_to_file( const T& v, const fc::path& fi, bool pretty = true, output_formatting format = stringify_large_ints_and_doubles, uint32_t max_depth = DEFAULT_MAX_RECURSION_DEPTH )
          {
-            save_to_file( variant(v), fi, pretty, format, max_depth );
+            save_to_file( variant(v, max_depth), fi, pretty, format, max_depth );
          }
 
          static void     save_to_file( const variant& v, const fc::path& fi, bool pretty = true, output_formatting format = stringify_large_ints_and_doubles, uint32_t max_depth = DEFAULT_MAX_RECURSION_DEPTH );
@@ -61,25 +61,25 @@ namespace fc
          template<typename T>
          static T from_file( const fc::path& p, parse_type ptype = legacy_parser, uint32_t max_depth = DEFAULT_MAX_RECURSION_DEPTH )
          {
-            return json::from_file(p, ptype, max_depth).as<T>();
+            return json::from_file(p, ptype, max_depth).as<T>(max_depth);
          }
 
          template<typename T>
          static string   to_string( const T& v, output_formatting format = stringify_large_ints_and_doubles, uint32_t max_depth = DEFAULT_MAX_RECURSION_DEPTH )
          {
-            return to_string( variant(v), format, max_depth );
+            return to_string( variant(v, max_depth), format, max_depth );
          }
 
          template<typename T>
          static string   to_pretty_string( const T& v, output_formatting format = stringify_large_ints_and_doubles, uint32_t max_depth = DEFAULT_MAX_RECURSION_DEPTH )
          {
-            return to_pretty_string( variant(v), format, max_depth );
+            return to_pretty_string( variant(v, max_depth), format, max_depth );
          }
 
          template<typename T>
          static void save_to_file( const T& v, const std::string& p, bool pretty = true, output_formatting format = stringify_large_ints_and_doubles, uint32_t max_depth = DEFAULT_MAX_RECURSION_DEPTH )
          {
-            save_to_file( variant(v), fc::path(p), pretty, format, max_depth );
+            save_to_file( variant(v, max_depth), fc::path(p), pretty, format, max_depth );
          } 
    };
 

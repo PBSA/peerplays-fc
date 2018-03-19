@@ -99,41 +99,48 @@ namespace fc {
 
 
    template<typename T>
-   void to_variant( const flat_set<T>& var,  variant& vo )
+   void to_variant( const flat_set<T>& var, variant& vo, uint32_t _max_depth )
    {
+       FC_ASSERT( _max_depth > 0 );
+      --_max_depth;
        std::vector<variant> vars(var.size());
        size_t i = 0;
-       for( auto itr = var.begin(); itr != var.end(); ++itr, ++i )
-          vars[i] = variant(*itr);
+       for( const auto& item : var )
+          vars[i++] = variant( item, _max_depth );
        vo = vars;
    }
    template<typename T>
-   void from_variant( const variant& var,  flat_set<T>& vo )
+   void from_variant( const variant& var, flat_set<T>& vo, uint32_t _max_depth )
    {
+      FC_ASSERT( _max_depth > 0 );
+      --_max_depth;
       const variants& vars = var.get_array();
       vo.clear();
       vo.reserve( vars.size() );
-      for( auto itr = vars.begin(); itr != vars.end(); ++itr )
-         vo.insert( itr->as<T>() );
+      for( const auto& item : vars )
+         vo.insert( item.as<T>(_max_depth) );
    }
 
    template<typename K, typename... T>
-   void to_variant( const flat_map<K, T...>& var,  variant& vo )
+   void to_variant( const flat_map<K, T...>& var,  variant& vo, uint32_t _max_depth )
    {
+       FC_ASSERT( _max_depth > 0 );
+      --_max_depth;
        std::vector< variant > vars(var.size());
        size_t i = 0;
-       for( auto itr = var.begin(); itr != var.end(); ++itr, ++i )
-          vars[i] = fc::variant(*itr);
+       for( const auto& item : var )
+          vars[i++] = variant( item, _max_depth );
        vo = vars;
    }
    template<typename K, typename T, typename... A>
-   void from_variant( const variant& var,  flat_map<K, T, A...>& vo )
+   void from_variant( const variant& var,  flat_map<K, T, A...>& vo, uint32_t _max_depth )
    {
+      FC_ASSERT( _max_depth > 0 );
+      --_max_depth;
       const variants& vars = var.get_array();
       vo.clear();
-      for( auto itr = vars.begin(); itr != vars.end(); ++itr )
-         vo.insert( itr->as< std::pair<K,T> >() );
-
+      for( const auto& item : vars )
+         vo.insert( item.as<std::pair<K,T>>(_max_depth) );
    }
 
 }

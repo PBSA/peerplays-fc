@@ -48,14 +48,14 @@ namespace fc
 
 
   template<typename IntType, typename EnumType>
-  void to_variant( const enum_type<IntType,EnumType>& var,  variant& vo )
+  void to_variant( const enum_type<IntType,EnumType>& var,  variant& vo, uint32_t max_depth = 1 )
   {
-    vo = (EnumType)var.value;
+    to_variant( var.value, vo, max_depth );
   }
   template<typename IntType, typename EnumType>
-  void from_variant( const variant& var,  enum_type<IntType,EnumType>& vo )
+  void from_variant( const variant& var,  enum_type<IntType,EnumType>& vo, uint32_t max_depth )
   {
-    vo.value = var.as<EnumType>();
+    vo.value = var.as<EnumType>(1);
   }
 
 
