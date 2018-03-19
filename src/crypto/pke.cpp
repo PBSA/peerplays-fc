@@ -338,28 +338,28 @@ namespace fc {
     }
 
   /** encodes the big int as base64 string, or a number */
-  void to_variant( const public_key& bi, variant& v )
+  void to_variant( const public_key& bi, variant& v, uint32_t max_depth )
   {
     v = bi.serialize();
   }
 
   /** decodes the big int as base64 string, or a number */
-  void from_variant( const variant& v, public_key& bi )
+  void from_variant( const variant& v, public_key& bi, uint32_t max_depth )
   {
-    bi = public_key( v.as<std::vector<char> >() ); 
+    bi = public_key( v.as<std::vector<char> >(max_depth) );
   }
 
 
   /** encodes the big int as base64 string, or a number */
-  void to_variant( const private_key& bi, variant& v )
+  void to_variant( const private_key& bi, variant& v, uint32_t max_depth )
   {
     v = bi.serialize();
   }
 
   /** decodes the big int as base64 string, or a number */
-  void from_variant( const variant& v, private_key& bi )
+  void from_variant( const variant& v, private_key& bi, uint32_t max_depth )
   {
-    bi = private_key( v.as<std::vector<char> >() ); 
+    bi = private_key( v.as<std::vector<char> >(max_depth) );
   }
 
 } // fc

@@ -64,6 +64,10 @@ BOOST_AUTO_TEST_CASE(websocket_test)
         BOOST_FAIL("expected assertion failure");
     } catch (const fc::exception& e) {
         std::cerr << e.to_string() << "\n";
+    } catch (const fc::exception& e) {
+        BOOST_FAIL("Unexpected exception: " + e.to_string());
+    } catch (const std::exception& e) {
+        BOOST_FAIL("Unexpected exception: " + std::string(e.what()));
     }
 }
 

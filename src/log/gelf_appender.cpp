@@ -38,7 +38,7 @@ namespace fc
   };
 
   gelf_appender::gelf_appender(const variant& args) :
-    my(new impl(args.as<config>()))
+    my( new impl( args.as<config>( FC_MAX_LOG_OBJECT_DEPTH ) ) )
   {
     try
     {
@@ -94,7 +94,7 @@ namespace fc
     mutable_variant_object gelf_message;
     gelf_message["version"] = "1.1";
     gelf_message["host"] = my->cfg.host;
-    gelf_message["short_message"] = format_string(message.get_format(), message.get_data());
+    gelf_message["short_message"] = format_string( message.get_format(), message.get_data(), my->cfg.max_object_depth );
     
     gelf_message["timestamp"] = context.get_timestamp().time_since_epoch().count() / 1000000.;
 

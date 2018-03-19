@@ -90,9 +90,9 @@ namespace fc
       friend class mutable_variant_object;
    };
    /** @ingroup Serializable */
-   void to_variant( const variant_object& var,  variant& vo );
+   void to_variant( const variant_object& var, variant& vo, uint32_t max_depth = 1 );
    /** @ingroup Serializable */
-   void from_variant( const variant& var,  variant_object& vo );
+   void from_variant( const variant& var, variant_object& vo, uint32_t max_depth = 1 );
 
 
   /**
@@ -169,11 +169,12 @@ namespace fc
       *
       *  @return *this;
       */
-      mutable_variant_object& operator()( string key, variant var );
+      mutable_variant_object& operator()( string key, variant var, uint32_t max_depth = 1 );
       template<typename T>
-      mutable_variant_object& operator()( string key, T&& var )
+      mutable_variant_object& operator()( string key, T&& var, uint32_t max_depth )
       {
-         set(std::move(key), variant( fc::forward<T>(var) ) );
+         _FC_ASSERT( max_depth > 0, "Recursion depth exceeded!" );
+         set( std::move(key), variant( fc::forward<T>(var), max_depth - 1 ) );
          return *this;
       }
       /**
@@ -216,9 +217,27 @@ namespace fc
       std::unique_ptr< std::vector< entry > > _key_value;
       friend class variant_object;
    };
+
+   class limited_mutable_variant_object : public mutable_variant_object
+   {
+      public:
+         limited_mutable_variant_object( uint32_t max_depth );
+
+         template<typename T>
+         limited_mutable_variant_object& operator()( string key, T&& var )
+         {
+            set( std::move(key), variant( fc::forward<T>(var), _max_depth ) );
+            return *this;
+         }
+         limited_mutable_variant_object& operator()( const variant_object& vo );
+
+      private:
+         const uint32_t _max_depth;
+   };
+
    /** @ingroup Serializable */
-   void to_variant( const mutable_variant_object& var,  variant& vo );
+   void to_variant( const mutable_variant_object& var, variant& vo, uint32_t max_depth = 1 );
    /** @ingroup Serializable */
-   void from_variant( const variant& var,  mutable_variant_object& vo );
+   void from_variant( const variant& var, mutable_variant_object& vo, uint32_t max_depth = 1 );
 
 } // namespace fc
