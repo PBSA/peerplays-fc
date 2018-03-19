@@ -45,13 +45,15 @@ namespace fc {
       R call_generic( const std::function<R(Arg0,Args...)>& f, variants::const_iterator a0, variants::const_iterator e, uint32_t max_depth )
       {
          FC_ASSERT( a0 != e );
-         return  call_generic<R,Args...>( bind_first_arg<R,Arg0,Args...>( f, a0->as< typename std::decay<Arg0>::type >( max_depth - 1 ) ), a0+1, e, max_depth - 1 );
+         FC_ASSERT( max_depth > 0, "Recursion depth exceeded!" );
+         return call_generic<R,Args...>( bind_first_arg<R,Arg0,Args...>( f, a0->as< typename std::decay<Arg0>::type >( max_depth - 1 ) ), a0+1, e, max_depth - 1 );
       }
 
       template<typename R, typename ... Args>
       std::function<variant(const fc::variants&, uint32_t)> to_generic( const std::function<R(Args...)>& f )
       {
          return [=]( const variants& args, uint32_t max_depth ) {
+            FC_ASSERT( max_depth > 0, "Recursion depth exceeded!" );
             return variant( call_generic( f, args.begin(), args.end(), max_depth - 1 ), max_depth - 1 );
          };
       }
@@ -60,6 +62,7 @@ namespace fc {
       std::function<variant(const fc::variants&, uint32_t)> to_generic( const std::function<void(Args...)>& f )
       {
          return [=]( const variants& args, uint32_t max_depth ) {
+            FC_ASSERT( max_depth > 0, "Recursion depth exceeded!" );
             call_generic( f, args.begin(), args.end(), max_depth - 1 );
             return variant();
          };
@@ -147,6 +150,7 @@ namespace fc {
          R call_generic( const std::function<R(std::function<Signature>,Args...)>& f, variants::const_iterator a0, variants::const_iterator e, uint32_t max_depth )
          {
             FC_ASSERT( a0 != e, "too few arguments passed to method" );
+            FC_ASSERT( max_depth > 0, "Recursion depth exceeded!" );
             detail::callback_functor<Signature> arg0( get_connection(), a0->as<uint64_t>(1) );
             return call_generic<R,Args...>( this->bind_first_arg<R,std::function<Signature>,Args...>( f, std::function<Signature>(arg0) ), a0+1, e, max_depth - 1 );
          }
@@ -154,6 +158,7 @@ namespace fc {
          R call_generic( const std::function<R(const std::function<Signature>&,Args...)>& f, variants::const_iterator a0, variants::const_iterator e, uint32_t max_depth )
          {
             FC_ASSERT( a0 != e, "too few arguments passed to method" );
+            FC_ASSERT( max_depth > 0, "Recursion depth exceeded!" );
             detail::callback_functor<Signature> arg0( get_connection(), a0->as<uint64_t>(1) );
             return call_generic<R,Args...>( this->bind_first_arg<R,const std::function<Signature>&,Args...>( f, arg0 ), a0+1, e, max_depth - 1 );
          }
@@ -162,6 +167,7 @@ namespace fc {
          R call_generic( const std::function<R(Arg0,Args...)>& f, variants::const_iterator a0, variants::const_iterator e, uint32_t max_depth )
          {
             FC_ASSERT( a0 != e, "too few arguments passed to method" );
+            FC_ASSERT( max_depth > 0, "Recursion depth exceeded!" );
             return  call_generic<R,Args...>( this->bind_first_arg<R,Arg0,Args...>( f, a0->as< typename std::decay<Arg0>::type >( max_depth - 1 ) ), a0+1, e, max_depth - 1 );
          }
 

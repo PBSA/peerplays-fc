@@ -12,6 +12,7 @@
 #include <fc/exception/exception.hpp>
 #include <fc/safe.hpp>
 #include <fc/io/raw_fwd.hpp>
+#include <algorithm>
 #include <map>
 #include <deque>
 
@@ -58,7 +59,7 @@ namespace fc {
     {
        FC_ASSERT( _max_depth > 0 );
        --_max_depth;
-       fc::raw::pack( s, variant( msg, _max_depth ), _max_depth );
+       fc::raw::pack( s, variant( msg, std::min( _max_depth, uint32_t(FC_MAX_LOG_OBJECT_DEPTH) ) ), _max_depth );
     }
     template<typename Stream>
     inline void unpack( Stream& s, fc::log_message& msg, uint32_t _max_depth )
@@ -67,7 +68,7 @@ namespace fc {
        fc::variant vmsg;
        --_max_depth;
        fc::raw::unpack( s, vmsg, _max_depth );
-       msg = vmsg.as<log_message>( _max_depth );
+       msg = vmsg.as<log_message>( std::min( _max_depth, uint32_t(FC_MAX_LOG_OBJECT_DEPTH) ) );
     }
 
     template<typename Stream>

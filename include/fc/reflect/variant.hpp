@@ -65,7 +65,7 @@ namespace fc
 
    template<typename IsEnum=fc::false_type>
    struct if_enum
-      {
+   {
       template<typename T>
       static inline void to_variant( const T& v, fc::variant& vo, uint32_t max_depth )
       {
