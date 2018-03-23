@@ -5,6 +5,7 @@
 #include <fc/io/raw.hpp>
 #include <fc/reflect/variant.hpp>
 #include <fc/static_variant.hpp>
+#include <fc/log/logger_config.hpp>
 
 namespace fc { namespace test {
 
@@ -47,6 +48,15 @@ BOOST_AUTO_TEST_SUITE(fc_variant_and_log)
 
 BOOST_AUTO_TEST_CASE( nested_objects_test )
 { try {
+
+   ilog( "Suppressing logging (but not disabled)" );
+   fc::logging_config cfg;
+   fc::logger_config dlc;
+   dlc.name = "default";
+   dlc.level = fc::log_level::debug;
+   dlc.appenders.push_back("stderr");
+   cfg.loggers.push_back( dlc );
+   fc::configure_logging( cfg );
 
    auto create_nested_object = []( uint32_t level )
    {
@@ -165,6 +175,9 @@ BOOST_AUTO_TEST_CASE( nested_objects_test )
       edump( (vec)(v) );
 
    }
+
+   fc::configure_logging( fc::logging_config::default_config() );
+   ilog( "End suppressing logging" );
 
 } FC_CAPTURE_LOG_AND_RETHROW ( (0) ) }
 
