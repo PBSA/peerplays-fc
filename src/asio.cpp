@@ -99,6 +99,7 @@ namespace fc {
 
        default_io_service_scope()
        {
+            cleanup_complete = false;
             io           = new boost::asio::io_service();
             the_work     = new boost::asio::io_service::work(*io);
             for( int i = 0; i < 8; ++i ) {
@@ -146,10 +147,16 @@ namespace fc {
           for( auto asio_thread : asio_threads ) {
              delete asio_thread;
           }
+          cleanup_complete = true;
        }
 
        ~default_io_service_scope()
-       {}
+       {
+          if (!cleanup_complete)
+             cleanup();
+       }
+    private:
+       bool cleanup_complete;
     };
 
     /// If cleanup is true, do not use the return value; it is a null reference
