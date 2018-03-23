@@ -11,10 +11,10 @@
 
 namespace fc
 {
-   namespace detail 
-   { 
-       class log_context_impl; 
-       class log_message_impl; 
+   namespace detail
+   {
+      class log_context_impl;
+      class log_message_impl;
    }
 
    /**
@@ -24,19 +24,19 @@ namespace fc
    {
       public:
          /**
-          * @brief Define's the various log levels for reporting.  
+          * @brief Define's the various log levels for reporting.
           *
-          * Each log level includes all higher levels such that 
+          * Each log level includes all higher levels such that
           * Debug includes Error, but Error does not include Debug.
           */
          enum values
          {
-             all, 
-             debug, 
-             info, 
-             warn, 
-             error, 
-             off  
+            all,
+            debug,
+            info,
+            warn,
+            error,
+            off
          };
          log_level( values v = off ):value(v){}
          explicit log_level( int v ):value( static_cast<values>(v)){}
@@ -53,14 +53,14 @@ namespace fc
     *
     *  @see FC_LOG_CONTEXT
     */
-   class log_context 
+   class log_context
    {
       public:
         log_context();
         log_context( log_level ll,
-                    const char* file, 
-                    uint64_t line, 
-                    const char* method );
+                     const char* file,
+                     uint64_t line,
+                     const char* method );
         ~log_context();
         explicit log_context( const variant& v, uint32_t max_depth );
         variant to_variant( uint32_t max_depth )const;
@@ -108,16 +108,16 @@ namespace fc
       public:
          log_message();
          /**
-          *  @param ctx - generally provided using the FC_LOG_CONTEXT(LEVEL) macro 
+          *  @param ctx - generally provided using the FC_LOG_CONTEXT(LEVEL) macro
           */
          log_message( log_context ctx, std::string format, variant_object args = variant_object() );
          ~log_message();
 
          log_message( const variant& v, uint32_t max_depth );
          variant        to_variant(uint32_t max_depth)const;
-                              
+
          string         get_message()const;
-                              
+
          log_context    get_context()const;
          string         get_format()const;
          variant_object get_data()const;
@@ -148,7 +148,7 @@ FC_REFLECT_TYPENAME( fc::log_message );
  */
 #define FC_LOG_CONTEXT(LOG_LEVEL) \
    fc::log_context( fc::log_level::LOG_LEVEL, __FILE__, __LINE__, __func__ )
-   
+
 /**
  * @def FC_LOG_MESSAGE(LOG_LEVEL,FORMAT,...)
  *
@@ -159,5 +159,7 @@ FC_REFLECT_TYPENAME( fc::log_message );
  * @param ...  A set of key/value pairs denoted as ("key",val)("key2",val2)...
  */
 #define FC_LOG_MESSAGE( LOG_LEVEL, FORMAT, ... ) \
-   fc::log_message( FC_LOG_CONTEXT(LOG_LEVEL), FORMAT, fc::limited_mutable_variant_object(FC_MAX_LOG_OBJECT_DEPTH)__VA_ARGS__ )
+   fc::log_message( FC_LOG_CONTEXT(LOG_LEVEL), \
+                    FORMAT, \
+                    fc::limited_mutable_variant_object( FC_MAX_LOG_OBJECT_DEPTH, true )__VA_ARGS__ )
 
