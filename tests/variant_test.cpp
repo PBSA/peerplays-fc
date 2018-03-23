@@ -69,62 +69,100 @@ BOOST_AUTO_TEST_CASE( nested_objects_test )
 
       fc::variant v;
 
-      BOOST_TEST_MESSAGE( "About to convert to variant." );
+      BOOST_TEST_MESSAGE( "========== About to nested object convert to variant. ==========" );
       BOOST_CHECK_THROW( to_variant( nested, v, nested_levels ), fc::assert_exception );
-      // CAPTURE_AND_LOG should never throw again
-      try { to_variant( nested, v, nested_levels ); } FC_CAPTURE_AND_LOG ( (nested) );
+      try{ try { try { try {
+         to_variant( nested, v, nested_levels ); BOOST_FAIL( "Expected exception." );
+      } FC_CAPTURE_LOG_AND_RETHROW( (nested) ); BOOST_FAIL( "Expected exception." );
+      } FC_CAPTURE_AND_RETHROW( (nested) ); BOOST_FAIL( "Expected exception." );
+      } FC_LOG_AND_RETHROW( ); BOOST_FAIL( "Expected exception." );
+      } FC_CAPTURE_AND_LOG ( (nested) ); // CAPTURE_AND_LOG should never throw again
+
       to_variant( nested, v, nested_levels + 1 );
 
-      BOOST_TEST_MESSAGE( "About to convert from variant." );
+      BOOST_TEST_MESSAGE( "========== About to convert nested object from variant. ==========" );
       fc::test::item unpacked;
       BOOST_CHECK_THROW( from_variant( v, unpacked, nested_levels ), fc::assert_exception );
+      try{ try { try { try {
+         from_variant( v, unpacked, nested_levels ); BOOST_FAIL( "Expected exception." );
+      } FC_CAPTURE_LOG_AND_RETHROW( (v) ); BOOST_FAIL( "Expected exception." );
+      } FC_LOG_AND_RETHROW( ); BOOST_FAIL( "Expected exception." );
+      } FC_CAPTURE_AND_RETHROW( (v) ); BOOST_FAIL( "Expected exception." );
+      } FC_CAPTURE_AND_LOG ( (v) ); // CAPTURE_AND_LOG should never throw again
+
       from_variant( v, unpacked, nested_levels + 1 );
 
       BOOST_CHECK( unpacked == nested );
 
+      // both log and dump should never throw
+      BOOST_TEST_MESSAGE( "========== About to log obj. ==========" );
+      ilog( "The obj is ${a}, variant is ${v}", ("a",nested)("v",v) );
+      BOOST_TEST_MESSAGE( "========== About to dump obj. ==========" );
+      idump( (nested)(v) );
+
       fc::static_variant<fc::test::item> sv( nested ), sv1;
-      BOOST_TEST_MESSAGE( "About to convert static_variant to variant." );
+      BOOST_TEST_MESSAGE( "========== About to convert static_variant to variant. ==========" );
       BOOST_CHECK_THROW( to_variant( sv, v, nested_levels + 1 ), fc::assert_exception );
-      // CAPTURE_AND_LOG should never throw again
-      try { to_variant( sv, v, nested_levels + 1 ); } FC_CAPTURE_AND_LOG ( (sv) );
+      try{ try { try { try {
+         to_variant( sv, v, nested_levels + 1 ); BOOST_FAIL( "Expected exception." );
+      } FC_CAPTURE_AND_RETHROW( (sv) ); BOOST_FAIL( "Expected exception." );
+      } FC_LOG_AND_RETHROW( ); BOOST_FAIL( "Expected exception." );
+      } FC_CAPTURE_LOG_AND_RETHROW( (sv) ); BOOST_FAIL( "Expected exception." );
+      } FC_CAPTURE_AND_LOG ( (sv) ); // CAPTURE_AND_LOG should never throw again
+
       to_variant( sv, v, nested_levels + 2 );
 
-      BOOST_TEST_MESSAGE( "About to convert static_variant from variant." );
+      BOOST_TEST_MESSAGE( "========== About to convert static_variant from variant. ==========" );
       BOOST_CHECK_THROW( from_variant( v, sv1, nested_levels + 1 ), fc::assert_exception );
+      try{ try { try { try {
+         from_variant( v, sv1, nested_levels + 1 ); BOOST_FAIL( "Expected exception." );
+      } FC_LOG_AND_RETHROW( ); BOOST_FAIL( "Expected exception." );
+      } FC_CAPTURE_AND_RETHROW( (v) ); BOOST_FAIL( "Expected exception." );
+      } FC_CAPTURE_LOG_AND_RETHROW( (v) ); BOOST_FAIL( "Expected exception." );
+      } FC_CAPTURE_AND_LOG ( (v) ); // CAPTURE_AND_LOG should never throw again
+
       from_variant( v, sv1, nested_levels + 2 );
 
       BOOST_CHECK( sv == sv1 );
 
+      // both log and dump should never throw
+      BOOST_TEST_MESSAGE( "========== About to log static_variant. ==========" );
+      wlog( "The static_variant is ${a}, variant is $(v)", ("a",sv)("v",v) );
+      BOOST_TEST_MESSAGE( "========== About to dump static_variant. ==========" );
+      wdump( (sv)(v) );
+
       std::vector<fc::static_variant<fc::test::item>> vec(300), vec1;
       for( int i = 0; i < 300; i++ )
          vec.push_back(sv);
-      BOOST_TEST_MESSAGE( "About to convert vector to variant." );
+      BOOST_TEST_MESSAGE( "========== About to convert vector to variant. ==========" );
       BOOST_CHECK_THROW( to_variant( vec, v, nested_levels + 2 ), fc::assert_exception );
-      // CAPTURE_AND_LOG should never throw again
-      try { to_variant( vec, v, nested_levels + 2 ); } FC_CAPTURE_AND_LOG ( (vec) );
+      try{ try { try { try {
+         to_variant( vec, v, nested_levels + 2 ); BOOST_FAIL( "Expected exception." );
+      } FC_CAPTURE_AND_RETHROW( (vec) ); BOOST_FAIL( "Expected exception." );
+      } FC_CAPTURE_LOG_AND_RETHROW( (vec) ); BOOST_FAIL( "Expected exception." );
+      } FC_LOG_AND_RETHROW( ); BOOST_FAIL( "Expected exception." );
+      } FC_CAPTURE_AND_LOG ( (vec) ); // CAPTURE_AND_LOG should never throw again
+
       to_variant( vec, v, nested_levels + 3 );
 
-      BOOST_TEST_MESSAGE( "About to convert vector from variant." );
+      BOOST_TEST_MESSAGE( "========== About to convert vector from variant. ==========" );
       BOOST_CHECK_THROW( from_variant( v, vec1, nested_levels + 2 ), fc::assert_exception );
+      try{ try { try { try {
+         from_variant( v, vec1, nested_levels + 2 ); BOOST_FAIL( "Expected exception." );
+      } FC_LOG_AND_RETHROW( ); BOOST_FAIL( "Expected exception." );
+      } FC_CAPTURE_LOG_AND_RETHROW( (v) ); BOOST_FAIL( "Expected exception." );
+      } FC_CAPTURE_AND_RETHROW( (v) ); BOOST_FAIL( "Expected exception." );
+      } FC_CAPTURE_AND_LOG ( (v) ); // CAPTURE_AND_LOG should never throw again
+
       from_variant( v, vec1, nested_levels + 3 );
 
       BOOST_CHECK( vec == vec1 );
 
       // both log and dump should never throw
-      BOOST_TEST_MESSAGE( "About to log obj." );
-      ilog( "The obj is ${a}", ("a",nested) );
-      BOOST_TEST_MESSAGE( "About to dump obj." );
-      idump( (nested) );
-
-      BOOST_TEST_MESSAGE( "About to log static_variant." );
-      ilog( "The static_variant is ${a}", ("a",sv) );
-      BOOST_TEST_MESSAGE( "About to dump static_variant." );
-      idump((sv));
-
-      BOOST_TEST_MESSAGE( "About to log vector." );
-      ilog( "The vector is ${a}", ("a",vec) );
-      BOOST_TEST_MESSAGE( "About to dump vector." );
-      idump((vec));
+      BOOST_TEST_MESSAGE( "========== About to log vector. ==========" );
+      elog( "The vector is ${a}, variant is ${v}", ("a",vec)("v",v) );
+      BOOST_TEST_MESSAGE( "========== About to dump vector. ==========" );
+      edump( (vec)(v) );
 
    }
 
