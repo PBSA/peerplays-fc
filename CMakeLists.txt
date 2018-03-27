@@ -106,15 +106,15 @@ endif ( MSVC )
 
 # Configure editline
 if ( MSVC )
-    # autoconf won't work here, hard code the defines
-    set( EDITLINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline" )
-
-    file( GLOB EDITLINE_SOURCES "${EDITLINE_DIR}/src/editline.c" )
-    add_library( editline ${EDITLINE_SOURCES} )
-
-    target_include_directories( editline PRIVATE "${EDITLINE_DIR}" PUBLIC "${EDITLINE_DIR}/include" )
-
-    set_target_properties( editline PROPERTIES COMPILE_DEFINITIONS LINKER_LANGUAGE C )
+#    # autoconf won't work here, hard code the defines
+#    set( EDITLINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline" )
+#
+#    file( GLOB EDITLINE_SOURCES "${EDITLINE_DIR}/src/editline.c" )
+#    add_library( editline ${EDITLINE_SOURCES} )
+#
+#    target_include_directories( editline PRIVATE "${EDITLINE_DIR}" PUBLIC "${EDITLINE_DIR}/include" )
+#
+#    set_target_properties( editline PROPERTIES COMPILE_DEFINITIONS LINKER_LANGUAGE C )
 else ( MSVC )
     include(ExternalProject)
     if ( MINGW )
@@ -302,8 +302,10 @@ setup_library( fc SOURCES ${sources} LIBRARY_TYPE STATIC )
 install( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" DESTINATION include )
 
 # begin editline stuff
-target_compile_definitions (fc PRIVATE HAVE_EDITLINE)
-set(editline_libraries editline)
+if(NOT MSVC)
+  target_compile_definitions (fc PRIVATE HAVE_EDITLINE)
+  set(editline_libraries editline)
+endif(NOT MSVC)
 if(WIN32)
   target_compile_definitions( fc PRIVATE _CRT_NONSTDC_NO_DEPRECATE )
 endif(WIN32)
