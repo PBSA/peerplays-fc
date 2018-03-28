@@ -232,7 +232,6 @@ set( fc_sources
      src/io/varint.cpp
      src/io/console.cpp
      src/filesystem.cpp
-     src/interprocess/process.cpp
      src/interprocess/signals.cpp
      src/interprocess/file_mapping.cpp
      src/interprocess/mmap_struct.cpp
@@ -403,7 +402,6 @@ target_include_directories(fc
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/websocketpp
 
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/boost_1.51/include
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
   )
 
