@@ -3,6 +3,7 @@
 #include <fc/string.hpp>
 #include <fc/platform_independence.hpp>
 #include <fc/io/raw_fwd.hpp>
+#include <boost/functional/hash.hpp>
 
 namespace fc
 {
@@ -133,7 +134,6 @@ namespace std
     };
 }
 
-/*
 namespace boost
 {
     template<>
@@ -145,7 +145,6 @@ namespace boost
        }
     };
 }
-*/
 
 #include <fc/reflect/reflect.hpp>
 FC_REFLECT_TYPENAME( fc::sha256 )
