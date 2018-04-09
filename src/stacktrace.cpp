@@ -1,12 +1,12 @@
 //
 // A stacktrace handler for bitshares
 //
-
-#include <signal.h>
-#include <fc/log/logger.hpp>
+#include <ostream>
 
 // only include stacktrace stuff if boost >= 1.65
 #if BOOST_VERSION / 100000 >= 1 && ((BOOST_VERSION / 100) % 1000) >= 65
+#include <signal.h>
+#include <fc/log/logger.hpp>
 #include <boost/stacktrace.hpp>
 
 namespace fc
