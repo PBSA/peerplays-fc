@@ -1,0 +1,43 @@
+//
+// A stacktrace handler for bitshares
+//
+
+#include <signal.h>
+#include <fc/log/logger.hpp>
+
+// only include stacktrace stuff if boost >= 1.65
+#if BOOST_VERSION / 100000 >= 1 && ((BOOST_VERSION / 100) % 1000) >= 65
+#include <boost/stacktrace.hpp>
+
+namespace fc
+{
+
+static void segfault_signal_handler(int signum)
+{
+   ::signal(signum, SIG_DFL);
+   std::stringstream ss;
+   ss << boost::stacktrace::stacktrace();
+   elog(ss.str());
+   ::raise(SIGABRT);
+}
+
+void print_stacktrace_on_segfault()
+{
+   ::signal(SIGSEGV, &segfault_signal_handler);
+}
+
+void print_stacktrace(std::ostream& out)
+{
+   out << boost::stacktrace::stacktrace();
+}
+
+}
+#else
+
+namespace fc
+{
+void print_stacktrace_on_segfault() {}
+void print_stacktrace(std::ostream& out) {}
+}
+
+#endif
