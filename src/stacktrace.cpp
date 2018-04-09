@@ -33,7 +33,8 @@ void print_stacktrace(std::ostream& out)
 
 }
 #else
-
+// Stacktrace output requires Boost 1.65 or above.
+// Therefore calls to these methods do nothing.
 namespace fc
 {
 void print_stacktrace_on_segfault() {}
