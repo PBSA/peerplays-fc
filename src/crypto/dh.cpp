@@ -15,7 +15,7 @@ namespace fc {
 
    bool diffie_hellman::generate_params( int s, uint8_t g )
    {
-        ssl_dh dh;
+        ssl_dh dh(DH_new());
         DH_generate_parameters_ex(dh.obj, s, g, NULL);
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
         ssl_bignum bn_p;
