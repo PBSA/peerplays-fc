@@ -42,7 +42,6 @@ static fc::string BLIND_T_X = "80deff382af8a8e4a5f297588e44d5bf858f30a524f74b13e
 static fc::string BLINDED_HASH = "7196e80cdafdfdfb7496323ad24bf47dda8447febd7426e444facc04940c7309";
 static fc::string BLIND_SIG = "40d6a477d849cc860df8ad159481f2ffc5b4dc3131b86a799d7d10460824dd53";
 static fc::string UNBLINDED = "700092a72a05e33509f9b068aa1d7c5336d8b5692b4157da199d7ec1e10fd7c0";
-/*
 
 BOOST_AUTO_TEST_CASE(test_extended_keys_1)
 {
@@ -120,7 +119,7 @@ BOOST_AUTO_TEST_CASE(test_extended_keys_2)
 //}
 
 BOOST_AUTO_TEST_CASE(test_blinding_1)
-{
+{ try {
     char buffer[7] = "test_";
     fc::ecc::extended_private_key alice = fc::ecc::extended_private_key::generate_master( "master" );
     fc::ecc::extended_private_key bob = fc::ecc::extended_private_key::generate_master( "puppet" );
@@ -136,8 +135,6 @@ BOOST_AUTO_TEST_CASE(test_blinding_1)
         try {
             fc::ecc::compact_signature sig = alice.unblind_signature( bob_pub, blind_sig, hash, i );
             fc::ecc::public_key validate( sig, hash );
-//            printf("Validated: "); print((unsigned char*) validate.serialize().begin(), 33);
-//            printf("\nT: "); print((unsigned char*) t.serialize().begin(), 33); printf("\n");
             BOOST_CHECK( validate.serialize() == t.serialize() );
         } catch (const fc::exception& e) {
             printf( "Test %d: %s\n", i, e.to_string().c_str() );
@@ -145,10 +142,10 @@ BOOST_AUTO_TEST_CASE(test_blinding_1)
         alice = alice.derive_child( i );
         bob = bob.derive_child( i | 0x80000000 );
     }
-}
+} FC_LOG_AND_RETHROW() }
 
 BOOST_AUTO_TEST_CASE(test_blinding_2)
-{
+{ try {
     char message[7] = "test_0";
     fc::ecc::extended_private_key alice = fc::ecc::extended_private_key::generate_master( "master" );
     fc::ecc::extended_private_key bob = fc::ecc::extended_private_key::generate_master( "puppet" );
@@ -174,39 +171,13 @@ BOOST_AUTO_TEST_CASE(test_blinding_2)
     BOOST_CHECK( !memcmp( sig.begin() + 1, buffer, sizeof(buffer) ) );
     fc::from_hex( UNBLINDED, buffer, sizeof(buffer) );
     BOOST_CHECK( !memcmp( sig.begin() + 33, buffer, sizeof(buffer) ) );
-}
+} FC_LOG_AND_RETHROW() }
 
 static void to_bignum(const char* data32, fc::ssl_bignum& out) {
     unsigned char dummy[33]; dummy[0] = 0;
     memcpy(dummy, data32, 32);
     BN_bin2bn((unsigned char*) data32, 32, out);
 }
-
-//static void print(const fc::sha256 hash) {
-//    print((unsigned char*) hash.data(), hash.data_size());
-//}
-//
-//static void print(const BIGNUM* bn) {
-//    unsigned char buffer[64];
-//    int len = BN_num_bytes(bn);
-//    if (len > sizeof(buffer)) {
-//        printf("BN too long - %d bytes?!", len);
-//        return;
-//    }
-//    BN_bn2bin(bn, buffer);
-//    print(buffer, len);
-//}
-//
-//static void print(const fc::ec_group& curve, const fc::ec_point& p, fc::bn_ctx& ctx) {
-//    fc::ssl_bignum x;
-//    fc::ssl_bignum y;
-//    EC_POINT_get_affine_coordinates_GFp(curve, p, x, y, ctx);
-//    printf("(");
-//    print(x);
-//    printf(", ");
-//    print(y);
-//    printf(")");
-//}
 
 namespace fc {
 SSL_TYPE(ec_key,       EC_KEY,       EC_KEY_free)
@@ -275,14 +246,25 @@ BOOST_AUTO_TEST_CASE(openssl_blinding)
     BN_mod_mul(blind_sig, p, blinded, n, ctx);
     BN_mod_add(blind_sig, blind_sig, q, n, ctx);
 
-    fc::ecdsa_sig sig(ECDSA_SIG_new());
-    BN_copy(sig->r, Kx);
-    BN_mod_mul(sig->s, c, blind_sig, n, ctx);
-    BN_mod_add(sig->s, sig->s, d, n, ctx);
+    fc::ssl_bignum sig_r;
+    fc::ssl_bignum sig_s;
+    BN_copy(sig_r, Kx);
+    BN_mod_mul(sig_s, c, blind_sig, n, ctx);
+    BN_mod_add(sig_s, sig_s, d, n, ctx);
 
-    if (BN_cmp(sig->s, n_half) > 0) {
-        BN_sub(sig->s, n, sig->s);
+    if (BN_cmp(sig_s, n_half) > 0) {
+        BN_sub(sig_s, n, sig_s);
     }
+
+    fc::ecdsa_sig sig(ECDSA_SIG_new());
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+    ECDSA_SIG_set0(sig, sig_r, sig_s);
+#else
+    sig->r = sig_r;
+    sig->s = sig_s;
+#endif
+    sig_r.obj = nullptr;
+    sig_s.obj = nullptr;
 
     fc::ec_key verify(EC_KEY_new());
     EC_KEY_set_public_key(verify, T);
@@ -303,4 +285,3 @@ BOOST_AUTO_TEST_CASE(openssl_blinding)
 //        printf("\nunblinded: "); print(sig->s);
 //        printf("\n");
 }
-*/
