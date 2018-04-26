@@ -221,6 +221,7 @@ set( fc_sources
      src/asio.cpp
      src/string.cpp
      src/shared_ptr.cpp
+     src/stacktrace.cpp
      src/time.cpp
      src/utf8.cpp
      src/io/iostream.cpp
