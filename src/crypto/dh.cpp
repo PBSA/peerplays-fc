@@ -18,8 +18,8 @@ namespace fc {
         ssl_dh dh(DH_new());
         DH_generate_parameters_ex(dh.obj, s, g, NULL);
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
-        ssl_bignum bn_p;
-        DH_get0_pqg(dh.obj, (const BIGNUM**)&bn_p.obj, NULL, NULL);
+        const BIGNUM* bn_p; // must not be free'd!
+        DH_get0_pqg(dh.obj, &bn_p, NULL, NULL);
         p.resize( BN_num_bytes( bn_p ) );
         if( p.size() )
             BN_bn2bin( bn_p, (unsigned char*)&p.front()  );
@@ -69,15 +69,15 @@ namespace fc {
         DH_generate_key(dh);
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
-        ssl_bignum bn_pub_key;
-        ssl_bignum bn_priv_key;
-        DH_get0_key(dh.obj, (const BIGNUM**)&bn_pub_key.obj, (const BIGNUM**)&bn_priv_key.obj);
+        const BIGNUM* bn_pub_key; // must not be free'd!
+        const BIGNUM* bn_priv_key; // must not be free'd!
+        DH_get0_key(dh.obj, &bn_pub_key, &bn_priv_key);
         pub_key.resize( BN_num_bytes( bn_pub_key ) );
         priv_key.resize( BN_num_bytes( bn_priv_key ) );
         if( pub_key.size() )
-            BN_bn2bin( bn_pub_key.obj, (unsigned char*)&pub_key.front()  );
+            BN_bn2bin( bn_pub_key, (unsigned char*)&pub_key.front()  );
         if( priv_key.size() )
-            BN_bn2bin( bn_priv_key.obj, (unsigned char*)&priv_key.front()  );
+            BN_bn2bin( bn_priv_key, (unsigned char*)&priv_key.front()  );
 #else
         pub_key.resize( BN_num_bytes( dh->pub_key ) );
         priv_key.resize( BN_num_bytes( dh->priv_key ) );
