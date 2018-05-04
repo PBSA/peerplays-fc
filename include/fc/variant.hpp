@@ -211,6 +211,9 @@ namespace fc
         variant( uint32_t val, uint32_t max_depth = 1 );
         variant( int32_t val, uint32_t max_depth = 1 );
         variant( uint64_t val, uint32_t max_depth = 1 );
+#ifdef __APPLE__
+        variant( size_t val, uint32_t max_depth = 1 );
+#endif
         variant( int64_t val, uint32_t max_depth = 1 );
         variant( double val, uint32_t max_depth = 1 );
         variant( bool val, uint32_t max_depth = 1 );
@@ -561,7 +564,7 @@ namespace fc
       to_variant( val, *this, max_depth );
    }
    #ifdef __APPLE__
-   inline void to_variant( size_t s, variant& v, uint32_t max_depth = 1 ) { v = variant(uint64_t(s)); }
+   inline void to_variant( size_t s, variant& v, uint32_t max_depth ) { v = variant(uint64_t(s)); }
    #endif
    template<typename T>
    void to_variant( const std::shared_ptr<T>& var, variant& vo, uint32_t max_depth )

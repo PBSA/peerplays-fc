@@ -221,18 +221,35 @@ namespace fc
    class limited_mutable_variant_object : public mutable_variant_object
    {
       public:
-         limited_mutable_variant_object( uint32_t max_depth );
+         limited_mutable_variant_object( uint32_t max_depth, bool skip_on_exception = false );
 
          template<typename T>
          limited_mutable_variant_object& operator()( string key, T&& var )
          {
-            set( std::move(key), variant( fc::forward<T>(var), _max_depth ) );
+            if( _reached_depth_limit )
+               // _skip_on_exception will always be true here
+               return *this;
+
+            optional<variant> v;
+            try
+            {
+               v = variant( fc::forward<T>(var), _max_depth );
+            }
+            catch( ... )
+            {
+               if( !_skip_on_exception )
+                  throw;
+               v = variant( "[ERROR: Caught exception while converting data to variant]" );
+            }
+            set( std::move(key), *v );
             return *this;
          }
          limited_mutable_variant_object& operator()( const variant_object& vo );
 
       private:
-         const uint32_t _max_depth;
+         const uint32_t _max_depth;       ///< The depth limit
+         const bool _reached_depth_limit; ///< Indicates whether we've reached depth limit
+         const bool _skip_on_exception;   ///< If set to true, won't rethrow exceptions when reached depth limit
    };
 
    /** @ingroup Serializable */

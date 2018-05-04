@@ -4,8 +4,6 @@
 PROJECT( fc )
 CMAKE_MINIMUM_REQUIRED( VERSION 2.8.12 )
 
-add_compile_options(-std=c++14)
-
 MESSAGE(STATUS "Configuring project fc located in: ${CMAKE_CURRENT_SOURCE_DIR}")
 SET( CMAKE_AUTOMOC OFF )
 
@@ -106,15 +104,15 @@ endif ( MSVC )
 
 # Configure editline
 if ( MSVC )
-    # autoconf won't work here, hard code the defines
-    set( EDITLINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline" )
-
-    file( GLOB EDITLINE_SOURCES "${EDITLINE_DIR}/src/editline.c" )
-    add_library( editline ${EDITLINE_SOURCES} )
-
-    target_include_directories( editline PRIVATE "${EDITLINE_DIR}" PUBLIC "${EDITLINE_DIR}/include" )
-
-    set_target_properties( editline PROPERTIES COMPILE_DEFINITIONS LINKER_LANGUAGE C )
+#    # autoconf won't work here, hard code the defines
+#    set( EDITLINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline" )
+#
+#    file( GLOB EDITLINE_SOURCES "${EDITLINE_DIR}/src/editline.c" )
+#    add_library( editline ${EDITLINE_SOURCES} )
+#
+#    target_include_directories( editline PRIVATE "${EDITLINE_DIR}" PUBLIC "${EDITLINE_DIR}/include" )
+#
+#    set_target_properties( editline PROPERTIES COMPILE_DEFINITIONS LINKER_LANGUAGE C )
 else ( MSVC )
     include(ExternalProject)
     if ( MINGW )
@@ -124,7 +122,7 @@ else ( MSVC )
      CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/editline --host=x86_64-w64-mingw32
      BUILD_COMMAND make
      INSTALL_COMMAND true
-     BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/editline/src/project_editline-build/.libs/libeditline.a
+     BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/editline/src/project_editline-build/src/.libs/libeditline.a
     )
     else ( MINGW )
     ExternalProject_Add( project_editline
@@ -133,7 +131,7 @@ else ( MSVC )
      CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/editline
      BUILD_COMMAND make
      INSTALL_COMMAND true
-     BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/editline/src/project_editline-build/.libs/libeditline.a
+     BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/editline/src/project_editline-build/src/.libs/libeditline.a
     )
     endif ( MINGW )
     ExternalProject_Add_Step(project_editline autogen
@@ -223,6 +221,7 @@ set( fc_sources
      src/asio.cpp
      src/string.cpp
      src/shared_ptr.cpp
+     src/stacktrace.cpp
      src/time.cpp
      src/utf8.cpp
      src/io/iostream.cpp
@@ -234,7 +233,6 @@ set( fc_sources
      src/io/varint.cpp
      src/io/console.cpp
      src/filesystem.cpp
-     src/interprocess/process.cpp
      src/interprocess/signals.cpp
      src/interprocess/file_mapping.cpp
      src/interprocess/mmap_struct.cpp
@@ -302,8 +300,10 @@ setup_library( fc SOURCES ${sources} LIBRARY_TYPE STATIC )
 install( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" DESTINATION include )
 
 # begin editline stuff
-target_compile_definitions (fc PRIVATE HAVE_EDITLINE)
-set(editline_libraries editline)
+if(NOT MSVC)
+  target_compile_definitions (fc PRIVATE HAVE_EDITLINE)
+  set(editline_libraries editline)
+endif(NOT MSVC)
 if(WIN32)
   target_compile_definitions( fc PRIVATE _CRT_NONSTDC_NO_DEPRECATE )
 endif(WIN32)
@@ -403,7 +403,6 @@ target_include_directories(fc
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/websocketpp
 
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/boost_1.51/include
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
   )
 

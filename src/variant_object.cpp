@@ -365,15 +365,35 @@ namespace fc
       return *this;
    }
 
-   limited_mutable_variant_object::limited_mutable_variant_object( uint32_t m )
-         : mutable_variant_object(), _max_depth(m - 1)
+   limited_mutable_variant_object::limited_mutable_variant_object( uint32_t m, bool skip_on_exception )
+         : mutable_variant_object(),
+           _max_depth(m - 1),
+           _reached_depth_limit(m == 0),
+           _skip_on_exception(skip_on_exception)
    {
-      FC_ASSERT( m > 0, "Recursion depth exceeded!" );
+      if( !skip_on_exception )
+         FC_ASSERT( m > 0, "Recursion depth exceeded!" );
+      else if( m == 0 )
+         set( "__err_msg", "[ERROR: Recusion depth exceeded!]" );
    }
 
    limited_mutable_variant_object& limited_mutable_variant_object::operator()( const variant_object& vo )
    {
-      mutable_variant_object::operator()( vo );
+      if( _reached_depth_limit )
+         // _skip_on_exception will always be true here
+         return *this;
+
+      try
+      {
+         mutable_variant_object::operator()( vo );
+      }
+      catch( ... )
+      {
+         if( !_skip_on_exception )
+            throw;
+         else
+            set( "__err_msg", "[ERROR: Caught exception in operator()( const variant_object& ).]" );
+      }
       return *this;
    }
 

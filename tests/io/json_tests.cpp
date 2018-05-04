@@ -231,8 +231,8 @@ BOOST_AUTO_TEST_CASE(structured_test)
    fc::variant v_uint64_1( (int8_t) 1 );
    fc::variant v_float_1( 0.0f );
    fc::variant v_float_2( -2.0f );
-   fc::variant v_double_1( 0.0d );
-   fc::variant v_double_2( -2.0d );
+   fc::variant v_double_1( 0.0 );
+   fc::variant v_double_2( -2.0 );
    fc::variants v_small_array
    {
        v_empty_obj,
