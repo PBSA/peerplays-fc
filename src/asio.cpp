@@ -135,7 +135,7 @@ namespace fc {
             }
        }
 
-       void cleanup()
+       ~default_io_service_scope()
        {
           delete the_work;
           io->stop();
@@ -147,18 +147,14 @@ namespace fc {
              delete asio_thread;
           }
        }
-
-       ~default_io_service_scope()
-       {}
     };
 
-    /// If cleanup is true, do not use the return value; it is a null reference
-    boost::asio::io_service& default_io_service(bool cleanup) {
+    /***
+     * @brief create an io_service
+     * @returns the io_service
+     */
+    boost::asio::io_service& default_io_service() {
         static default_io_service_scope fc_asio_service[1];
-        if (cleanup) {
-           for( int i = 0; i < 1; ++i )
-              fc_asio_service[i].cleanup();
-        }
         return *fc_asio_service[0].io;
     }
 
