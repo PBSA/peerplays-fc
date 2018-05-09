@@ -160,6 +160,18 @@ namespace fc
 #define FC_DUMP_FORMAT_ARG_NAMES( SEQ )\
    BOOST_PP_SEQ_FOR_EACH( FC_DUMP_FORMAT_ARG_NAME, v, SEQ )
 
+#define fc_ddump( LOGGER, SEQ ) \
+    fc_dlog( LOGGER, FC_FORMAT(SEQ), FC_FORMAT_ARG_PARAMS(SEQ) )  
+#define fc_idump( LOGGER, SEQ ) \
+    fc_ilog( LOGGER, FC_FORMAT(SEQ), FC_FORMAT_ARG_PARAMS(SEQ) )  
+#define fc_wdump( LOGGER, SEQ ) \
+    fc_wlog( LOGGER, FC_FORMAT(SEQ), FC_FORMAT_ARG_PARAMS(SEQ) )  
+#define fc_edump( LOGGER, SEQ ) \
+    fc_elog( LOGGER, FC_FORMAT(SEQ), FC_FORMAT_ARG_PARAMS(SEQ) )  
+
+#define ddump( SEQ ) \
+    dlog( FC_FORMAT(SEQ), FC_FORMAT_ARG_PARAMS(SEQ) )  
+
 // TODO FC_FORMAT_ARG_PARAMS(...) may throw exceptions when calling fc::variant(...) inside,
 //      as a quick-fix / workaround, we catch all exceptions here.
 //      However, to log as much info as possible, it's better to catch exceptions when processing each argument
