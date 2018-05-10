@@ -41,14 +41,11 @@ BOOST_AUTO_TEST_CASE(dh_test)
     BOOST_CHECK( !memcmp( charlie.shared_key.data(), bob.shared_key.data(), bob.shared_key.size() ) );
     std::vector<char> bob_charlie = charlie.shared_key;
 
-    BOOST_CHECK_EQUAL( alice_bob.size(), alice_charlie.size() );
-    BOOST_CHECK( memcmp( alice_bob.data(), alice_charlie.data(), alice_bob.size() ) );
+    BOOST_CHECK( alice_bob.size() != alice_charlie.size() ||  memcmp( alice_bob.data(), alice_charlie.data(), alice_bob.size() ) );
 
-    BOOST_CHECK_EQUAL( alice_bob.size(), bob_charlie.size() );
-    BOOST_CHECK( memcmp( alice_bob.data(), bob_charlie.data(), alice_bob.size() ) );
+    BOOST_CHECK( alice_bob.size() != bob_charlie.size() || memcmp( alice_bob.data(), bob_charlie.data(), alice_bob.size() ) );
 
-    BOOST_CHECK_EQUAL( alice_charlie.size(), bob_charlie.size() );
-    BOOST_CHECK( memcmp( alice_charlie.data(), bob_charlie.data(), alice_charlie.size() ) );
+    BOOST_CHECK( alice_charlie.size() != bob_charlie.size() || memcmp( alice_charlie.data(), bob_charlie.data(), alice_charlie.size() ) );
 
     alice.p.clear(); alice.p.push_back(100); alice.p.push_back(2);
     BOOST_CHECK( !alice.validate() );
