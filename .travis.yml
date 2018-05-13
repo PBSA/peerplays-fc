@@ -10,7 +10,7 @@ sudo: true
 install:
  - echo "deb http://de.archive.ubuntu.com/ubuntu xenial main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
  - sudo apt-get update
- - sudo apt-get install --allow-unauthenticated g++ libboost-all-dev cmake libreadline-dev libssl-dev autoconf
+ - sudo apt-get install --allow-unauthenticated g++ libboost-all-dev cmake libreadline-dev libssl-dev autoconf parallel
 
 addons:
   sonarcloud:
@@ -22,7 +22,7 @@ script:
  - cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_CXX_FLAGS=--coverage -DBoost_USE_STATIC_LIBS=OFF  -DCMAKE_CXX_OUTPUT_EXTENSION_REPLACE=ON .
  - 'which build-wrapper-linux-x86-64 && build-wrapper-linux-x86-64 --out-dir bw-output make -j 2 || make -j 2'
  - set -o pipefail
- - tests/all_tests 2>&1 | cat
+ - tests/run-parallel-tests.sh tests/all_tests
  - "tests/api 2>&1 | grep -vE 'callback result 9|remote_calc->add. 4, 5 .: 9|set callback|] \\.$'"
  - tests/bip_lock 2>&1 | cat
  - tests/hmac_test 2>&1 | cat
