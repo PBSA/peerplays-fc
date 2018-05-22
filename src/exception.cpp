@@ -183,9 +183,17 @@ namespace fc
    string exception::to_detail_string( log_level ll )const
    {
       std::stringstream ss;
-      ss << variant(my->_code).as_string() <<" " << my->_name << ": " <<my->_what<<"\n";
-      for( auto itr = my->_elog.begin(); itr != my->_elog.end();  )
-      {
+      try {
+         try {
+            ss << variant( my->_code ).as_string();
+         } catch( std::bad_alloc& ) {
+            throw;
+         } catch( ... ) {
+            ss << "<- exception in to_detail_string.";
+         }
+         ss << " " << my->_name << ": " << my->_what << "\n";
+         for( auto itr = my->_elog.begin(); itr != my->_elog.end(); ) {
+            try {
          ss << itr->get_message() <<"\n"; //fc::format_string( itr->get_format(), itr->get_data() ) <<"\n";
          try
          {
@@ -197,7 +205,17 @@ namespace fc
          }
          ss << "    " << itr->get_context().to_string();
          ++itr;
+            } catch( std::bad_alloc& ) {
+               throw;
+            } catch( ... ) {
+               ss << "<- exception in to_detail_string.";
+            }
          if( itr != my->_elog.end() ) ss<<"\n";
+      }
+      } catch( std::bad_alloc& ) {
+         throw;
+      } catch( ... ) {
+         ss << "<- exception in to_detail_string.\n";
       }
       return ss.str();
    }
@@ -208,13 +226,31 @@ namespace fc
    string exception::to_string( log_level ll )const
    {
       std::stringstream ss;
-      ss << what() << " (" << variant(my->_code).as_string() <<")\n";
-      for( auto itr = my->_elog.begin(); itr != my->_elog.end(); ++itr )
-      {
+      try {
+         ss << my->_what;
+         try {
+            ss << " (" << variant( my->_code ).as_string() << ")\n";
+         } catch( std::bad_alloc& ) {
+            throw;
+         } catch( ... ) {
+            ss << "<- exception in to_string.\n";
+         }
+         for( auto itr = my->_elog.begin(); itr != my->_elog.end(); ++itr ) {
+            try {
             ss << fc::format_string( itr->get_format(), itr->get_data() ) << "\n";
    //      ss << "    " << itr->get_context().to_string() <<"\n";
+            } catch( std::bad_alloc& ) {
+               throw;
+            } catch( ... ) {
+               ss << "<- exception in to_string.\n";
+            }
       }
       return ss.str();
+      } catch( std::bad_alloc& ) {
+         throw;
+      } catch( ... ) {
+         ss << "<- exception in to_string.\n";
+      }
    }
 
    [[noreturn]] void exception_factory::rethrow( const exception& e )const
