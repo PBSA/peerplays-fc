@@ -280,7 +280,6 @@ set( fc_sources
      src/network/rate_limiting.cpp
      src/network/resolve.cpp
      src/network/url.cpp
-     src/compress/smaz.cpp
      src/compress/zlib.cpp
      )
 
