@@ -251,6 +251,7 @@ namespace fc
       } catch( ... ) {
          ss << "<- exception in to_string.\n";
       }
+      return ss.str();
    }
 
    [[noreturn]] void exception_factory::rethrow( const exception& e )const
