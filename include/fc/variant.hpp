@@ -173,7 +173,7 @@ namespace fc
     *        and variant_object's.  
     *
     * variant's allocate everything but strings, arrays, and objects on the
-    * stack and are 'move aware' for values allcoated on the heap.  
+    * stack and are 'move aware' for values allocated on the heap.
     *
     * Memory usage on 64 bit systems is 16 bytes and 12 bytes on 32 bit systems.
     */
@@ -352,7 +352,7 @@ namespace fc
         void    clear();
       private:
         void    init();
-        double  _data;                ///< Alligned according to double requirements
+        double  _data;                ///< Aligned according to double requirements
         char    _type[sizeof(void*)]; ///< pad to void* size
    };
    typedef optional<variant> ovariant;
