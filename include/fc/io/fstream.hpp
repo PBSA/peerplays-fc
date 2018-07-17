@@ -2,10 +2,7 @@
 #include <fc/shared_ptr.hpp>
 #include <fc/filesystem.hpp>
 #include <fc/io/iostream.hpp>
-
 #include <fstream>
-
-using namespace std;
 
 namespace fc {
   class path;

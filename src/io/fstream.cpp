@@ -10,6 +10,8 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/fstream.hpp>
 
+using namespace std;
+
 namespace fc {
    class ofstream::impl : public fc::retainable {
       public:
