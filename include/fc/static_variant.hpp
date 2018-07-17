@@ -338,11 +338,6 @@ public:
     tag_type which() const {return _tag;}
 };
 
-template<typename Result>
-struct visitor {
-    typedef Result result_type;
-};
-
    struct from_static_variant 
    {
       variant& var;
