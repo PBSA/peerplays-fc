@@ -349,7 +349,7 @@ namespace fc { namespace http {
                           auto con = _server.get_con_from_hdl(hdl);
                           wdump(("server")(con->get_request_body()));
                           auto response = current_con->on_http( con->get_request_body() );
-
+                          idump((response));
                           con->set_body( response );
                           con->set_status( websocketpp::http::status_code::ok );
                        } catch ( const fc::exception& e )
