@@ -103,6 +103,11 @@ void cli::run()
          }
          else
             std::cout << itr->second( result, args ) << "\n";
+
+         if (method == "quit") 
+         {
+            stop();
+         }
       }
       catch ( const fc::exception& e )
       {
