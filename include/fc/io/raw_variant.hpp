@@ -128,7 +128,7 @@ namespace fc { namespace raw {
     {
        FC_ASSERT( _max_depth > 0 );
        --_max_depth;
-       unsigned_int vs = (uint32_t)v.size();
+       unsigned_int vs = v.size();
        pack( s, vs, _max_depth );
        for( auto itr = v.begin(); itr != v.end(); ++itr )
        {

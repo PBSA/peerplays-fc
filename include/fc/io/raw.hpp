@@ -273,9 +273,9 @@ namespace fc {
     // std::vector<char>
     template<typename Stream> inline void pack( Stream& s, const std::vector<char>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, unsigned_int((uint32_t)value.size()), _max_depth - 1 );
+       fc::raw::pack( s, unsigned_int(value.size()), _max_depth - 1 );
        if( value.size() )
-          s.write( &value.front(), (uint32_t)value.size() );
+          s.write( &value.front(), value.size() );
     }
     template<typename Stream> inline void unpack( Stream& s, std::vector<char>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
@@ -289,7 +289,7 @@ namespace fc {
     // fc::string
     template<typename Stream> inline void pack( Stream& s, const fc::string& v, uint32_t _max_depth )  {
        FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, unsigned_int((uint32_t)v.size()), _max_depth - 1 );
+       fc::raw::pack( s, unsigned_int(v.size()), _max_depth - 1 );
        if( v.size() ) s.write( v.c_str(), v.size() );
     }
 
@@ -433,7 +433,7 @@ namespace fc {
     inline void pack( Stream& s, const std::unordered_set<T>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
        --_max_depth;
-       fc::raw::pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
+       fc::raw::pack( s, unsigned_int(value.size()), _max_depth );
        auto itr = value.begin();
        auto end = value.end();
        while( itr != end ) {
@@ -478,7 +478,7 @@ namespace fc {
     inline void pack( Stream& s, const std::unordered_map<K,V>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
        --_max_depth;
-       fc::raw::pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
+       fc::raw::pack( s, unsigned_int(value.size()), _max_depth );
        auto itr = value.begin();
        auto end = value.end();
        while( itr != end ) {
@@ -506,7 +506,7 @@ namespace fc {
     inline void pack( Stream& s, const std::map<K,V>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
        --_max_depth;
-       fc::raw::pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
+       fc::raw::pack( s, unsigned_int(value.size()), _max_depth );
        auto itr = value.begin();
        auto end = value.end();
        while( itr != end ) {
@@ -534,7 +534,7 @@ namespace fc {
     inline void pack( Stream& s, const std::deque<T>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
        --_max_depth;
-       fc::raw::pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
+       fc::raw::pack( s, unsigned_int(value.size()), _max_depth );
        auto itr = value.begin();
        auto end = value.end();
        while( itr != end ) {
@@ -562,7 +562,7 @@ namespace fc {
     inline void pack( Stream& s, const std::vector<T>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
        --_max_depth;
-       fc::raw::pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
+       fc::raw::pack( s, unsigned_int(value.size()), _max_depth );
        auto itr = value.begin();
        auto end = value.end();
        while( itr != end ) {
@@ -590,7 +590,7 @@ namespace fc {
     inline void pack( Stream& s, const std::set<T>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
        --_max_depth;
-       fc::raw::pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
+       fc::raw::pack( s, unsigned_int(value.size()), _max_depth );
        auto itr = value.begin();
        auto end = value.end();
        while( itr != end ) {
