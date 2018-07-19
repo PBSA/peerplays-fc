@@ -14,6 +14,12 @@
 # endif
 #endif
 
+#ifdef WIN32
+# include <signal.h>
+#else
+# include <csignal>
+#endif
+
 namespace fc { namespace rpc {
 
 static std::vector<std::string>& cli_commands()
@@ -104,9 +110,9 @@ void cli::run()
          else
             std::cout << itr->second( result, args ) << "\n";
 
-         if (method == "quit") 
+         if (result.is_integer() && result.as_int64() == SIGQUIT) 
          {
-            stop();
+            break;
          }
       }
       catch ( const fc::exception& e )
