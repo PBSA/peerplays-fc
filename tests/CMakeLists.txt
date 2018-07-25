@@ -59,5 +59,6 @@ add_executable( all_tests all_tests.cpp
                           time_test.cpp
                           utf8_test.cpp
                           variant_test.cpp
+                          logging_tests.cpp
                           )
 target_link_libraries( all_tests fc )
