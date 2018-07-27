@@ -1,5 +1,5 @@
 #include <boost/test/unit_test.hpp>
-
+#include <boost/version.hpp>
 #include <fc/time.hpp>
 
 using namespace fc;
@@ -37,9 +37,10 @@ BOOST_AUTO_TEST_CASE(time_point_sec_test)
     BOOST_CHECK_EQUAL( "20380119T031408", tp2g.to_non_delimited_iso_string() );
 
     time_point_sec tp3g(0xc0000000U);
-    // commented next 2 tests as they will only work with boost >= 1.64
-    //BOOST_CHECK_EQUAL( "2072-01-28T16:51:12", tp3g.to_iso_string() );
-    //BOOST_CHECK_EQUAL( "20720128T165112", tp3g.to_non_delimited_iso_string() );
+    if (BOOST_VERSION >= BOOST_VERSION_NUMBER(1,64,0)) {
+        BOOST_CHECK_EQUAL( "2072-01-28T16:51:12", tp3g.to_iso_string() );
+        BOOST_CHECK_EQUAL( "20720128T165112", tp3g.to_non_delimited_iso_string() );
+    }
 
     BOOST_CHECK( tp0 == time_point_sec() );
     BOOST_CHECK( tp0 < tp1 );
