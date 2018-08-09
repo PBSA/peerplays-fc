@@ -243,6 +243,11 @@ namespace fc {
      try {
          boost::system::error_code ec;
          boost::filesystem::copy( boost::filesystem::path(f), boost::filesystem::path(t), ec );
+         if( ec )
+         {
+            FC_THROW( "Copy from ${srcfile} to ${dstfile} failed because ${reason}:${value}",
+                      ("srcfile",f)("dstfile",t)("reason",ec.category().name())("value",ec.value()) );
+         }
      } catch ( boost::system::system_error& e ) {
      	FC_THROW( "Copy from ${srcfile} to ${dstfile} failed because ${reason}",
 	         ("srcfile",f)("dstfile",t)("reason",e.what() ) );
