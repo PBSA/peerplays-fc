@@ -245,12 +245,12 @@ namespace fc {
          boost::filesystem::copy( boost::filesystem::path(f), boost::filesystem::path(t), ec );
          if( ec )
          {
-            FC_THROW( "Copy from ${srcfile} to ${dstfile} failed because ${reason}:${value}",
-                      ("srcfile",f)("dstfile",t)("reason",ec.category().name())("value",ec.value()) );
+            FC_THROW( "Copy from ${srcfile} to ${dstfile} failed because ${code} : ${message}",
+                      ("srcfile",f)("dstfile",t)("code",ec.value())("message",ec.message()) );
          }
      } catch ( boost::system::system_error& e ) {
      	FC_THROW( "Copy from ${srcfile} to ${dstfile} failed because ${reason}",
-	         ("srcfile",f)("dstfile",t)("reason",e.what() ) );
+	         ("srcfile",f)("dstfile",t)("reason",std::string(e.what()) ) );
      } catch ( ... ) {
      	FC_THROW( "Copy from ${srcfile} to ${dstfile} failed",
 	         ("srcfile",f)("dstfile",t)("inner", fc::except_str() ) );
@@ -264,7 +264,7 @@ namespace fc {
     catch ( boost::system::system_error& e )
     {
       FC_THROW( "Resize file '${f}' to size ${s} failed: ${reason}",
-                ("f",f)("s",t)( "reason", e.what() ) );
+                ("f",f)("s",t)( "reason", std::string(e.what()) ) );
     } 
     catch ( ... ) 
     {
@@ -310,7 +310,7 @@ namespace fc {
          } catch ( fc::exception& e ) {
              FC_RETHROW_EXCEPTION( e, error,
                    "Rename from ${srcfile} to ${dstfile} failed due to ${reason}, trying to copy then remove",
-                   ("srcfile",f)("dstfile",t)("reason",er.what()) );
+                   ("srcfile",f)("dstfile",t)("reason",std::string(er.what())) );
          }
      } catch ( ... ) {
      	FC_THROW( "Rename from ${srcfile} to ${dstfile} failed",
