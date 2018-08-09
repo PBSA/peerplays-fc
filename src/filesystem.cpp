@@ -303,13 +303,14 @@ namespace fc {
   void rename( const path& f, const path& t ) { 
      try {
   	    boost::filesystem::rename( boost::filesystem::path(f), boost::filesystem::path(t) ); 
-     } catch ( boost::system::system_error& ) {
-         try{
-             boost::filesystem::copy( boost::filesystem::path(f), boost::filesystem::path(t) ); 
-             boost::filesystem::remove( boost::filesystem::path(f)); 
-         } catch ( boost::system::system_error& e ) {
-             FC_THROW( "Rename from ${srcfile} to ${dstfile} failed because ${reason}",
-                     ("srcfile",f)("dstfile",t)("reason",e.what() ) );
+     } catch ( boost::system::system_error& er ) {
+         try {
+            copy( f, t );
+            remove( f );
+         } catch ( fc::exception& e ) {
+             FC_RETHROW_EXCEPTION( e, error,
+                   "Rename from ${srcfile} to ${dstfile} failed due to ${reason}, trying to copy then remove",
+                   ("srcfile",f)("dstfile",t)("reason",er.what()) );
          }
      } catch ( ... ) {
      	FC_THROW( "Rename from ${srcfile} to ${dstfile} failed",
