@@ -2,6 +2,7 @@
 
 #include <deque>
 #include <map>
+#include <set>
 #include <vector>
 
 #include <fc/string.hpp>
@@ -69,6 +70,22 @@ namespace fc {
          return n.c_str();  
      } 
   };
+  template<typename E> struct get_typename< std::set<E> >
+  {
+     static const char* name()
+     {
+        static std::string n = std::string("std::set<") + std::string(get_typename<E>::name()) + std::string(">");
+        return n.c_str();
+     }
+  };
+ template<typename A, typename B> struct get_typename< std::pair<A,B> >
+  {
+      static const char* name()
+      {
+         static std::string n = std::string("std::pair<") + get_typename<A>::name() + "," + get_typename<B>::name() + ">";
+         return n.c_str();
+      }
+  }; 
 
   struct signed_int;
   struct unsigned_int;
