@@ -7,6 +7,7 @@
 
 #include <fc/string.hpp>
 #include <fc/optional.hpp>
+#include <fc/smart_ref_fwd.hpp>
 
 #include <fc/container/flat_fwd.hpp>
 #include <fc/container/deque_fwd.hpp>
@@ -86,10 +87,19 @@ namespace fc {
          return n.c_str();
       }
   }; 
+  template<typename T> struct get_typename< fc::smart_ref<T> >
+  {
+     static const char* name()
+     {
+        return (std::string("fc::smart_ref<") + get_typename<T>::name() + std::string(">")).c_str();
+     }
+  };
 
   struct signed_int;
   struct unsigned_int;
+  struct variant_object;
   template<> struct get_typename<signed_int>   { static const char* name()   { return "signed_int";   } };
   template<> struct get_typename<unsigned_int>   { static const char* name()   { return "unsigned_int";   } };
+  template<> struct get_typename<variant_object>   { static const char* name()   { return "fc::variant_object";   } };
 
 }
