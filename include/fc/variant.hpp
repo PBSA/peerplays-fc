@@ -92,6 +92,8 @@ namespace fc
    void to_variant( const uint64_t& var,  variant& vo,  uint32_t max_depth = 1 );
    void to_variant( const int64_t& var,   variant& vo,  uint32_t max_depth = 1 );
 
+   void to_variant( const bool& var,      variant& vo,  uint32_t max_depth = 1 );
+
    void to_variant( const variant_object& var, variant& vo,        uint32_t max_depth );
    void from_variant( const variant& var,      variant_object& vo, uint32_t max_depth );
    void to_variant( const mutable_variant_object& var, variant& vo,   uint32_t max_depth );
