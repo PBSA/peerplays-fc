@@ -326,6 +326,16 @@ public:
         return impl::storage_ops<0, Types...>::apply(_tag, storage, v);
     }
 
+    template<tag_type w, typename visitor>
+    static typename visitor::result_type visit(visitor& v) {
+        return impl::storage_ops<0, Types...>::apply((const tag_type)w, (const void*)nullptr, v);
+    }
+
+    template<tag_type w, typename visitor>
+    static typename visitor::result_type visit(const visitor& v) {
+        return impl::storage_ops<0, Types...>::apply((const tag_type)w, (const void*)nullptr, v);
+    }
+
     static int count() { return impl::type_info<Types...>::count; }
     void set_which( tag_type w ) {
       FC_ASSERT( w >= 0 );
