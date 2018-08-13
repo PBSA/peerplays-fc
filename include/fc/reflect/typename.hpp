@@ -91,7 +91,8 @@ namespace fc {
   {
      static const char* name()
      {
-        return (std::string("fc::smart_ref<") + get_typename<T>::name() + std::string(">")).c_str();
+        static std::string n = std::string("fc::smart_ref<") + get_typename<T>::name() + std::string(">");
+        return n.c_str();
      }
   };
 
