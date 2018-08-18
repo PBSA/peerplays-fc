@@ -193,10 +193,10 @@ namespace fc {
       uint64_t v = 0; char b = 0; uint8_t by = 0;
       do {
           s.get(b);
-          v |= uint32_t(uint8_t(b) & 0x7f) << by;
+          v |= uint64_t(uint8_t(b) & 0x7f) << by;
           by += 7;
       } while( uint8_t(b) & 0x80 );
-      vi.value = static_cast<uint32_t>(v);
+      vi.value = static_cast<uint64_t>(v);
     }
 
     template<typename Stream, typename T> inline void unpack( Stream& s, const T& vi, uint32_t _max_depth )
