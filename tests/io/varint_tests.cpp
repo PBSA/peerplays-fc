@@ -62,7 +62,7 @@ static const std::vector<fc::unsigned_int> TEST_U = {
                                 0xffffffffffffffffULL  // \377\377\377\377\377\377\377\377\377\1
    };
 BOOST_AUTO_TEST_CASE( test_unsigned )
-{
+{ try {
    const std::vector<char> packed_u = fc::raw::pack<std::vector<fc::unsigned_int>>( TEST_U, 3 );
    BOOST_CHECK_EQUAL( UINT_LENGTH, packed_u.size() );
    BOOST_CHECK_EQUAL( EXPECTED_UINTS, std::string( packed_u.data(), packed_u.size() ) );
@@ -83,22 +83,16 @@ BOOST_AUTO_TEST_CASE( test_unsigned )
    BOOST_CHECK_EQUAL( TEST_U.size(), unjson_u.size() );
    for( size_t i = 0; i < TEST_U.size(); i++ )
       BOOST_CHECK_EQUAL( TEST_U[i].value, unjson_u[i].value );
-}
+} FC_LOG_AND_RETHROW() }
 
 BOOST_AUTO_TEST_CASE( test_limits )
 { try {
-   static const std::string PACKED_U = "\04"
-                                       "\200\1"
-                                       "\200\200\200\200\200\200\200\200\100"
-                                       "\200\200\200\200\200\200\200\200\200\201" // not terminated
-                                       "\200\200\200\200\200\200\200\200\300\201"; // not terminated
-   std::vector<fc::unsigned_int> unpacked_u;
-   fc::raw::unpack( std::vector<char>( PACKED_U.begin(), PACKED_U.end() ), unpacked_u, 3 );
-   BOOST_REQUIRE_EQUAL( 4, unpacked_u.size() );
-   BOOST_CHECK_EQUAL(               0x80,    unpacked_u[0].value );
-   BOOST_CHECK_EQUAL( 0x4000000000000000ULL, unpacked_u[1].value );
-   BOOST_CHECK_EQUAL( 0x8000000000000000ULL, unpacked_u[2].value );
-   BOOST_CHECK_EQUAL( 0xc000000000000000ULL, unpacked_u[3].value );
+   static const std::string overflow = "\200\200\200\200\200\200\200\200\200\2"; // = 2^64
+   static const std::string overlong = "\200\200\200\200\200\200\200\200\300\200\1";
+
+   fc::unsigned_int dest;
+   BOOST_CHECK_THROW( fc::raw::unpack( std::vector<char>( overflow.begin(), overflow.end() ), dest, 3 ), fc::overflow_exception );
+   BOOST_CHECK_THROW( fc::raw::unpack( std::vector<char>( overlong.begin(), overlong.end() ), dest, 3 ), fc::overflow_exception );
 } FC_LOG_AND_RETHROW() }
 
 BOOST_AUTO_TEST_SUITE_END()

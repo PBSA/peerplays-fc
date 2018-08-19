@@ -172,9 +172,11 @@ namespace fc {
       uint64_t v = 0; char b = 0; uint8_t by = 0;
       do {
           s.get(b);
+          if( by >= 64 || (by == 63 && b > 1) )
+             FC_THROW_EXCEPTION( overflow_exception, "Invalid packed unsigned_int!" );
           v |= uint64_t(uint8_t(b) & 0x7f) << by;
           by += 7;
-      } while( (uint8_t(b) & 0x80) && by < 64 );
+      } while( uint8_t(b) & 0x80 );
       vi.value = static_cast<uint64_t>(v);
     }
 
