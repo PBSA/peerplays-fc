@@ -90,7 +90,7 @@ namespace std
    struct hash<fc::unsigned_int>
    {
        public:
-         size_t operator()(const fc::signed_int &a) const 
+         size_t operator()(const fc::unsigned_int &a) const
          {
             return std::hash<uint64_t>()(a.value);
          }
