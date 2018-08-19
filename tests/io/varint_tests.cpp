@@ -85,4 +85,40 @@ BOOST_AUTO_TEST_CASE( test_unsigned )
       BOOST_CHECK_EQUAL( TEST_U[i].value, unjson_u[i].value );
 }
 
+BOOST_AUTO_TEST_CASE( test_limits )
+{ try {
+   static const std::string PACKED_U = "\04"
+                                       "\200\1"
+                                       "\200\200\200\200\200\200\200\200\100"
+                                       "\200\200\200\200\200\200\200\200\200\201" // not terminated
+                                       "\200\200\200\200\200\200\200\200\300\201"; // not terminated
+   std::vector<fc::unsigned_int> unpacked_u;
+   fc::raw::unpack( std::vector<char>( PACKED_U.begin(), PACKED_U.end() ), unpacked_u, 3 );
+   BOOST_REQUIRE_EQUAL( 4, unpacked_u.size() );
+   BOOST_CHECK_EQUAL(               0x80,    unpacked_u[0].value );
+   BOOST_CHECK_EQUAL( 0x4000000000000000ULL, unpacked_u[1].value );
+   BOOST_CHECK_EQUAL( 0x8000000000000000ULL, unpacked_u[2].value );
+   BOOST_CHECK_EQUAL( 0xc000000000000000ULL, unpacked_u[3].value );
+
+   /* Hm, seems that signed_int is broken, see below
+   static const std::string PACKED_S = "\04"
+                                       "\200\1"
+                                       "\200\200\200\200\04"
+                                       "\200\200\200\200\210" // not terminated
+                                       "\200\200\200\200\214"; // not terminated
+   std::vector<fc::signed_int> unpacked_s;
+   fc::raw::unpack( std::vector<char>( PACKED_S.begin(), PACKED_S.end() ), unpacked_s, 3 );
+   BOOST_REQUIRE_EQUAL( 4, unpacked_s.size() );
+   BOOST_CHECK_EQUAL(       0x40, unpacked_s[0].value );
+   BOOST_CHECK_EQUAL( 0x20000000, unpacked_s[1].value );
+   BOOST_CHECK_EQUAL( 0x40000000, unpacked_s[2].value );
+   BOOST_CHECK_EQUAL( 0x60000000, unpacked_s[3].value );
+    */
+
+   std::vector<char> packed_s = fc::raw::pack( fc::signed_int(0x40000000), 3 );
+   fc::signed_int tmp = fc::raw::unpack<fc::signed_int>( packed_s, 3 );
+   BOOST_CHECK_EQUAL( 0x40000000, tmp.value );
+
+} FC_LOG_AND_RETHROW() }
+
 BOOST_AUTO_TEST_SUITE_END()
