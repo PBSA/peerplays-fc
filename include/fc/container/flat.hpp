@@ -11,7 +11,7 @@ namespace fc {
        inline void pack( Stream& s, const flat_set<T>& value, uint32_t _max_depth ) {
          FC_ASSERT( _max_depth > 0 );
          --_max_depth;
-         pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
+         pack( s, unsigned_int(value.size()), _max_depth );
          auto itr = value.begin();
          auto end = value.end();
          while( itr != end ) {
@@ -38,7 +38,7 @@ namespace fc {
        inline void pack( Stream& s, const flat_map<K,V...>& value, uint32_t _max_depth ) {
          FC_ASSERT( _max_depth > 0 );
          --_max_depth;
-         pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
+         pack( s, unsigned_int(value.size()), _max_depth );
          auto itr = value.begin();
          auto end = value.end();
          while( itr != end ) {
@@ -67,7 +67,7 @@ namespace fc {
        void pack( Stream& s, const bip::vector<T,A>& value, uint32_t _max_depth ) {
          FC_ASSERT( _max_depth > 0 );
          --_max_depth;
-         pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
+         pack( s, unsigned_int(value.size()), _max_depth );
          if( !std::is_fundamental<T>::value ) {
             auto itr = value.begin();
             auto end = value.end();
