@@ -14,6 +14,7 @@
 #include <fc/exception/exception.hpp>
 #include <iomanip>
 #include <sstream>
+#include <mutex>
 
 
 namespace fc {
@@ -27,7 +28,7 @@ namespace fc {
 #endif
    };
 
-   console_appender::console_appender( const variant& args ) 
+   console_appender::console_appender( const variant& args )
    :my(new impl)
    {
       configure( args.as<config>() );
@@ -66,7 +67,7 @@ namespace fc {
    #ifdef WIN32
    static WORD
    #else
-   static const char* 
+   static const char*
    #endif
    get_console_color(console_appender::color::type t ) {
       switch( t ) {
@@ -140,7 +141,7 @@ namespace fc {
       #endif
 
       if( text.size() )
-         fprintf( out, "%s", text.c_str() ); //fmt_str.c_str() ); 
+         fprintf( out, "%s", text.c_str() ); //fmt_str.c_str() );
 
       #ifdef WIN32
       if (my->console_handle != INVALID_HANDLE_VALUE)

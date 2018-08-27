@@ -20,10 +20,16 @@ namespace fc {
     T&       at( size_t pos )      { assert( pos < N); return data[pos]; }
     const T& at( size_t pos )const { assert( pos < N); return data[pos]; }
     ///@}
+
+    T&       operator[]( size_t pos )      { assert( pos < N); return data[pos]; }
+    const T& operator[]( size_t pos )const { assert( pos < N); return data[pos]; }
+
     
-    T*           begin()       {  return &data[0]; }
     const T*     begin()const  {  return &data[0]; }
     const T*     end()const    {  return &data[N]; }
+
+    T*           begin()       {  return &data[0]; }
+    T*           end()         {  return &data[N]; }
 
     size_t       size()const { return N; }
     
