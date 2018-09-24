@@ -34,20 +34,19 @@ namespace fc {
       public:
          impl( const config& c) : cfg( c )
          {
-            if( cfg.rotate )
-            {
-               FC_ASSERT( cfg.rotation_interval >= seconds( 1 ) );
-               FC_ASSERT( cfg.rotation_limit >= cfg.rotation_interval );
-
-               rotate_files( true );
-            }
-
             try
             {
                fc::create_directories(cfg.filename.parent_path());
 
-               if(!cfg.rotate)
+               if( cfg.rotate )
+               {
+                  FC_ASSERT( cfg.rotation_interval >= seconds( 1 ) );
+                  FC_ASSERT( cfg.rotation_limit >= cfg.rotation_interval );
+
+                  rotate_files( true );
+               } else {
                   out.open( cfg.filename, std::ios_base::out | std::ios_base::app);
+               }
             }
             catch( ... )
             {
