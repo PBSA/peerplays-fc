@@ -24,7 +24,13 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <fc/crypto/ripemd160.hpp>
+#include <fc/crypto/sha1.hpp>
+#include <fc/crypto/sha224.hpp>
+#include <fc/crypto/sha256.hpp>
+#include <fc/crypto/sha512.hpp>
 #include <fc/thread/parallel.hpp>
+#include <fc/time.hpp>
 
 BOOST_AUTO_TEST_SUITE(parallel_tests)
 
@@ -70,6 +76,50 @@ BOOST_AUTO_TEST_CASE( do_something_parallel )
       for( size_t i = 0; i < pair.second.size(); i++ )
          BOOST_CHECK_EQUAL( i, pair.second[i] );
    }
+}
+
+const std::string TEXT = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"$%&/()=?,.-#+´{[]}`*'_:;<>|";
+
+template<typename Hash>
+class hash_test {
+   public:
+      std::string _hashname = fc::get_typename<Hash>::name();
+
+      void run_single_threaded() {
+         const std::string first = Hash::hash(TEXT).str();
+         fc::time_point start = fc::time_point::now();
+         for( int i = 0; i < 1000; i++ )
+            BOOST_CHECK_EQUAL( first, Hash::hash(TEXT).str() );
+         fc::time_point end = fc::time_point::now();
+         ilog( "${c} single-threaded ${h}'s in ${t}µs", ("c",1000)("h",_hashname)("t",end-start) );
+      }
+
+      void run_multi_threaded() {
+         const std::string first = Hash::hash(TEXT).str();
+         std::vector<fc::future<std::string>> results;
+         results.reserve( 10000 );
+         fc::time_point start = fc::time_point::now();
+         for( int i = 0; i < 10000; i++ )
+            results.push_back( fc::do_parallel( [] () { return Hash::hash(TEXT).str(); } ) );
+         for( auto& result: results )
+            BOOST_CHECK_EQUAL( first, result.wait() );
+         fc::time_point end = fc::time_point::now();
+         ilog( "${c} multi-threaded ${h}'s in ${t}µs", ("c",10000)("h",_hashname)("t",end-start) );
+      }
+
+      void run() {
+         run_single_threaded();
+         run_multi_threaded();
+      }
+};
+
+BOOST_AUTO_TEST_CASE( hash_parallel )
+{
+   hash_test<fc::ripemd160>().run();
+   hash_test<fc::sha1>().run();
+   hash_test<fc::sha224>().run();
+   hash_test<fc::sha256>().run();
+   hash_test<fc::sha512>().run();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
