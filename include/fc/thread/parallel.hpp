@@ -27,6 +27,10 @@
 #include <fc/thread/task.hpp>
 #include <fc/asio.hpp>
 
+/* NOTE: the methods in this header are NOT to be mixed up with fc's
+ * multithreading. Parallel functions MUST NOT call fc::thread::yield NOR
+ * use fc's mutexes etc.!
+ */
 namespace fc {
 
    namespace detail {
