@@ -24,6 +24,7 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <fc/crypto/elliptic.hpp>
 #include <fc/crypto/ripemd160.hpp>
 #include <fc/crypto/sha1.hpp>
 #include <fc/crypto/sha224.hpp>
@@ -120,6 +121,60 @@ BOOST_AUTO_TEST_CASE( hash_parallel )
    hash_test<fc::sha224>().run();
    hash_test<fc::sha256>().run();
    hash_test<fc::sha512>().run();
+}
+
+BOOST_AUTO_TEST_CASE( sign_verify_parallel )
+{
+   const fc::sha256 HASH = fc::sha256::hash(TEXT);
+
+   std::vector<fc::ecc::private_key> keys;
+   keys.reserve(1000);
+   for( int i = 0; i < 1000; i++ )
+      keys.push_back( fc::ecc::private_key::regenerate( fc::sha256::hash( TEXT + fc::to_string(i) ) ) );
+
+   std::vector<fc::ecc::compact_signature> sigs;
+   sigs.reserve( 10 * keys.size() );
+   {
+      fc::time_point start = fc::time_point::now();
+      for( int i = 0; i < 10; i++ )
+         for( const auto& key: keys )
+            sigs.push_back( key.sign_compact( HASH ) );
+      fc::time_point end = fc::time_point::now();
+      ilog( "${c} single-threaded signatures in ${t}µs", ("c",sigs.size())("t",end-start) );
+   }
+
+   {
+      fc::time_point start = fc::time_point::now();
+      for( size_t i = 0; i < sigs.size(); i++ )
+         BOOST_CHECK( keys[i % keys.size()].get_public_key() == fc::ecc::public_key( sigs[i], HASH ) );
+      fc::time_point end = fc::time_point::now();
+      ilog( "${c} single-threaded verifies in ${t}µs", ("c",sigs.size())("t",end-start) );
+   }
+
+   {
+      std::vector<fc::future<fc::ecc::compact_signature>> results;
+      results.reserve( 10 * keys.size() );
+      fc::time_point start = fc::time_point::now();
+      for( int i = 0; i < 10; i++ )
+         for( const auto& key: keys )
+            results.push_back( fc::do_parallel( [&key,&HASH] () { return key.sign_compact( HASH ); } ) );
+      for( auto& res : results )
+         res.wait();
+      fc::time_point end = fc::time_point::now();
+      ilog( "${c} multi-threaded signatures in ${t}µs", ("c",sigs.size())("t",end-start) );
+   }
+
+   {
+      std::vector<fc::future<fc::ecc::public_key>> results;
+      results.reserve( sigs.size() );
+      fc::time_point start = fc::time_point::now();
+      for( const auto& sig: sigs )
+         results.push_back( fc::do_parallel( [&sig,&HASH] () { return fc::ecc::public_key( sig, HASH ); } ) );
+      for( size_t i = 0; i < results.size(); i++ )
+         BOOST_CHECK( keys[i % keys.size()].get_public_key() == results[i].wait() );
+      fc::time_point end = fc::time_point::now();
+      ilog( "${c} multi-threaded verifies in ${t}µs", ("c",sigs.size())("t",end-start) );
+   }
 }
 
 BOOST_AUTO_TEST_SUITE_END()
