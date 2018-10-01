@@ -19,7 +19,6 @@ namespace asio {
      *  @brief internal implementation types/methods for fc::asio
      */
     namespace detail {
-        using namespace fc;
 
         class read_write_handler
         {
@@ -59,14 +58,14 @@ namespace asio {
           bool operator()( C& c, bool s ) { c.non_blocking(s); return true; } 
         };
 
-        #if WIN32  // windows stream handles do not support non blocking!
+#if WIN32  // windows stream handles do not support non blocking!
 	       template<>
          struct non_blocking<boost::asio::windows::stream_handle> { 
 	          typedef boost::asio::windows::stream_handle C;
             bool operator()( C& ) { return false; } 
             bool operator()( C&, bool ) { return false; } 
         };
-        #endif 
+#endif
     } // end of namespace detail
 
     /***

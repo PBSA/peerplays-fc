@@ -58,7 +58,6 @@ namespace fc {
                 }
                 else
                 {
-                  //elog( "${message} ", ("message", boost::system::system_error(ec).what()));
                   p->set_exception( fc::exception_ptr( new fc::exception(
                           FC_LOG_MESSAGE( error, "${message} ", ("message", boost::system::system_error(ec).what())) ) ) );
                 }
@@ -83,8 +82,6 @@ namespace fc {
                 }
                 p->set_value( eps );
             } else {
-                //elog( "%s", boost::system::system_error(ec).what() );
-                //p->set_exception( fc::copy_exception( boost::system::system_error(ec) ) );
                 p->set_exception(
                     fc::exception_ptr( new fc::exception(
                         FC_LOG_MESSAGE( error, "process exited with: ${message} ",
@@ -125,9 +122,9 @@ namespace fc {
 
        for( uint16_t i = 0; i < this->num_io_threads; ++i )
        {
-          asio_threads.push_back( new boost::thread( [=]()
+          asio_threads.push_back( new boost::thread( [i,this]()
                 {
-                 fc::thread::current().set_name("asio");
+                 fc::thread::current().set_name( "fc::asio worker #" + fc::to_string(i) );
                  
                  BOOST_SCOPE_EXIT(void)
                  {
@@ -194,7 +191,7 @@ namespace fc {
           promise<std::vector<boost::asio::ip::tcp::endpoint> >::ptr p( new promise<std::vector<boost::asio::ip::tcp::endpoint> >("tcp::resolve completion") );
           res.async_resolve( boost::asio::ip::tcp::resolver::query(hostname,port),
                             boost::bind( detail::resolve_handler<boost::asio::ip::tcp::endpoint,resolver_iterator>, p, _1, _2 ) );
-          return p->wait();;
+          return p->wait();
         }
         FC_RETHROW_EXCEPTIONS(warn, "")
       }
