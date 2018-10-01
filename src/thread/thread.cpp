@@ -34,7 +34,7 @@ static void set_thread_name(const char* threadName)
    {
    }
 }
-#elif defined(__linux__) && !defined(NDEBUG)
+#elif defined(__linux__)
 # include <pthread.h>
 static void set_thread_name(const char* threadName)
 {
