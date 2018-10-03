@@ -62,20 +62,20 @@ namespace fc {
   }
 
    thread*& current_thread() {
-      #ifdef _MSC_VER
+#ifdef _MSC_VER
          static __declspec(thread) thread* t = NULL;
-      #else
+#else
          static __thread thread* t = NULL;
-      #endif
+#endif
       return t;
    }
 
-   thread::thread( const std::string& name  ) {
+   thread::thread( const std::string& name, thread_idle_notifier* notifier ) {
       promise<void>::ptr p(new promise<void>("thread start"));
-      boost::thread* t = new boost::thread( [this,p,name]() {
+      boost::thread* t = new boost::thread( [this,p,name,notifier]() {
           try {
             set_thread_name(name.c_str()); // set thread's name for the debugger to display
-            this->my = new thread_d(*this);
+            this->my = new thread_d( *this, notifier );
             current_thread() = this;
             p->set_value();
             exec();
@@ -85,26 +85,19 @@ namespace fc {
           } catch ( ... ) {
             wlog( "unhandled exception" );
             p->set_exception( std::make_shared<unhandled_exception>( FC_LOG_MESSAGE( warn, "unhandled exception: ${diagnostic}", ("diagnostic",boost::current_exception_diagnostic_information()) ) ) );
-            //assert( !"unhandled exception" );
-            //elog( "Caught unhandled exception %s", boost::current_exception_diagnostic_information().c_str() );
           }
       } );
       p->wait();
       my->boost_thread = t;
       my->name = name;
-      //wlog("name:${n} tid:${tid}", ("n", name)("tid", (uintptr_t)my->boost_thread->native_handle()) );
    }
    thread::thread( thread_d* ) {
      my = new thread_d(*this);
    }
 
    thread::~thread() {
-      //wlog( "my ${n}", ("n",name()) );
       if( my )
-      {
-        // wlog( "calling quit() on ${n}",("n",my->name) );
         quit();
-      }
 
       delete my;
    }
@@ -129,7 +122,7 @@ namespace fc {
    {
      if (!is_current())
      {
-       async([=](){ set_name(n); }, "set_name").wait();
+       async([this,n](){ set_name(n); }, "set_name").wait();
        return;
      }
      my->name = n;
@@ -152,17 +145,13 @@ namespace fc {
     if( !is_current() )
     {
       auto t = my->boost_thread;
-      async( [=](){quit();}, "thread::quit" );//.wait();
+      async( [this](){quit();}, "thread::quit" );
       if( t )
-      {
-        //wlog("destroying boost thread ${tid}",("tid",(uintptr_t)my->boost_thread->native_handle()));
         t->join();
-      }
       return;
     }
     
     my->done = true;
-    //      wlog( "${s}", ("s",name()) );
     // We are quiting from our own thread...
 
     // break all promises, thread quit!
@@ -173,20 +162,14 @@ namespace fc {
       {
         fc::context* n = cur->next;
         // this will move the context into the ready list.
-        //cur->prom->set_exception( boost::copy_exception( error::thread_quit() ) );
-        //cur->set_exception_on_blocking_promises( thread_quit() );
         cur->set_exception_on_blocking_promises( std::make_shared<canceled_exception>(FC_LOG_MESSAGE(error, "cancellation reason: thread quitting")) );
 
         cur = n;
       }
       if( my->blocked )
-      {
-        //wlog( "still blocking... whats up with that?");
         debug( "on quit" );
-      }
     }
     BOOST_ASSERT( my->blocked == 0 );
-    //my->blocked = 0;
 
     for (task_base* unstarted_task : my->task_pqueue)
       unstarted_task->set_exception(std::make_shared<canceled_exception>(FC_LOG_MESSAGE(error, "cancellation reason: thread quitting")));
@@ -314,7 +297,6 @@ namespace fc {
          if( p[i]->ready() )
            return i;
 
-       //BOOST_THROW_EXCEPTION( wait_any_error() );
        return -1;
    }
 
@@ -330,8 +312,6 @@ namespace fc {
    void thread::async_task( task_base* t, const priority& p, const time_point& tp ) {
       assert(my);
       t->_when = tp;
-     // slog( "when %lld", t->_when.time_since_epoch().count() );
-     // slog( "delay %lld", (tp - fc::time_point::now()).count() );
       task_base* stale_head = my->task_in_queue.load(boost::memory_order_relaxed);
       do { t->_next = stale_head;
       }while( !my->task_in_queue.compare_exchange_weak( stale_head, t, boost::memory_order_release ) );
@@ -381,7 +361,6 @@ namespace fc {
          if( !my->current )
            my->current = new fc::context(&fc::thread::current());
 
-         //slog( "                                 %1% blocking on %2%", my->current, p.get() );
          my->current->add_blocking_promise(p.get(), true);
 
          // if not max timeout, added to sleep pqueue
@@ -394,15 +373,10 @@ namespace fc {
                              sleep_priority_less() );
          }
 
-       //  elog( "blocking %1%", my->current );
          my->add_to_blocked( my->current );
-      //   my->debug("swtiching fibers..." );
-
 
          my->start_next_fiber();
-        // slog( "resuming %1%", my->current );
 
-         //slog( "                                 %1% unblocking blocking on %2%", my->current, p.get() );
          my->current->remove_blocking_promise(p.get());
 
          my->check_fiber_exceptions();
@@ -410,7 +384,6 @@ namespace fc {
 
     void thread::notify( const promise_base::ptr& p )
     {
-      //slog( "this %p  my %p", this, my );
       BOOST_ASSERT(p->ready());
       if( !is_current() )
       {
@@ -473,7 +446,7 @@ namespace fc {
 
     void thread::notify_task_has_been_canceled()
     {
-      async( [=](){ my->notify_task_has_been_canceled(); }, "notify_task_has_been_canceled", priority::max() );
+      async( [this](){ my->notify_task_has_been_canceled(); }, "notify_task_has_been_canceled", priority::max() );
     }
 
     void thread::unblock(fc::context* c)
@@ -481,6 +454,26 @@ namespace fc {
       my->unblock(c);
     }
 
+    namespace detail {
+       idle_guard::idle_guard( thread_d* t ) : notifier(t->notifier)
+       {
+          if( notifier )
+          {
+             task_base* work = notifier->idle();
+             if( work )
+             {
+                task_base* stale_head = t->task_in_queue.load(boost::memory_order_relaxed);
+                do {
+                   work->_next = stale_head;
+                } while( !t->task_in_queue.compare_exchange_weak( stale_head, work, boost::memory_order_release ) );
+             }
+          }
+       }
+       idle_guard::~idle_guard()
+       {
+          if( notifier ) notifier->busy();
+       }
+    }
 
 #ifdef _MSC_VER
     /* support for providing a structured exception handler for async tasks */
