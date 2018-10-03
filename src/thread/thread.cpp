@@ -98,16 +98,6 @@ namespace fc {
      my = new thread_d(*this);
    }
 
-   thread::thread( thread&& m ) {
-    my = m.my;
-    m.my = 0;
-   }
-
-   thread& thread::operator=(thread&& t ) {
-      fc_swap(t.my,my);
-      return *this;
-   }
-
    thread::~thread() {
       //wlog( "my ${n}", ("n",name()) );
       if( my )

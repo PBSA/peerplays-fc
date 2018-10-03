@@ -22,8 +22,8 @@ namespace fc {
   class thread {
     public:
       thread( const std::string& name = "" );
-      thread( thread&& m );
-      thread& operator=(thread&& t );
+      thread( thread&& m ) = delete;
+      thread& operator=(thread&& t ) = delete;
 
       /**
        *  Returns the current thread.
@@ -130,7 +130,7 @@ namespace fc {
           return wait_any_until(fc::move(proms), fc::time_point::now()+timeout_us );
        }
     private:
-      thread( class thread_d* );
+      thread( class thread_d* ); // parameter is ignored, will create a new thread_d
       friend class promise_base;
       friend class task_base;
       friend class thread_d;
