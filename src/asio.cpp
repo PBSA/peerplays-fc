@@ -101,9 +101,11 @@ namespace fc {
      * @param num_threads the number of threads
      */
     void default_io_service_scope::set_num_threads(uint16_t num_threads) {
-       FC_ASSERT(fc::asio::default_io_service_scope::num_io_threads == 0);
-       fc::asio::default_io_service_scope::num_io_threads = num_threads;
+       FC_ASSERT(num_io_threads == 0);
+       num_io_threads = num_threads;
     }
+
+    uint16_t default_io_service_scope::get_num_threads() { return num_io_threads; }
 
     /***
      * Default constructor
@@ -113,14 +115,14 @@ namespace fc {
        io           = new boost::asio::io_service();
        the_work     = new boost::asio::io_service::work(*io);
 
-       if (this->num_io_threads == 0)
+       if( num_io_threads == 0 )
        {
           // the default was not set by the configuration. Determine a good
           // number of threads. Minimum of 8, maximum of hardware_concurrency
-          this->num_io_threads = std::max( boost::thread::hardware_concurrency(), 8u );
+          num_io_threads = std::max( boost::thread::hardware_concurrency(), 8u );
        }
 
-       for( uint16_t i = 0; i < this->num_io_threads; ++i )
+       for( uint16_t i = 0; i < num_io_threads; ++i )
        {
           asio_threads.push_back( new boost::thread( [i,this]()
                 {

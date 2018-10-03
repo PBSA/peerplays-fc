@@ -25,23 +25,24 @@
 #pragma once
 
 #include <fc/thread/task.hpp>
+#include <fc/thread/thread.hpp>
 #include <fc/asio.hpp>
 
-/* NOTE: the methods in this header are NOT to be mixed up with fc's
- * multithreading. Parallel functions MUST NOT call fc::thread::yield NOR
- * use fc's mutexes etc.!
- */
 namespace fc {
 
    namespace detail {
-      template<typename Task>
-      class parallel_completion_handler {
-         public:
-            parallel_completion_handler( Task* task ) : _task(task) {}
-            void operator()() { _task->run(); }
-         private:
-            Task* _task;
+      class pool_impl;
+
+      class worker_pool {
+      public:
+         worker_pool();
+         ~worker_pool();
+         void post( task_base* task );
+      private:
+          pool_impl*    my;
       };
+
+      worker_pool& get_worker_pool();
    }
 
    /**
@@ -57,7 +58,7 @@ namespace fc {
       fc::task<Result,sizeof(FunctorType)>* tsk =
          new fc::task<Result,sizeof(FunctorType)>( fc::forward<Functor>(f), desc );
       fc::future<Result> r(fc::shared_ptr< fc::promise<Result> >(tsk,true) );
-      fc::asio::default_io_service().post( detail::parallel_completion_handler<fc::task<Result,sizeof(FunctorType)>>( tsk ) );
+      detail::get_worker_pool().post( tsk );
       return r;
    }
 }

@@ -77,7 +77,8 @@ namespace asio {
        public:
           default_io_service_scope();
           ~default_io_service_scope();
-          static void set_num_threads(uint16_t num_threads);
+          static void     set_num_threads(uint16_t num_threads);
+          static uint16_t get_num_threads();
           boost::asio::io_service*          io;
        private:
           std::vector<boost::thread*>       asio_threads;
