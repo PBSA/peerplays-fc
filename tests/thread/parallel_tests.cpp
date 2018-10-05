@@ -177,4 +177,149 @@ BOOST_AUTO_TEST_CASE( sign_verify_parallel )
    }
 }
 
+BOOST_AUTO_TEST_CASE( serial_valve )
+{
+   boost::atomic<uint32_t> counter(0);
+   fc::serial_valve valve;
+
+   { // Simple test, f2 finishes before f1
+      fc::promise<void>* syncer = new fc::promise<void>();
+      fc::promise<void>* waiter = new fc::promise<void>();
+      auto p1 = fc::async([&counter,&valve,syncer,waiter] () {
+         valve.do_serial( [syncer,waiter](){ syncer->set_value();
+                                             fc::future<void>( fc::shared_ptr<fc::promise<void>>( waiter, true ) ).wait(); },
+                          [&counter](){ BOOST_CHECK_EQUAL( 0, counter.load() );
+                                        counter.fetch_add(1); } );
+      });
+      fc::future<void>( fc::shared_ptr<fc::promise<void>>( syncer, true ) ).wait();
+
+      // at this point, p1.f1 has started executing and is waiting on waiter
+
+      syncer = new fc::promise<void>();
+      auto p2 = fc::async([&counter,&valve,syncer] () {
+         valve.do_serial( [syncer](){ syncer->set_value(); },
+                          [&counter](){ BOOST_CHECK_EQUAL( 1, counter.load() );
+                                        counter.fetch_add(1); } );
+      });
+      fc::future<void>( fc::shared_ptr<fc::promise<void>>( syncer, true ) ).wait();
+
+      fc::usleep( fc::milliseconds(10) );
+
+      // at this point, p2.f1 has started executing and p2.f2 is waiting for its turn
+
+      BOOST_CHECK( !p1.ready() );
+      BOOST_CHECK( !p2.ready() );
+
+      waiter->set_value(); // signal p1.f1 to continue
+
+      p2.wait(); // and wait for p2.f2 to complete
+
+      BOOST_CHECK( p1.ready() );
+      BOOST_CHECK( p2.ready() );
+      BOOST_CHECK_EQUAL( 2, counter.load() );
+   }
+
+   { // Triple test, f3 finishes first, then f1, finally f2
+      fc::promise<void>* syncer = new fc::promise<void>();
+      fc::promise<void>* waiter = new fc::promise<void>();
+      counter.store(0);
+      auto p1 = fc::async([&counter,&valve,syncer,waiter] () {
+         valve.do_serial( [&syncer,waiter](){ syncer->set_value();
+                                              fc::future<void>( fc::shared_ptr<fc::promise<void>>( waiter, true ) ).wait(); },
+                          [&counter](){ BOOST_CHECK_EQUAL( 0, counter.load() );
+                                        counter.fetch_add(1); } );
+      });
+      fc::future<void>( fc::shared_ptr<fc::promise<void>>( syncer, true ) ).wait();
+
+      // at this point, p1.f1 has started executing and is waiting on waiter
+
+      syncer = new fc::promise<void>();
+      auto p2 = fc::async([&counter,&valve,syncer] () {
+         valve.do_serial( [&syncer](){ syncer->set_value();
+                                       fc::usleep( fc::milliseconds(100) ); },
+                          [&counter](){ BOOST_CHECK_EQUAL( 1, counter.load() );
+                                        counter.fetch_add(1); } );
+      });
+      fc::future<void>( fc::shared_ptr<fc::promise<void>>( syncer, true ) ).wait();
+
+      // at this point, p2.f1 has started executing and is sleeping
+
+      syncer = new fc::promise<void>();
+      auto p3 = fc::async([&counter,&valve,syncer] () {
+         valve.do_serial( [syncer](){ syncer->set_value(); },
+                          [&counter](){ BOOST_CHECK_EQUAL( 2, counter.load() );
+                                        counter.fetch_add(1); } );
+      });
+      fc::future<void>( fc::shared_ptr<fc::promise<void>>( syncer, true ) ).wait();
+
+      fc::usleep( fc::milliseconds(10) );
+
+      // at this point, p3.f1 has started executing and p3.f2 is waiting for its turn
+
+      BOOST_CHECK( !p1.ready() );
+      BOOST_CHECK( !p2.ready() );
+      BOOST_CHECK( !p3.ready() );
+
+      waiter->set_value(); // signal p1.f1 to continue
+
+      p3.wait(); // and wait for p3.f2 to complete
+
+      BOOST_CHECK( p1.ready() );
+      BOOST_CHECK( p2.ready() );
+      BOOST_CHECK( p3.ready() );
+      BOOST_CHECK_EQUAL( 3, counter.load() );
+   }
+
+   { // Triple test again but with invocations from different threads
+      fc::promise<void>* syncer = new fc::promise<void>();
+      fc::promise<void>* waiter = new fc::promise<void>();
+      counter.store(0);
+      auto p1 = fc::do_parallel([&counter,&valve,syncer,waiter] () {
+         valve.do_serial( [&syncer,waiter](){ syncer->set_value();
+                                              fc::future<void>( fc::shared_ptr<fc::promise<void>>( waiter, true ) ).wait(); },
+                          [&counter](){ BOOST_CHECK_EQUAL( 0, counter.load() );
+                                        counter.fetch_add(1); } );
+      });
+      fc::future<void>( fc::shared_ptr<fc::promise<void>>( syncer, true ) ).wait();
+
+      // at this point, p1.f1 has started executing and is waiting on waiter
+
+      syncer = new fc::promise<void>();
+      auto p2 = fc::do_parallel([&counter,&valve,syncer] () {
+         valve.do_serial( [&syncer](){ syncer->set_value();
+                                       fc::usleep( fc::milliseconds(100) ); },
+                          [&counter](){ BOOST_CHECK_EQUAL( 1, counter.load() );
+                                        counter.fetch_add(1); } );
+      });
+      fc::future<void>( fc::shared_ptr<fc::promise<void>>( syncer, true ) ).wait();
+
+      // at this point, p2.f1 has started executing and is sleeping
+
+      syncer = new fc::promise<void>();
+      auto p3 = fc::do_parallel([&counter,&valve,syncer] () {
+         valve.do_serial( [syncer](){ syncer->set_value(); },
+                          [&counter](){ BOOST_CHECK_EQUAL( 2, counter.load() );
+                                        counter.fetch_add(1); } );
+      });
+      fc::future<void>( fc::shared_ptr<fc::promise<void>>( syncer, true ) ).wait();
+
+      fc::usleep( fc::milliseconds(10) );
+
+      // at this point, p3.f1 has started executing and p3.f2 is waiting for its turn
+
+      BOOST_CHECK( !p1.ready() );
+      BOOST_CHECK( !p2.ready() );
+      BOOST_CHECK( !p3.ready() );
+
+      waiter->set_value(); // signal p1.f1 to continue
+
+      p3.wait(); // and wait for p3.f2 to complete
+
+      BOOST_CHECK( p1.ready() );
+      BOOST_CHECK( p2.ready() );
+      BOOST_CHECK( p3.ready() );
+      BOOST_CHECK_EQUAL( 3, counter.load() );
+   }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

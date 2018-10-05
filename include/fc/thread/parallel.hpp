@@ -45,6 +45,46 @@ namespace fc {
       worker_pool& get_worker_pool();
    }
 
+   class serial_valve {
+   private:
+      class ticket_guard {
+      public:
+         ticket_guard( boost::atomic<future<void>*>& latch );
+         ~ticket_guard();
+         void wait_for_my_turn();
+      private:
+         promise<void>* my_promise;
+         future<void>*  ticket;
+      };
+
+      friend class ticket_guard;
+      boost::atomic<future<void>*> latch;
+
+   public:
+      serial_valve();
+      ~serial_valve();
+
+      /** Executes f1() then f2().
+       *  For any two calls do_serial(f1,f2) and do_serial(f1',f2') where
+       *  do_serial(f1,f2) is invoked before do_serial(f1',f2'), it is
+       *  guaranteed that f2' will be executed after f2 has completed. Failure
+       *  of either function counts as completion of both.
+       *  If f1 throws then f2 will not be invoked.
+       *
+       * @param f1 a functor to invoke
+       * @param f2 a functor to invoke
+       * @return the return value of f2()
+       */
+      template<typename Functor1,typename Functor2>
+      auto do_serial( const Functor1& f1, const Functor2& f2 ) -> decltype(f2())
+      {
+         ticket_guard guard( latch );
+         f1();
+         guard.wait_for_my_turn();
+         return f2();
+      }
+   };
+
    /**
     *  Calls function <code>f</code> in a separate thread and returns a future
     *  that can be used to wait on the result.

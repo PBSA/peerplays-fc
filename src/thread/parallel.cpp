@@ -151,4 +151,48 @@ namespace fc {
          return the_pool;
       }
    }
-}
+
+   serial_valve::ticket_guard::ticket_guard( boost::atomic<future<void>*>& latch )
+   {
+      my_promise = new promise<void>();
+      future<void>* my_future = new future<void>( promise<void>::ptr( my_promise, true ) );
+      try
+      {
+          do
+          {
+             ticket = latch.load();
+             FC_ASSERT( ticket, "Valve is shutting down!" );
+          }
+          while( !latch.compare_exchange_weak( ticket, my_future ) );
+      }
+      catch (...)
+      {
+         delete my_future; // this takes care of my_promise as well
+         throw;
+      }
+   }
+
+   serial_valve::ticket_guard::~ticket_guard()
+   {
+      my_promise->set_value();
+      ticket->wait();
+      delete ticket;
+   }
+
+   void serial_valve::ticket_guard::wait_for_my_turn()
+   {
+       ticket->wait();
+   }
+
+   serial_valve::serial_valve()
+   {
+      latch.store( new future<void>( promise<void>::ptr( new promise<void>( true ), true ) ) );
+   }
+
+   serial_valve::~serial_valve()
+   {
+      fc::future<void>* last = latch.exchange( 0 );
+      last->wait();
+      delete last;
+   }
+} // namespace fc
