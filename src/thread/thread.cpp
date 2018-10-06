@@ -80,11 +80,27 @@ namespace fc {
             p->set_value();
             exec();
           } catch ( fc::exception& e ) {
-            wlog( "unhandled exception" );
-            p->set_exception( e.dynamic_copy_exception() );
+            if( !p->ready() )
+            {
+               wlog( "unhandled exception" );
+               p->set_exception( e.dynamic_copy_exception() );
+            }
+            else
+            { // possibly shutdown?
+               std::cerr << "unhandled exception in thread '" << name << "'\n";
+               std::cerr << e.to_detail_string( log_level::warn );
+            }
           } catch ( ... ) {
-            wlog( "unhandled exception" );
-            p->set_exception( std::make_shared<unhandled_exception>( FC_LOG_MESSAGE( warn, "unhandled exception: ${diagnostic}", ("diagnostic",boost::current_exception_diagnostic_information()) ) ) );
+            if( !p->ready() )
+            {
+               wlog( "unhandled exception" );
+               p->set_exception( std::make_shared<unhandled_exception>( FC_LOG_MESSAGE( warn, "unhandled exception: ${diagnostic}", ("diagnostic",boost::current_exception_diagnostic_information()) ) ) );
+            }
+            else
+            { // possibly shutdown?
+               std::cerr << "unhandled exception in thread '" << name << "'\n";
+               std::cerr << boost::current_exception_diagnostic_information() << "\n";
+            }
           }
       } );
       p->wait();
