@@ -64,6 +64,7 @@ namespace fc {
       {
       public:
          pool_impl( const uint16_t num_threads )
+            : idle_threads( 2 * num_threads ), waiting_tasks( 200 )
          {
             notifiers.resize( num_threads );
             threads.reserve( num_threads );
@@ -99,7 +100,8 @@ namespace fc {
                   threads[ini->id]->async_task( task, priority() );
                   return;
                }
-            waiting_tasks.push( task );
+            while( !waiting_tasks.push( task ) )
+               elog( "Worker pool internal error" );
          }
 
          task_base* enqueue_idle_thread( idle_notifier_impl* ini )
@@ -110,7 +112,8 @@ namespace fc {
             fc::unique_lock<fc::spin_yield_lock> lock(pool_lock);
             if( waiting_tasks.pop( task ) )
                return task;
-            idle_threads.push( ini );
+            while( !idle_threads.push( ini ) )
+               elog( "Worker pool internal error" );
             return 0;
          }
       private:
