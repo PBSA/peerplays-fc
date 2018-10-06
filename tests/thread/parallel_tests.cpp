@@ -33,6 +33,21 @@
 #include <fc/thread/parallel.hpp>
 #include <fc/time.hpp>
 
+struct thread_config {
+  thread_config() {
+     for( int i = 0; i < boost::unit_test::framework::master_test_suite().argc - 1; ++i )
+        if( !strcmp( boost::unit_test::framework::master_test_suite().argv[i], "--pool-threads" ) )
+        {
+           uint16_t threads = atoi(boost::unit_test::framework::master_test_suite().argv[++i]);
+           std::cout << "Using " << threads << " pool threads\n";
+           fc::asio::default_io_service_scope::set_num_threads(threads);
+        }
+  }
+};
+
+BOOST_GLOBAL_FIXTURE( thread_config );
+
+
 BOOST_AUTO_TEST_SUITE(parallel_tests)
 
 BOOST_AUTO_TEST_CASE( do_nothing_parallel )
