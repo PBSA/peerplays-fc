@@ -20,9 +20,11 @@ namespace fc
          enum parse_type
          {
             legacy_parser         = 0,
+#ifdef WITH_EXOTIC_JSON_PARSERS
             strict_parser         = 1,
             relaxed_parser        = 2,
             legacy_parser_with_string_doubles = 3,
+#endif
             broken_nul_parser     = 4
          };
          enum output_formatting
