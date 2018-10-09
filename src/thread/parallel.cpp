@@ -84,24 +84,23 @@ namespace fc {
             });
          }
 
-         void post( task_base* task )
+         thread* post( task_base* task )
          {
             idle_notifier_impl* ini;
             while( idle_threads.pop( ini ) )
                if( ini->is_idle.exchange( false ) )
                { // minor race condition here, a thread might receive a task while it's busy
-                  threads[ini->id]->async_task( task, priority() );
-                  return;
+                  return threads[ini->id];
                }
             boost::unique_lock<fc::spin_yield_lock> lock(pool_lock);
             while( idle_threads.pop( ini ) )
                if( ini->is_idle.exchange( false ) )
                { // minor race condition here, a thread might receive a task while it's busy
-                  threads[ini->id]->async_task( task, priority() );
-                  return;
+                  return threads[ini->id];
                }
             while( !waiting_tasks.push( task ) )
                elog( "Worker pool internal error" );
+            return 0;
          }
 
          task_base* enqueue_idle_thread( idle_notifier_impl* ini )
@@ -145,7 +144,9 @@ namespace fc {
 
       void worker_pool::post( task_base* task )
       {
-         my->post( task );
+         thread* worker = my->post( task );
+         if( worker )
+             worker->async_task( task, priority() );
       }
 
       worker_pool& get_worker_pool()

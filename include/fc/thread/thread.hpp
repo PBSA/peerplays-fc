@@ -12,7 +12,7 @@ namespace fc {
 
    namespace detail
    {
-      class pool_impl;
+      class worker_pool;
       void* get_thread_specific_data(unsigned slot);
       void set_thread_specific_data(unsigned slot, void* new_value, void(*cleanup)(void*));
       unsigned get_next_unused_task_storage_slot();
@@ -152,7 +152,7 @@ namespace fc {
       friend class task_base;
       friend class thread_d;
       friend class mutex;
-      friend class detail::pool_impl;
+      friend class detail::worker_pool;
       friend void* detail::get_thread_specific_data(unsigned slot);
       friend void detail::set_thread_specific_data(unsigned slot, void* new_value, void(*cleanup)(void*));
       friend unsigned detail::get_next_unused_task_storage_slot();
