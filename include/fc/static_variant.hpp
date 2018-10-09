@@ -359,32 +359,32 @@ public:
     template<typename visitor>
     static typename visitor::result_type visit( tag_type tag, visitor& v, void* data )
     {
-        static std::vector<std::function<typename visitor::result_type(visitor&,void*)>> wrappers = init_wrappers<visitor,void*,Types...>();
-        FC_ASSERT( tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
+        static auto wrappers = init_wrappers<visitor,void*,Types...>();
+        FC_ASSERT( tag >= 0 && tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
         return wrappers[tag]( v, data );
     }
 
     template<typename visitor>
     static typename visitor::result_type visit( tag_type tag, const visitor& v, void* data )
     {
-        static std::vector<std::function<typename visitor::result_type(const visitor&,void*)>> wrappers = init_wrappers<const visitor,void*,Types...>();
-        FC_ASSERT( tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
+        static auto wrappers = init_wrappers<const visitor,void*,Types...>();
+        FC_ASSERT( tag >= 0 && tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
         return wrappers[tag]( v, data );
     }
 
     template<typename visitor>
     static typename visitor::result_type visit( tag_type tag, visitor& v, const void* data )
     {
-        static std::vector<std::function<typename visitor::result_type(visitor&,const void*)>> wrappers = init_const_wrappers<visitor,const void*,Types...>();
-        FC_ASSERT( tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
+        static auto wrappers = init_const_wrappers<visitor,const void*,Types...>();
+        FC_ASSERT( tag >= 0 && tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
         return wrappers[tag]( v, data );
     }
 
     template<typename visitor>
     static typename visitor::result_type visit( tag_type tag, const visitor& v, const void* data )
     {
-        static std::vector<std::function<typename visitor::result_type(const visitor&,const void*)>> wrappers = init_const_wrappers<const visitor,const void*,Types...>();
-        FC_ASSERT( tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
+        static auto wrappers = init_const_wrappers<const visitor,const void*,Types...>();
+        FC_ASSERT( tag >= 0 && tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
         return wrappers[tag]( v, data );
     }
 
