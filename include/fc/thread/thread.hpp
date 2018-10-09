@@ -25,6 +25,8 @@ namespace fc {
     */
    class thread_idle_notifier {
    public:
+      virtual ~thread_idle_notifier() {}
+
       /** This method is called when the thread is idle. If it returns a
        *  task_base it will be queued and executed immediately.
        *  @return a task to execute, or nullptr

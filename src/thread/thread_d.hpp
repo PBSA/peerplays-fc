@@ -19,7 +19,7 @@ namespace fc {
     namespace detail {
        class idle_guard {
        public:
-          idle_guard( thread_d* t );
+          explicit idle_guard( thread_d* t );
           ~idle_guard();
        private:
           thread_idle_notifier* notifier;

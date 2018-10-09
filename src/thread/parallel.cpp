@@ -32,8 +32,6 @@
 
 namespace fc {
    namespace detail {
-      class pool_impl;
-
       class idle_notifier_impl : public thread_idle_notifier
       {
       public:
@@ -49,6 +47,8 @@ namespace fc {
             is_idle.store( copy.is_idle.load() );
          }
 
+         virtual ~idle_notifier_impl() {}
+
          virtual task_base* idle();
          virtual void       busy()
          {
@@ -63,7 +63,7 @@ namespace fc {
       class pool_impl
       {
       public:
-         pool_impl( const uint16_t num_threads )
+         explicit pool_impl( const uint16_t num_threads )
             : idle_threads( 2 * num_threads ), waiting_tasks( 200 )
          {
             notifiers.resize( num_threads );

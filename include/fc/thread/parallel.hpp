@@ -49,7 +49,7 @@ namespace fc {
    private:
       class ticket_guard {
       public:
-         ticket_guard( boost::atomic<future<void>*>& latch );
+         explicit ticket_guard( boost::atomic<future<void>*>& latch );
          ~ticket_guard();
          void wait_for_my_turn();
       private:
