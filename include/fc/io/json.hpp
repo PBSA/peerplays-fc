@@ -30,9 +30,7 @@ namespace fc
          enum output_formatting
          {
             stringify_large_ints_and_doubles = 0,
-#ifdef WITH_EXOTIC_JSON_PARSERS
             legacy_generator = 1
-#endif
          };
 
          static ostream& to_stream( ostream& out, const fc::string& );
