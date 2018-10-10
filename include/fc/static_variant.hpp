@@ -187,7 +187,8 @@ std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> init_wr
 template<typename Visitor,typename Data, typename T, typename ... Types>
 std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> init_wrappers()
 {
-   std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> result = init_wrappers<Visitor,Data,Types...>();
+   std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> result
+        = init_wrappers<Visitor,Data,Types...>();
    result.insert( result.begin(), [] ( Visitor& v, Data d ) { return v( *reinterpret_cast<T*>( d ) ); } );
    return result;
 }
@@ -201,7 +202,8 @@ std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> init_co
 template<typename Visitor,typename Data, typename T, typename ... Types>
 std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> init_const_wrappers()
 {
-   std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> result = init_const_wrappers<Visitor,Data,Types...>();
+   std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> result
+        = init_const_wrappers<Visitor,Data,Types...>();
    result.insert( result.begin(), [] ( Visitor& v, Data d ) { return v( *reinterpret_cast<const T*>( d ) ); } );
    return result;
 }
