@@ -11,10 +11,10 @@ namespace fc {
    namespace bip = boost::interprocess;
 
    namespace raw {
-       template<typename Stream, typename T>
-       void pack( Stream& s, const flat_set<T>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
-       template<typename Stream, typename T>
-       void unpack( Stream& s, flat_set<T>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+       template<typename Stream, typename T, typename... A>
+       void pack( Stream& s, const flat_set<T, A...>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+       template<typename Stream, typename T, typename... A>
+       void unpack( Stream& s, flat_set<T, A...>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
        template<typename Stream, typename K, typename... V>
        void pack( Stream& s, const flat_map<K,V...>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
        template<typename Stream, typename K, typename V, typename... A>
