@@ -100,16 +100,8 @@ void cli::run()
          {
             break;
          }
-         
-         // We have to hide sensitive information on the fly
-#ifdef HAVE_EDITLINE
-         if (rl_check_secret(rl_line_buffer))
-            std::cout << " *** secret *** " << "\n";
-         else
-#endif
-         {
-            std::cout << line << "\n";
-         }
+
+         std::cout << "\n";
 
          line += char(EOF);
          fc::variants args = fc::json::variants_from_string(line);
