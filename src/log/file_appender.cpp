@@ -144,9 +144,7 @@ namespace fc {
 
    file_appender::file_appender( const variant& args ) :
      my( new impl( args.as<config>( FC_MAX_LOG_OBJECT_DEPTH ) ) )
-   {
-      
-   }
+   {}
 
    file_appender::~file_appender(){}
 
