@@ -64,7 +64,7 @@ static const std::vector<fc::unsigned_int> TEST_U = {
 BOOST_AUTO_TEST_CASE( test_unsigned )
 { try {
    const std::vector<char> packed_u = fc::raw::pack<std::vector<fc::unsigned_int>>( TEST_U, 3 );
-   BOOST_CHECK_EQUAL( UINT_LENGTH, packed_u.size() );
+   BOOST_CHECK_EQUAL( UINT_LENGTH, (int)packed_u.size() );
    BOOST_CHECK_EQUAL( EXPECTED_UINTS, std::string( packed_u.data(), packed_u.size() ) );
    std::vector<fc::unsigned_int> unpacked_u;
    fc::raw::unpack<std::vector<fc::unsigned_int>>( packed_u, unpacked_u, 3 );

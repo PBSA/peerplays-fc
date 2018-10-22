@@ -189,11 +189,11 @@ static void test_recursive( const fc::variant& v )
    fc::json::save_to_file( v, file.path(), false );
 
    fc::variants list = fc::json::variants_from_string( json );
-   BOOST_CHECK_EQUAL( 1, list.size() );
+   BOOST_CHECK_EQUAL( 1u, list.size() );
    BOOST_CHECK( equal( v, list[0] ) );
 
    list = fc::json::variants_from_string( pretty );
-   BOOST_CHECK_EQUAL( 1, list.size() );
+   BOOST_CHECK_EQUAL( 1u, list.size() );
    BOOST_CHECK( equal( v, list[0] ) );
 
    BOOST_CHECK( equal( v, fc::json::from_string( json + " " ) ) );
