@@ -429,7 +429,7 @@ openssl_thread_config::openssl_thread_config()
 }
 openssl_thread_config::~openssl_thread_config()
 {
-  if (CRYPTO_get_id_callback() != NULL && CRYPTO_get_id_callback() == &get_thread_id)
+  if (CRYPTO_get_id_callback() == &get_thread_id)
   {
     CRYPTO_set_id_callback(NULL);
     CRYPTO_set_locking_callback(NULL);
