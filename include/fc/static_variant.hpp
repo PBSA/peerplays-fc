@@ -10,6 +10,8 @@
  *
  **/
 #pragma once
+
+#include <functional>
 #include <stdexcept>
 #include <typeinfo>
 #include <fc/exception/exception.hpp>
@@ -176,6 +178,36 @@ struct type_info<> {
 
 } // namespace impl
 
+template<typename Visitor,typename Data>
+std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> init_wrappers()
+{
+   return std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>>();
+}
+
+template<typename Visitor,typename Data, typename T, typename ... Types>
+std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> init_wrappers()
+{
+   std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> result
+        = init_wrappers<Visitor,Data,Types...>();
+   result.insert( result.begin(), [] ( Visitor& v, Data d ) { return v( *reinterpret_cast<T*>( d ) ); } );
+   return result;
+}
+
+template<typename Visitor,typename Data>
+std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> init_const_wrappers()
+{
+   return std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>>();
+}
+
+template<typename Visitor,typename Data, typename T, typename ... Types>
+std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> init_const_wrappers()
+{
+   std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> result
+        = init_const_wrappers<Visitor,Data,Types...>();
+   result.insert( result.begin(), [] ( Visitor& v, Data d ) { return v( *reinterpret_cast<const T*>( d ) ); } );
+   return result;
+}
+
 template<typename... Types>
 class static_variant {
     static_assert(impl::type_info<Types...>::no_reference_types, "Reference types are not permitted in static_variant.");
@@ -308,22 +340,54 @@ public:
     }
     template<typename visitor>
     typename visitor::result_type visit(visitor& v) {
-        return impl::storage_ops<0, Types...>::apply(_tag, storage, v);
+        return visit( _tag, v, (void*) storage );
     }
 
     template<typename visitor>
     typename visitor::result_type visit(const visitor& v) {
-        return impl::storage_ops<0, Types...>::apply(_tag, storage, v);
+        return visit( _tag, v, (void*) storage );
     }
 
     template<typename visitor>
     typename visitor::result_type visit(visitor& v)const {
-        return impl::storage_ops<0, Types...>::apply(_tag, storage, v);
+        return visit( _tag, v, (const void*) storage );
     }
 
     template<typename visitor>
     typename visitor::result_type visit(const visitor& v)const {
-        return impl::storage_ops<0, Types...>::apply(_tag, storage, v);
+        return visit( _tag, v, (const void*) storage );
+    }
+
+    template<typename visitor>
+    static typename visitor::result_type visit( tag_type tag, visitor& v, void* data )
+    {
+        static auto wrappers = init_wrappers<visitor,void*,Types...>();
+        FC_ASSERT( tag >= 0 && tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
+        return wrappers[tag]( v, data );
+    }
+
+    template<typename visitor>
+    static typename visitor::result_type visit( tag_type tag, const visitor& v, void* data )
+    {
+        static auto wrappers = init_wrappers<const visitor,void*,Types...>();
+        FC_ASSERT( tag >= 0 && tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
+        return wrappers[tag]( v, data );
+    }
+
+    template<typename visitor>
+    static typename visitor::result_type visit( tag_type tag, visitor& v, const void* data )
+    {
+        static auto wrappers = init_const_wrappers<visitor,const void*,Types...>();
+        FC_ASSERT( tag >= 0 && tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
+        return wrappers[tag]( v, data );
+    }
+
+    template<typename visitor>
+    static typename visitor::result_type visit( tag_type tag, const visitor& v, const void* data )
+    {
+        static auto wrappers = init_const_wrappers<const visitor,const void*,Types...>();
+        FC_ASSERT( tag >= 0 && tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
+        return wrappers[tag]( v, data );
     }
 
     static int count() { return impl::type_info<Types...>::count; }

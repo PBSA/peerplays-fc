@@ -87,6 +87,9 @@ void throw_bad_enum_cast( const char* k, const char* e );
   visitor.TEMPLATE operator()<member_type,type,&type::elem>( BOOST_PP_STRINGIZE(elem) ); \
 }
 
+#define FC_REFLECT_VISIT_MEMBER_I( r, visitor, I, elem ) \
+   case I: FC_REFLECT_VISIT_MEMBER( r, visitor, elem ) break;
+
 
 #define FC_REFLECT_BASE_MEMBER_COUNT( r, OP, elem ) \
   OP fc::reflector<elem>::total_member_count
@@ -99,6 +102,13 @@ template<typename Visitor>\
 static inline void visit( const Visitor& v ) { \
     BOOST_PP_SEQ_FOR_EACH( FC_REFLECT_VISIT_BASE, v, INHERITS ) \
     BOOST_PP_SEQ_FOR_EACH( FC_REFLECT_VISIT_MEMBER, v, MEMBERS ) \
+}\
+template<typename Visitor, typename IndexType>\
+static inline void visit_local_member( const Visitor& v, IndexType index ) { \
+   switch( index ) {\
+      BOOST_PP_SEQ_FOR_EACH_I( FC_REFLECT_VISIT_MEMBER_I, v, MEMBERS ) \
+      default: break;\
+   }\
 }
 
 #define FC_REFLECT_DERIVED_IMPL_EXT( TYPE, INHERITS, MEMBERS ) \

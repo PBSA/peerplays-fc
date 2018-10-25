@@ -629,6 +629,7 @@ void from_variant( const variant& var, uint64_t& vo, uint32_t max_depth )
    vo = var.as_uint64();
 }
 
+void to_variant( const bool& var, variant& vo, uint32_t max_depth )  { vo = uint64_t(var); }
 void from_variant( const variant& var, bool& vo, uint32_t max_depth )
 {
    vo = var.as_bool();
