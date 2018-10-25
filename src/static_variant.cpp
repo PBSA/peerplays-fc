@@ -12,7 +12,7 @@ dynamic_storage::~dynamic_storage()
 
 void* dynamic_storage::data() const
 {
-    assert( storage != nullptr );
+    FC_ASSERT( storage != nullptr );
     return (void*)storage;
 }
 
