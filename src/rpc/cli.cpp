@@ -18,10 +18,10 @@
 
 namespace fc { namespace rpc {
 
-static std::string& cli_regex_secret()
+static boost::regex& cli_regex_secret()
 {
-   static std::string* regex_secret = new std::string();
-   return *regex_secret;
+   static boost::regex* regex_expr = new boost::regex();
+   return *regex_expr;
 }
 
 static std::vector<std::string>& cli_commands()
@@ -100,8 +100,6 @@ void cli::run()
          {
             break;
          }
-
-         std::cout << "\n";
 
          line += char(EOF);
          fc::variants args = fc::json::variants_from_string(line);
@@ -212,9 +210,7 @@ static int cli_completion(char *token, char ***array)
  */
 static int cli_check_secret(const char *source)
 {
-   boost::regex expr{cli_regex_secret()};
-
-   if (boost::regex_match(source, expr))
+   if (boost::regex_match(source, cli_regex_secret()))
       return 1;
    
    return 0;
