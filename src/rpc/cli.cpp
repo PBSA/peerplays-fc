@@ -20,8 +20,8 @@ namespace fc { namespace rpc {
 
 static boost::regex& cli_regex_secret()
 {
-   static boost::regex* regex_expr = new boost::regex();
-   return *regex_expr;
+   static boost::regex regex_expr;
+   return regex_expr;
 }
 
 static std::vector<std::string>& cli_commands()
