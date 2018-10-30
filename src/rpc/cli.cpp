@@ -210,7 +210,7 @@ static int cli_completion(char *token, char ***array)
  */
 static int cli_check_secret(const char *source)
 {
-   if (nullptr != cli_regex_secret().expression() && boost::regex_match(source, cli_regex_secret()))
+   if (!cli_regex_secret().empty() && boost::regex_match(source, cli_regex_secret()))
       return 1;
    
    return 0;
