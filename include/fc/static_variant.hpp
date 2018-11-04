@@ -14,6 +14,8 @@
 #include <functional>
 #include <stdexcept>
 #include <typeinfo>
+
+#include <fc/array.hpp>
 #include <fc/exception/exception.hpp>
 
 namespace fc {
