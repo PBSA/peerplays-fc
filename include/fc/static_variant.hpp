@@ -14,6 +14,8 @@
 #include <functional>
 #include <stdexcept>
 #include <typeinfo>
+
+#include <fc/array.hpp>
 #include <fc/exception/exception.hpp>
 
 namespace fc {
@@ -178,33 +180,39 @@ struct type_info<> {
 
 } // namespace impl
 
-template<typename Visitor,typename Data>
-std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> init_wrappers()
+template<int L,typename Visitor,typename Data>
+static const fc::array<typename Visitor::result_type(*)(Visitor&,Data),L>
+      init_wrappers( Visitor& v, Data d, typename Visitor::result_type(**funcs)(Visitor&,Data) = 0)
 {
-   return std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>>();
+   return fc::array<typename Visitor::result_type(*)(Visitor&,Data),L>();
 }
 
-template<typename Visitor,typename Data, typename T, typename ... Types>
-std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> init_wrappers()
+template<int L,typename Visitor,typename Data,typename T, typename ... Types>
+static const fc::array<typename Visitor::result_type(*)(Visitor&,Data),L>
+      init_wrappers( Visitor& v, Data d, typename Visitor::result_type(**funcs)(Visitor&,Data) = 0 )
 {
-   std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> result
-        = init_wrappers<Visitor,Data,Types...>();
-   result.insert( result.begin(), [] ( Visitor& v, Data d ) { return v( *reinterpret_cast<T*>( d ) ); } );
+   fc::array<typename Visitor::result_type(*)(Visitor&,Data),L> result;
+   if( !funcs ) funcs = result.begin();
+   *funcs++ = [] ( Visitor& v, Data d ) { return v( *reinterpret_cast<T*>( d ) ); };
+   init_wrappers<L,Visitor,Data,Types...>( v, d, funcs );
    return result;
 }
 
-template<typename Visitor,typename Data>
-std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> init_const_wrappers()
+template<int L,typename Visitor,typename Data>
+static const fc::array<typename Visitor::result_type(*)(Visitor&,Data),L>
+      init_const_wrappers( Visitor& v, Data d, typename Visitor::result_type(**funcs)(Visitor&,Data) = 0 )
 {
-   return std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>>();
+   return fc::array<typename Visitor::result_type(*)(Visitor&,Data),L>();
 }
 
-template<typename Visitor,typename Data, typename T, typename ... Types>
-std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> init_const_wrappers()
+template<int L,typename Visitor,typename Data,typename T, typename ... Types>
+static const fc::array<typename Visitor::result_type(*)(Visitor&,Data),L>
+      init_const_wrappers( Visitor& v, Data d, typename Visitor::result_type(**funcs)(Visitor&,Data) = 0 )
 {
-   std::vector<std::function<typename Visitor::result_type(Visitor&,Data)>> result
-        = init_const_wrappers<Visitor,Data,Types...>();
-   result.insert( result.begin(), [] ( Visitor& v, Data d ) { return v( *reinterpret_cast<const T*>( d ) ); } );
+   fc::array<typename Visitor::result_type(*)(Visitor&,Data),L> result;
+   if( !funcs ) funcs = result.begin();
+   *funcs++ = [] ( Visitor& v, Data d ) { return v( *reinterpret_cast<const T*>( d ) ); };
+   init_const_wrappers<L,Visitor,Data,Types...>( v, d, funcs );
    return result;
 }
 
@@ -361,7 +369,7 @@ public:
     template<typename visitor>
     static typename visitor::result_type visit( tag_type tag, visitor& v, void* data )
     {
-        static auto wrappers = init_wrappers<visitor,void*,Types...>();
+        static const auto wrappers = init_wrappers<impl::type_info<Types...>::count,visitor,void*,Types...>( v, data );
         FC_ASSERT( tag >= 0 && tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
         return wrappers[tag]( v, data );
     }
@@ -369,7 +377,7 @@ public:
     template<typename visitor>
     static typename visitor::result_type visit( tag_type tag, const visitor& v, void* data )
     {
-        static auto wrappers = init_wrappers<const visitor,void*,Types...>();
+        static const auto wrappers = init_wrappers<impl::type_info<Types...>::count,const visitor,void*,Types...>( v, data );
         FC_ASSERT( tag >= 0 && tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
         return wrappers[tag]( v, data );
     }
@@ -377,7 +385,7 @@ public:
     template<typename visitor>
     static typename visitor::result_type visit( tag_type tag, visitor& v, const void* data )
     {
-        static auto wrappers = init_const_wrappers<visitor,const void*,Types...>();
+        static const auto wrappers = init_const_wrappers<impl::type_info<Types...>::count,visitor,const void*,Types...>( v, data );
         FC_ASSERT( tag >= 0 && tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
         return wrappers[tag]( v, data );
     }
@@ -385,7 +393,7 @@ public:
     template<typename visitor>
     static typename visitor::result_type visit( tag_type tag, const visitor& v, const void* data )
     {
-        static auto wrappers = init_const_wrappers<const visitor,const void*,Types...>();
+        static const auto wrappers = init_const_wrappers<impl::type_info<Types...>::count,const visitor,const void*,Types...>( v, data );
         FC_ASSERT( tag >= 0 && tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
         return wrappers[tag]( v, data );
     }
