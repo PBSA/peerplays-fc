@@ -33,6 +33,8 @@
 #include <fc/thread/parallel.hpp>
 #include <fc/time.hpp>
 
+#include <iostream>
+
 struct thread_config {
   thread_config() {
      for( int i = 0; i < boost::unit_test::framework::master_test_suite().argc - 1; ++i )

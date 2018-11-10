@@ -4,6 +4,8 @@
 #include <fc/log/logger.hpp>
 #include "thread_d.hpp"
 
+#include <iostream>
+
 #if defined(_MSC_VER) && !defined(NDEBUG)
 # include <windows.h>
 const DWORD MS_VC_EXCEPTION=0x406D1388;
