@@ -4,7 +4,7 @@
 #include <ostream>
 #include <boost/version.hpp>
 
-// only include stacktrace stuff if boost >= 1.65
+// only include stacktrace stuff if boost >= 1.65 and not macOS
 #if BOOST_VERSION / 100000 >= 1 && ((BOOST_VERSION / 100) % 1000) >= 65 && !defined(__APPLE__)
 #include <signal.h>
 #include <fc/log/logger.hpp>
