@@ -28,6 +28,8 @@
 #include <fc/thread/thread.hpp>
 #include <fc/asio.hpp>
 
+#include <boost/atomic/atomic.hpp>
+
 namespace fc {
 
    namespace detail {
