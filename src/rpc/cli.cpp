@@ -327,6 +327,15 @@ void cli::getline( const std::string& prompt, std::string& line)
             line = line_read;
             // we don't need here to add line in editline's history, cause it will be doubled
             free(line_read);
+            if (cli_check_secret(line_read)) {
+               el_no_echo = 1;
+               line_read = readline("Enter password: ");
+               el_no_echo = 0;
+               if( line_read == nullptr )
+                  FC_THROW_EXCEPTION( fc::eof_exception, "" );
+               line = line + ' ' + line_read;
+            }
+            free(line_read);
          }).wait();
       }
    }
