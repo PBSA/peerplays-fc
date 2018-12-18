@@ -24,7 +24,7 @@ SET( DEFAULT_LIBRARY_INSTALL_DIR lib/ )
 SET( DEFAULT_EXECUTABLE_INSTALL_DIR bin/ )
 SET( CMAKE_DEBUG_POSTFIX _debug )
 SET( BUILD_SHARED_LIBS NO )
-SET( ECC_IMPL secp256k1 CACHE STRING "secp256k1 or openssl or mixed" )
+SET( ECC_IMPL pp_secp256k1 CACHE STRING "secp256k1 or openssl or mixed" )
 SET( FC_USE_FULL_ZLIB FALSE CACHE BOOL "TRUE to try to use full zlib for compression, FALSE to use miniz.c")
 
 if( FC_USE_FULL_ZLIB )
@@ -46,7 +46,7 @@ SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
 IF( ECC_IMPL STREQUAL openssl )
   SET( ECC_REST src/crypto/elliptic_impl_pub.cpp )
 ELSE( ECC_IMPL STREQUAL openssl )
-  SET( ECC_LIB secp256k1 )
+  SET( ECC_LIB pp_secp256k1 )
   IF( ECC_IMPL STREQUAL mixed )
     SET( ECC_REST src/crypto/elliptic_impl_priv.cpp src/crypto/elliptic_impl_pub.cpp )
   ELSE( ECC_IMPL STREQUAL mixed )
@@ -60,9 +60,9 @@ if ( MSVC )
     set( SECP256K1_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp" )
 
     file( GLOB SECP256K1_SOURCES "${SECP256K1_DIR}/src/secp256k1.c" )
-    add_library( secp256k1 ${SECP256K1_SOURCES} )
+    add_library( pp_secp256k1 ${SECP256K1_SOURCES} )
 
-    target_include_directories( secp256k1 PRIVATE "${SECP256K1_DIR}" PUBLIC "${SECP256K1_DIR}/include" )
+    target_include_directories( pp_secp256k1 PRIVATE "${SECP256K1_DIR}" PUBLIC "${SECP256K1_DIR}/include" )
 
     set( SECP256K1_BUILD_DEFINES
         USE_FIELD_10X26
@@ -70,7 +70,7 @@ if ( MSVC )
         USE_NUM_NONE
         USE_SCALAR_8X32
         USE_SCALAR_INV_BUILTIN )
-    set_target_properties( secp256k1 PROPERTIES COMPILE_DEFINITIONS "${SECP256K1_BUILD_DEFINES}" LINKER_LANGUAGE C )
+    set_target_properties( pp_secp256k1 PROPERTIES COMPILE_DEFINITIONS "${SECP256K1_BUILD_DEFINES}" LINKER_LANGUAGE C )
 else ( MSVC )
     include(ExternalProject)
     if ( MINGW )
@@ -100,10 +100,10 @@ else ( MSVC )
 
     ExternalProject_Get_Property(project_secp256k1 binary_dir)
 
-    add_library(secp256k1 STATIC IMPORTED)
-    set_property(TARGET secp256k1 PROPERTY IMPORTED_LOCATION ${binary_dir}/.libs/libsecp256k1${CMAKE_STATIC_LIBRARY_SUFFIX})
-    set_property(TARGET secp256k1 PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/include)
-    add_dependencies(secp256k1 project_secp256k1)
+    add_library(pp_secp256k1 STATIC IMPORTED)
+    set_property(TARGET pp_secp256k1 PROPERTY IMPORTED_LOCATION ${binary_dir}/.libs/libsecp256k1${CMAKE_STATIC_LIBRARY_SUFFIX})
+    set_property(TARGET pp_secp256k1 PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/include)
+    add_dependencies(pp_secp256k1 project_secp256k1)
     install( FILES ${binary_dir}/.libs/libsecp256k1${CMAKE_STATIC_LIBRARY_SUFFIX} DESTINATION lib/cryptonomex )
 endif ( MSVC )
 # End configure secp256k1-zkp
@@ -366,7 +366,7 @@ endif()
 
 target_include_directories(fc
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${Boost_INCLUDE_DIR}
+    #${Boost_INCLUDE_DIR}
     ${OPENSSL_INCLUDE_DIR}
     "vendor/diff-match-patch-cpp-stl"
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/websocketpp
@@ -381,7 +381,8 @@ target_include_directories(fc
 IF(NOT WIN32)
   set(LINK_USR_LOCAL_LIB -L/usr/local/lib)
 ENDIF()
-target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${readline_libraries} ${ECC_LIB} )
+
+target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} udt ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${readline_libraries} ${ECC_LIB} ${pthread_library} )
 
 if(MSVC)
   set_source_files_properties( src/network/http/websocket.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
