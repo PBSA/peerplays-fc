@@ -429,7 +429,7 @@ namespace fc {
        unsigned_int size; fc::raw::unpack( s, size, _max_depth );
        value.clear();
        FC_ASSERT( size.value*sizeof(T) < MAX_ARRAY_ALLOC_SIZE );
-       value.reserve(size.value);
+       value.reserve( std::min( size.value, FC_MAX_PREALLOC_SIZE ) );
        for( uint32_t i = 0; i < size.value; ++i )
        {
           T tmp;
@@ -475,7 +475,7 @@ namespace fc {
        unsigned_int size; fc::raw::unpack( s, size, _max_depth );
        value.clear();
        FC_ASSERT( size.value*(sizeof(K)+sizeof(V)) < MAX_ARRAY_ALLOC_SIZE );
-       value.reserve(size.value);
+       value.reserve( std::min( size.value, FC_MAX_PREALLOC_SIZE ) );
        for( uint32_t i = 0; i < size.value; ++i )
        {
           std::pair<K,V> tmp;
@@ -530,12 +530,12 @@ namespace fc {
        --_max_depth;
        unsigned_int size; fc::raw::unpack( s, size, _max_depth );
        FC_ASSERT( size.value*sizeof(T) < MAX_ARRAY_ALLOC_SIZE );
-       value.resize(size.value);
-       auto itr = value.begin();
-       auto end = value.end();
-       while( itr != end ) {
-          fc::raw::unpack( s, *itr, _max_depth );
-          ++itr;
+       value.resize( std::min( size.value, FC_MAX_PREALLOC_SIZE ) );
+       for( uint64_t i = 0; i < size; i++ )
+       {
+          if( i >= value.size() )
+             value.resize( std::min( 2*value.size(), size.value ) );
+          unpack( s, value[i], _max_depth );
        }
     }
 
@@ -558,12 +558,12 @@ namespace fc {
        --_max_depth;
        unsigned_int size; fc::raw::unpack( s, size, _max_depth );
        FC_ASSERT( size.value*sizeof(T) < MAX_ARRAY_ALLOC_SIZE );
-       value.resize(size.value);
-       auto itr = value.begin();
-       auto end = value.end();
-       while( itr != end ) {
-          fc::raw::unpack( s, *itr, _max_depth );
-          ++itr;
+       value.resize( std::min( size.value, FC_MAX_PREALLOC_SIZE ) );
+       for( uint64_t i = 0; i < size; i++ )
+       {
+          if( i >= value.size() )
+             value.resize( std::min( 2*value.size(), size.value ) );
+          unpack( s, value[i], _max_depth );
        }
     }
 

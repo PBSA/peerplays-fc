@@ -26,7 +26,7 @@ namespace fc {
          unsigned_int size; unpack( s, size, _max_depth );
          value.clear();
          FC_ASSERT( size.value*sizeof(T) < MAX_ARRAY_ALLOC_SIZE );
-         value.reserve(size.value);
+         value.reserve( std::min( size.value, FC_MAX_PREALLOC_SIZE ) );
          for( uint32_t i = 0; i < size.value; ++i )
          {
              T tmp;
@@ -54,7 +54,7 @@ namespace fc {
          unsigned_int size; unpack( s, size, _max_depth );
          value.clear();
          FC_ASSERT( size.value*(sizeof(K)+sizeof(V)) < MAX_ARRAY_ALLOC_SIZE );
-         value.reserve(size.value);
+         value.reserve( std::min( size.value, FC_MAX_PREALLOC_SIZE ) );
          for( uint32_t i = 0; i < size.value; ++i )
          {
              std::pair<K,V> tmp;
@@ -86,11 +86,16 @@ namespace fc {
           --_max_depth;
           unsigned_int size;
           unpack( s, size, _max_depth );
-          value.resize( size );
           if( !std::is_fundamental<T>::value ) {
-             for( auto& item : value )
-                unpack( s, item, _max_depth );
+             value.resize( std::min( size.value, FC_MAX_PREALLOC_SIZE ) );
+             for( uint64_t i = 0; i < size; i++ )
+             {
+                if( i >= value.size() )
+                   value.resize( std::min( 2*value.size(), size.value ) );
+                unpack( s, value[i], _max_depth );
+             }
           } else {
+             value.resize( size );
              s.read( (char*)value.data(), value.size() );
           }
        }
