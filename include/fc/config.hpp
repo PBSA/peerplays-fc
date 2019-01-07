@@ -10,5 +10,5 @@
 
 #ifndef FC_MAX_PREALLOC_SIZE
 // how many elements will be reserve()d when deserializing vectors
-#define FC_MAX_PREALLOC_SIZE (200UL)
+#define FC_MAX_PREALLOC_SIZE (256UL)
 #endif
