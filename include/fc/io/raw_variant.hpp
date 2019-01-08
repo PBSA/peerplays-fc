@@ -143,9 +143,9 @@ namespace fc { namespace raw {
        --_max_depth;
        unsigned_int vs;
        unpack( s, vs, _max_depth );
-
+       FC_ASSERT( vs.value*sizeof(variant_object::entry) < MAX_ARRAY_ALLOC_SIZE );
        mutable_variant_object mvo;
-       mvo.reserve(vs.value);
+       mvo.reserve( std::min( vs.value, FC_MAX_PREALLOC_SIZE ) );
        for( uint32_t i = 0; i < vs.value; ++i )
        {
           fc::string key;
