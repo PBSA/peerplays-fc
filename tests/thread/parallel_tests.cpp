@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE( do_something_parallel )
    results.reserve( 20 );
    boost::thread_specific_ptr<int> tls;
    for( size_t i = 0; i < results.capacity(); i++ )
-      results.push_back( fc::do_parallel( [i,&tls] () {
+      results.push_back( fc::do_parallel( [&tls] () {
          if( !tls.get() ) { tls.reset( new int(0) ); }
          result res = { boost::this_thread::get_id(), (*tls.get())++ };
          return res;
