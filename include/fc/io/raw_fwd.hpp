@@ -12,8 +12,6 @@
 #include <unordered_map>
 #include <set>
 
-#define MAX_ARRAY_ALLOC_SIZE (1024*1024*10)
-
 namespace fc {
    class time_point;
    class time_point_sec;

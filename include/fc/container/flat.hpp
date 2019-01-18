@@ -25,7 +25,6 @@ namespace fc {
          --_max_depth;
          unsigned_int size; unpack( s, size, _max_depth );
          value.clear();
-         FC_ASSERT( size.value*sizeof(T) < MAX_ARRAY_ALLOC_SIZE );
          value.reserve( std::min( size.value, FC_MAX_PREALLOC_SIZE ) );
          for( uint32_t i = 0; i < size.value; ++i )
          {
@@ -53,7 +52,6 @@ namespace fc {
          --_max_depth;
          unsigned_int size; unpack( s, size, _max_depth );
          value.clear();
-         FC_ASSERT( size.value*(sizeof(K)+sizeof(V)) < MAX_ARRAY_ALLOC_SIZE );
          value.reserve( std::min( size.value, FC_MAX_PREALLOC_SIZE ) );
          for( uint32_t i = 0; i < size.value; ++i )
          {

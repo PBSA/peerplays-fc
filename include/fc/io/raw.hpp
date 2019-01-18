@@ -261,7 +261,6 @@ namespace fc {
     template<typename Stream> inline void unpack( Stream& s, std::vector<char>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
        unsigned_int size; fc::raw::unpack( s, size, _max_depth - 1 );
-       FC_ASSERT( size.value < MAX_ARRAY_ALLOC_SIZE );
        value.resize(size.value);
        if( value.size() )
           s.read( value.data(), value.size() );
@@ -428,7 +427,6 @@ namespace fc {
        --_max_depth;
        unsigned_int size; fc::raw::unpack( s, size, _max_depth );
        value.clear();
-       FC_ASSERT( size.value*sizeof(T) < MAX_ARRAY_ALLOC_SIZE );
        value.reserve( std::min( size.value, FC_MAX_PREALLOC_SIZE ) );
        for( uint32_t i = 0; i < size.value; ++i )
        {
@@ -474,7 +472,6 @@ namespace fc {
        --_max_depth;
        unsigned_int size; fc::raw::unpack( s, size, _max_depth );
        value.clear();
-       FC_ASSERT( size.value*(sizeof(K)+sizeof(V)) < MAX_ARRAY_ALLOC_SIZE );
        value.reserve( std::min( size.value, FC_MAX_PREALLOC_SIZE ) );
        for( uint32_t i = 0; i < size.value; ++i )
        {
@@ -502,7 +499,6 @@ namespace fc {
        --_max_depth;
        unsigned_int size; fc::raw::unpack( s, size, _max_depth );
        value.clear();
-       FC_ASSERT( size.value*(sizeof(K)+sizeof(V)) < MAX_ARRAY_ALLOC_SIZE );
        for( uint32_t i = 0; i < size.value; ++i )
        {
           std::pair<K,V> tmp;
@@ -529,7 +525,6 @@ namespace fc {
        FC_ASSERT( _max_depth > 0 );
        --_max_depth;
        unsigned_int size; fc::raw::unpack( s, size, _max_depth );
-       FC_ASSERT( size.value*sizeof(T) < MAX_ARRAY_ALLOC_SIZE );
        value.resize( std::min( size.value, FC_MAX_PREALLOC_SIZE ) );
        for( uint64_t i = 0; i < size; i++ )
        {
@@ -557,7 +552,6 @@ namespace fc {
        FC_ASSERT( _max_depth > 0 );
        --_max_depth;
        unsigned_int size; fc::raw::unpack( s, size, _max_depth );
-       FC_ASSERT( size.value*sizeof(T) < MAX_ARRAY_ALLOC_SIZE );
        value.resize( std::min( size.value, FC_MAX_PREALLOC_SIZE ) );
        for( uint64_t i = 0; i < size; i++ )
        {
