@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 #include <fc/config.hpp>
 #include <fc/container/flat_fwd.hpp>
 #include <fc/container/deque_fwd.hpp>
