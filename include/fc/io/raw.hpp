@@ -261,6 +261,7 @@ namespace fc {
     template<typename Stream> inline void unpack( Stream& s, std::vector<char>& value, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
        unsigned_int size; fc::raw::unpack( s, size, _max_depth - 1 );
+       FC_ASSERT( size.value < MAX_ARRAY_ALLOC_SIZE );
        value.resize(size.value);
        if( value.size() )
           s.read( value.data(), value.size() );
