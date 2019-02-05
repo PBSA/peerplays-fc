@@ -25,7 +25,7 @@ namespace fc {
          --_max_depth;
          unsigned_int size; unpack( s, size, _max_depth );
          value.clear();
-         value.reserve( std::min( size.value, FC_MAX_PREALLOC_SIZE ) );
+         value.reserve( std::min( size.value, static_cast<uint64_t>(FC_MAX_PREALLOC_SIZE) ) );
          for( uint32_t i = 0; i < size.value; ++i )
          {
              T tmp;
@@ -52,7 +52,7 @@ namespace fc {
          --_max_depth;
          unsigned_int size; unpack( s, size, _max_depth );
          value.clear();
-         value.reserve( std::min( size.value, FC_MAX_PREALLOC_SIZE ) );
+         value.reserve( std::min( size.value, static_cast<uint64_t>(FC_MAX_PREALLOC_SIZE) ) );
          for( uint32_t i = 0; i < size.value; ++i )
          {
              std::pair<K,V> tmp;
@@ -85,11 +85,11 @@ namespace fc {
           unsigned_int size;
           unpack( s, size, _max_depth );
           if( !std::is_fundamental<T>::value ) {
-             value.resize( std::min( size.value, FC_MAX_PREALLOC_SIZE ) );
+             value.resize( std::min( size.value, static_cast<uint64_t>(FC_MAX_PREALLOC_SIZE) ) );
              for( uint64_t i = 0; i < size; i++ )
              {
                 if( i >= value.size() )
-                   value.resize( std::min( 2*value.size(), size.value ) );
+                   value.resize( std::min( static_cast<uint64_t>(2*value.size()), size.value ) );
                 unpack( s, value[i], _max_depth );
              }
           } else {
