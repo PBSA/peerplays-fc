@@ -5,7 +5,6 @@
 #include <fc/io/varint.hpp>
 #include <fc/optional.hpp>
 #include <fc/fwd.hpp>
-#include <fc/smart_ref_fwd.hpp>
 #include <fc/array.hpp>
 #include <fc/time.hpp>
 #include <fc/filesystem.hpp>
@@ -218,19 +217,6 @@ namespace fc {
     void unpack( Stream& s, fc::fwd<T,S,Align>& v, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
        fc::raw::unpack( *v, _max_depth - 1 ); // TODO not sure about this
-    }
-    template<typename Stream, typename T>
-    void pack( Stream& s, const fc::smart_ref<T>& v, uint32_t _max_depth )
-    {
-       FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, *v, _max_depth - 1 );
-    }
-
-    template<typename Stream, typename T>
-    void unpack( Stream& s, fc::smart_ref<T>& v, uint32_t _max_depth )
-    {
-       FC_ASSERT( _max_depth > 0 );
-       fc::raw::unpack( s, *v, _max_depth - 1 );
     }
 
     // optional
