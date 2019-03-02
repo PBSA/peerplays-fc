@@ -139,11 +139,11 @@ namespace fc { namespace ecc {
 
     std::string public_key::to_base58( const public_key_data &key )
     {
-      uint32_t check = (uint32_t)sha256::hash(key.data, sizeof(key))._hash[0];
-      static_assert(sizeof(key) + sizeof(check) == 37, "Elliptic public key size (or its hash) is incorrect");
+      sha256 check = sha256::hash(key.data, sizeof(key));
+      static_assert(sizeof(key) + 4 == 37, "Elliptic public key size (or its hash) is incorrect");
       array<char, 37> data;
       memcpy(data.data, key.begin(), key.size());
-      memcpy(data.begin() + key.size(), (const char*)&check, sizeof(check));
+      memcpy(data.begin() + key.size(), (const char*)check._hash, 4);
       return fc::to_base58(data.begin(), data.size());
     }
 
@@ -154,8 +154,8 @@ namespace fc { namespace ecc {
         FC_ASSERT( s == sizeof(data) );
 
         public_key_data key;
-        uint32_t check = (uint32_t)sha256::hash(data.data, sizeof(key))._hash[0];
-        FC_ASSERT( memcmp( (char*)&check, data.data + sizeof(key), sizeof(check) ) == 0 );
+        sha256 check = sha256::hash(data.data, sizeof(key));
+        FC_ASSERT( memcmp( (char*)check._hash, data.data + sizeof(key), 4 ) == 0 );
         memcpy( (char*)key.data, data.data, sizeof(key) );
         return from_key_data(key);
     }
