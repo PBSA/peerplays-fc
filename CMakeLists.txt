@@ -34,6 +34,7 @@ SET (ORIGINAL_LIB_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
 SET(BOOST_COMPONENTS)
 LIST(APPEND BOOST_COMPONENTS thread date_time filesystem system program_options chrono unit_test_framework context iostreams regex)
+# boost::endian is also required, but FindBoost can't handle header-only libs
 SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
 
 # Configure secp256k1-zkp

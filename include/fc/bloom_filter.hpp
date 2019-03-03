@@ -617,11 +617,6 @@ inline bloom_filter operator ^ (const bloom_filter& a, const bloom_filter& b)
 
 } // namespace fc
 
-
-FC_REFLECT( fc::bloom_filter, (salt_)(bit_table_)(salt_count_)(table_size_)(raw_table_size_)(projected_element_count_)(inserted_element_count_)(random_seed_)(desired_false_positive_probability_) )
-FC_REFLECT( fc::bloom_parameters::optimal_parameters_t, (number_of_hashes)(table_size) )
-FC_REFLECT( fc::bloom_parameters, (minimum_size)(maximum_size)(minimum_number_of_hashes)(maximum_number_of_hashes)(projected_element_count)(false_positive_probability)(random_seed)(optimal_parameters) )
-
 /*
   Note 1:
   If it can be guaranteed that bits_per_char will be of the form 2^n then

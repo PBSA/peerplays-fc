@@ -1,4 +1,5 @@
 #pragma once
+#include <boost/endian/buffers.hpp>
 #include <fc/io/raw_variant.hpp>
 #include <fc/reflect/reflect.hpp>
 #include <fc/io/datastream.hpp>
@@ -89,72 +90,66 @@ namespace fc {
     template<typename Stream>
     inline void pack( Stream& s, const fc::time_point_sec& tp, uint32_t _max_depth )
     {
-       uint32_t usec = tp.sec_since_epoch();
-       s.write( (const char*)&usec, sizeof(usec) );
+       pack( s, tp.sec_since_epoch(), _max_depth );
     }
 
     template<typename Stream>
     inline void unpack( Stream& s, fc::time_point_sec& tp, uint32_t _max_depth )
     { try {
        uint32_t sec;
-       s.read( (char*)&sec, sizeof(sec) );
+       unpack( s, sec, _max_depth );
        tp = fc::time_point() + fc::seconds(sec);
     } FC_RETHROW_EXCEPTIONS( warn, "" ) }
 
     template<typename Stream>
     inline void pack( Stream& s, const fc::time_point& tp, uint32_t _max_depth )
     {
-       uint64_t usec = tp.time_since_epoch().count();
-       s.write( (const char*)&usec, sizeof(usec) );
+       pack( s, tp.time_since_epoch().count(), _max_depth );
     }
 
     template<typename Stream>
     inline void unpack( Stream& s, fc::time_point& tp, uint32_t _max_depth )
     { try {
        uint64_t usec;
-       s.read( (char*)&usec, sizeof(usec) );
+       unpack( s, usec, _max_depth );
        tp = fc::time_point() + fc::microseconds(usec);
     } FC_RETHROW_EXCEPTIONS( warn, "" ) }
 
     template<typename Stream>
     inline void pack( Stream& s, const fc::microseconds& usec, uint32_t _max_depth )
     {
-       uint64_t usec_as_int64 = usec.count();
-       s.write( (const char*)&usec_as_int64, sizeof(usec_as_int64) );
+       pack( s, usec.count(), _max_depth );
     }
 
     template<typename Stream>
     inline void unpack( Stream& s, fc::microseconds& usec, uint32_t _max_depth )
     { try {
        uint64_t usec_as_int64;
-       s.read( (char*)&usec_as_int64, sizeof(usec_as_int64) );
+       unpack( s, usec_as_int64, _max_depth );
        usec = fc::microseconds(usec_as_int64);
     } FC_RETHROW_EXCEPTIONS( warn, "" ) }
 
     template<typename Stream, typename T, size_t N>
-    inline void pack( Stream& s, const fc::array<T,N>& v, uint32_t _max_depth ) {
-      s.write((const char*)&v.data[0],N*sizeof(T));
+    inline void pack( Stream& s, const fc::array<T,N>& v, uint32_t _max_depth ) = delete;
+    template<typename Stream, size_t N>
+    inline void pack( Stream& s, const fc::array<char,N>& v, uint32_t _max_depth ) {
+       s.write( &v.data[0], N );
     }
-
-    template<typename Stream, typename T>
-    inline void pack( Stream& s, const std::shared_ptr<T>& v, uint32_t _max_depth )
-    {
-       FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, *v, _max_depth - 1 );
-    }
-
-    template<typename Stream, typename T>
-    inline void pack( Stream& s, const std::shared_ptr<const T>& v, uint32_t _max_depth )
-    {
-       FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, *v, _max_depth - 1 );
+    template<typename Stream, size_t N>
+    inline void pack( Stream& s, const fc::array<unsigned char,N>& v, uint32_t _max_depth ) {
+       s.write( (char*)&v.data[0], N );
     }
 
     template<typename Stream, typename T, size_t N>
-    inline void unpack( Stream& s, fc::array<T,N>& v, uint32_t _max_depth )
-    { try {
-      s.read((char*)&v.data[0],N*sizeof(T));
-    } FC_RETHROW_EXCEPTIONS( warn, "fc::array<type,length>", ("type",fc::get_typename<T>::name())("length",N) ) }
+    inline void unpack( Stream& s, fc::array<T,N>& v, uint32_t _max_depth ) = delete;
+    template<typename Stream, size_t N>
+    inline void unpack( Stream& s, fc::array<char,N>& v, uint32_t _max_depth ) { try {
+       s.read( &v.data[0], N );
+    } FC_RETHROW_EXCEPTIONS( warn, "fc::array<char,${length}>", ("length",N) ) }
+    template<typename Stream, size_t N>
+    inline void unpack( Stream& s, fc::array<unsigned char,N>& v, uint32_t _max_depth ) { try {
+       s.read( (char*)&v.data[0], N );
+    } FC_RETHROW_EXCEPTIONS( warn, "fc::array<unsigned char,${length}>", ("length",N) ) }
 
     template<typename Stream, typename T>
     inline void unpack( Stream& s, std::shared_ptr<T>& v, uint32_t _max_depth )
@@ -162,7 +157,14 @@ namespace fc {
        FC_ASSERT( _max_depth > 0 );
        v = std::make_shared<T>();
        fc::raw::unpack( s, *v, _max_depth - 1 );
-    } FC_RETHROW_EXCEPTIONS( warn, "std::shared_ptr<T>", ("type",fc::get_typename<T>::name()) ) }
+    } FC_RETHROW_EXCEPTIONS( warn, "std::shared_ptr<${type}>", ("type",fc::get_typename<T>::name()) ) }
+
+    template<typename Stream, typename T>
+    inline void pack( Stream& s, const std::shared_ptr<const T>& v, uint32_t _max_depth )
+    {
+       FC_ASSERT( _max_depth > 0 );
+       fc::raw::pack( s, *v, _max_depth - 1 );
+    }
 
     template<typename Stream, typename T>
     inline void unpack( Stream& s, std::shared_ptr<const T>& v, uint32_t _max_depth )
@@ -345,12 +347,96 @@ namespace fc {
       template<>
       struct if_class<fc::false_type> {
         template<typename Stream, typename T>
-        static inline void pack( Stream& s, const T& v, uint32_t _max_depth ) {
-          s.write( (char*)&v, sizeof(v) );
-        }
+        static inline void pack( Stream& s, const T v, uint32_t _max_depth ) = delete;
         template<typename Stream, typename T>
-        static inline void unpack( Stream& s, T& v, uint32_t _max_depth ) {
-          s.read( (char*)&v, sizeof(v) );
+        static inline void unpack( Stream& s, T& v, uint32_t _max_depth ) = delete;
+        template<typename Stream>
+        static inline void pack( Stream& s, const int64_t v, uint32_t _max_depth ) {
+           boost::endian::little_int64_buf_t tmp;
+           tmp = v;
+           s.write( (char*)&tmp, sizeof(tmp) );
+        }
+        template<typename Stream>
+        static inline void unpack( Stream& s, int64_t& v, uint32_t _max_depth ) {
+           boost::endian::little_int64_buf_t tmp;
+           s.read( (char*)&tmp, sizeof(tmp) );
+           v = tmp.value();
+        }
+        template<typename Stream>
+        static inline void pack( Stream& s, const uint64_t v, uint32_t _max_depth ) {
+           boost::endian::little_uint64_buf_t tmp;
+           tmp = v;
+           s.write( (char*)&tmp, sizeof(tmp) );
+        }
+        template<typename Stream>
+        static inline void unpack( Stream& s, uint64_t& v, uint32_t _max_depth ) {
+           boost::endian::little_uint64_buf_t tmp;
+           s.read( (char*)&tmp, sizeof(tmp) );
+           v = tmp.value();
+        }
+        template<typename Stream>
+        static inline void pack( Stream& s, const int32_t v, uint32_t _max_depth ) {
+           boost::endian::little_int32_buf_t tmp;
+           tmp = v;
+           s.write( (char*)&tmp, sizeof(tmp) );
+        }
+        template<typename Stream>
+        static inline void unpack( Stream& s, int32_t& v, uint32_t _max_depth ) {
+           boost::endian::little_int32_buf_t tmp;
+           s.read( (char*)&tmp, sizeof(tmp) );
+           v = tmp.value();
+        }
+        template<typename Stream>
+        static inline void pack( Stream& s, const uint32_t v, uint32_t _max_depth ) {
+           boost::endian::little_uint32_buf_t tmp;
+           tmp = v;
+           s.write( (char*)&tmp, sizeof(tmp) );
+        }
+        template<typename Stream>
+        static inline void unpack( Stream& s, uint32_t& v, uint32_t _max_depth ) {
+           boost::endian::little_uint32_buf_t tmp;
+           s.read( (char*)&tmp, sizeof(tmp) );
+           v = tmp.value();
+        }
+        template<typename Stream>
+        static inline void pack( Stream& s, const int16_t v, uint32_t _max_depth ) {
+           boost::endian::little_int16_buf_t tmp;
+           tmp = v;
+           s.write( (char*)&tmp, sizeof(tmp) );
+        }
+        template<typename Stream>
+        static inline void unpack( Stream& s, int16_t& v, uint32_t _max_depth ) {
+           boost::endian::little_int16_buf_t tmp;
+           s.read( (char*)&tmp, sizeof(tmp) );
+           v = tmp.value();
+        }
+        template<typename Stream>
+        static inline void pack( Stream& s, const uint16_t v, uint32_t _max_depth ) {
+           boost::endian::little_uint16_buf_t tmp;
+           tmp = v;
+           s.write( (char*)&tmp, sizeof(tmp) );
+        }
+        template<typename Stream>
+        static inline void unpack( Stream& s, uint16_t& v, uint32_t _max_depth ) {
+           boost::endian::little_uint16_buf_t tmp;
+           s.read( (char*)&tmp, sizeof(tmp) );
+           v = tmp.value();
+        }
+        template<typename Stream>
+        static inline void pack( Stream& s, const int8_t v, uint32_t _max_depth ) {
+           s.write( (char*)&v, 1 );
+        }
+        template<typename Stream>
+        static inline void unpack( Stream& s, int8_t& v, uint32_t _max_depth ) {
+           s.read( (char*)&v, 1 );
+        }
+        template<typename Stream>
+        static inline void pack( Stream& s, const uint8_t v, uint32_t _max_depth ) {
+           s.write( (char*)&v, 1 );
+        }
+        template<typename Stream>
+        static inline void unpack( Stream& s, uint8_t& v, uint32_t _max_depth ) {
+           s.read( (char*)&v, 1 );
         }
       };
 
