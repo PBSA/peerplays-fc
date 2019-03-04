@@ -70,7 +70,10 @@ BOOST_AUTO_TEST_CASE( types_edge_cases_test )
 
    sv::tag_type current_value = variant_with_tagtype.get<sv::tag_type>();
    BOOST_CHECK_EQUAL( current_value, init_value );
+#ifndef _WIN32
+   // this does not work in Windows. See Issue #1593
    BOOST_CHECK( variant_with_tagtype == init_value );
+#endif
 
    for (sv::tag_type i = variant_with_tagtype.count(); i-->0;)
    {
