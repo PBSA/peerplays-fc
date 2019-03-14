@@ -653,5 +653,104 @@ namespace fc {
        sv.visit( unpack_static_variant<Stream>(s) );
     }
 
+//////////////////////////////////// PeerPlays
+    template<typename T>
+    inline std::vector<unsigned char> unsigned_pack( const T& v ) {
+      datastream<size_t> ps;
+      fc::raw::pack(ps,v );
+      std::vector<unsigned char> vec(ps.tellp());
+
+      if( vec.size() ) {
+        datastream<unsigned char*>  ds( vec.data(), size_t(vec.size()) );
+        fc::raw::pack(ds,v);
+      }
+      return vec;
+    }
+
+    template<typename T>
+    inline T unpack( const std::vector<unsigned char>& s )
+    { try  {
+      T tmp;
+      if( s.size() ) {
+        datastream<const unsigned char*>  ds( s.data(), size_t(s.size()) );
+        fc::raw::unpack(ds,tmp);
+      }
+      return tmp;
+    } FC_RETHROW_EXCEPTIONS( warn, "error unpacking ${type}", ("type",fc::get_typename<T>::name() ) ) }
+
+
+    template<typename Stream>
+    void pack( Stream& s, const u256& v )
+    {
+      fc::raw::pack(s, v.str()); 
+    }
+
+    template<typename Stream>
+    void unpack( Stream& s, u256& v )
+    { 
+      std::string str;
+      fc::raw::unpack(s, str);
+      u256 tmp(str);
+      v = tmp;
+    }
+    
+    template<typename Stream, typename T, size_t N>
+    inline void pack( Stream& s, const std::array<T,N>& v)
+    {
+      s.write((const char*)&v.front(),N*sizeof(T));
+    }
+
+    template<typename Stream, typename T, size_t N>
+    inline void unpack( Stream& s, std::array<T,N>& v)
+    { try {
+      s.read((char*)&v.front(),N*sizeof(T));
+    } FC_RETHROW_EXCEPTIONS( warn, "std::array<type,length>", ("type",fc::get_typename<T>::name())("length",N) ) }
+
+    template<typename Stream>
+    struct pack_boost_variant : public boost::static_visitor<>
+    {
+      Stream& stream;
+      pack_boost_variant( Stream& s ):stream(s){}
+
+      template<typename T> 
+      void operator()(T& v )const
+      {
+         fc::raw::pack( stream, v );
+      }
+    };
+
+    template<typename Stream, typename... Args>
+    struct unpack_boost_variant
+    {
+      Stream& stream;
+      boost::variant<Args...>& bv;
+
+      unpack_boost_variant( Stream& s, boost::variant<Args...>& _bv ):stream(s),bv(_bv){}
+
+      typedef void result_type;
+      template<typename T> void operator()( T& v )const
+      {
+          fc::raw::unpack( stream, v );
+          bv = v;
+      }
+    };
+
+    template<typename Stream, typename... T>
+    void pack( Stream& s, const boost::variant<T...>& v )
+    {
+       fc::raw::pack( s, unsigned_int(v.which()) );
+       boost::apply_visitor( pack_boost_variant<Stream>(s), v );
+    }
+
+    template<typename Stream, typename... T> void unpack( Stream& s, boost::variant<T...>& v )
+    {
+       unsigned_int w;
+       fc::raw::unpack( s, w );
+       static_variant<T...> sv;
+       sv.set_which(w.value);
+       sv.visit( unpack_boost_variant<Stream, T...>(s, v) );
+    }
+//////////////////////////////////// PeerPlays
+
 } } // namespace fc::raw
 
