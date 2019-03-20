@@ -507,6 +507,27 @@ namespace fc
        v = std::move(vars);
    }
 
+   /** @ingroup Serializable */
+   template<typename T, size_t N>
+   void from_variant( const variant& var, std::array<T,N>& tmp )
+   {
+      const variants& vars = var.get_array();
+      size_t count = 0;
+      for( auto itr = vars.begin(); itr != vars.end(); ++itr ) {
+         tmp[count++] = ( itr->as<T>() );
+      }
+   }
+
+   /** @ingroup Serializable */
+   template<typename T, size_t N>
+   void to_variant( const std::array<T,N>& t, variant& v )
+   {
+      std::vector<variant> vars(t.size());
+       for( size_t i = 0; i < t.size(); ++i )
+          vars[i] = variant(t[i]);
+       v = std::move(vars);
+   }
+
 
    /** @ingroup Serializable */
    template<typename A, typename B>
