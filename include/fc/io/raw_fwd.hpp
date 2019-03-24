@@ -126,6 +126,16 @@ namespace fc {
     template<typename Stream, typename T, size_t N> inline void pack( Stream& s, const fc::array<T,N>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream, typename T, size_t N> inline void unpack( Stream& s, fc::array<T,N>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH);
 
+    template<typename Stream, typename T> inline void pack( Stream& s, const shared_ptr<T>& v,
+                                                            uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream, typename T> inline void unpack( Stream& s, shared_ptr<T>& v,
+                                                              uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+
+    template<typename Stream, typename T> inline void pack( Stream& s, const shared_ptr<const T>& v,
+                                                            uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream, typename T> inline void unpack( Stream& s, shared_ptr<const T>& v,
+                                                              uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+
     template<typename Stream> inline void pack( Stream& s, const bool& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream> inline void unpack( Stream& s, bool& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
 

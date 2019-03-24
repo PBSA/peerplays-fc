@@ -170,7 +170,7 @@ namespace fc {
        FC_ASSERT( _max_depth > 0 );
        T tmp;
        fc::raw::unpack( s, tmp, _max_depth - 1 );
-       v = std::make_shared<const T>(tmp);
+       v = std::make_shared<const T>(std::move(tmp));
     } FC_RETHROW_EXCEPTIONS( warn, "std::shared_ptr<const T>", ("type",fc::get_typename<T>::name()) ) }
 
     template<typename Stream> inline void pack( Stream& s, const unsigned_int& v, uint32_t _max_depth ) {
