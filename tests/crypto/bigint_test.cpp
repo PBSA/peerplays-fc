@@ -46,8 +46,6 @@ BOOST_AUTO_TEST_CASE(bigint_test_2)
         BOOST_CHECK( bi_accu >= a_1 );
     } while ( bi_accu.log2() <= 128 );
 
-    bi_accu = bi_accu;
-
     BOOST_CHECK( bi_accu && !bi_accu.is_negative() && bi_accu != bi_1 );
 
     BOOST_CHECK( bi_3.exp( bi_accu.log2() ) > bi_accu );

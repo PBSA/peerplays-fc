@@ -446,11 +446,11 @@ namespace fc
    catch( fc::exception& er ) { \
       FC_RETHROW_EXCEPTION( er, LOG_LEVEL, FORMAT, __VA_ARGS__ ); \
    } catch( const std::exception& e ) {  \
-      fc::exception fce( \
+      throw fc::exception( \
                 FC_LOG_MESSAGE( LOG_LEVEL, "${what}: " FORMAT,__VA_ARGS__("what",e.what())), \
                 fc::std_exception_code,\
                 typeid(e).name(), \
-                e.what() ) ; throw fce;\
+                e.what() ) ;\
    } catch( ... ) {  \
       throw fc::unhandled_exception( \
                 FC_LOG_MESSAGE( LOG_LEVEL, FORMAT,__VA_ARGS__), \
@@ -461,11 +461,11 @@ namespace fc
    catch( fc::exception& er ) { \
       FC_RETHROW_EXCEPTION( er, warn, "", FC_FORMAT_ARG_PARAMS(__VA_ARGS__) ); \
    } catch( const std::exception& e ) {  \
-      fc::exception fce( \
+      throw fc::exception( \
                 FC_LOG_MESSAGE( warn, "${what}: ",FC_FORMAT_ARG_PARAMS(__VA_ARGS__)("what",e.what())), \
                 fc::std_exception_code,\
                 typeid(e).name(), \
-                e.what() ) ; throw fce;\
+                e.what() ) ;\
    } catch( ... ) {  \
       throw fc::unhandled_exception( \
                 FC_LOG_MESSAGE( warn, "",FC_FORMAT_ARG_PARAMS(__VA_ARGS__)), \
