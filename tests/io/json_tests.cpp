@@ -171,7 +171,7 @@ static bool equal( const fc::variant& a, const fc::variant& b )
          return true;
       case fc::variant::type_id::blob_type:
       default:
-         FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Unsupported variant type: " + std::to_string( a.get_type() ) );
+         FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Unsupported variant type: {t}", ( "t", a.get_type() ) );
     }
 }
 

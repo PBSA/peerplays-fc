@@ -606,6 +606,8 @@ static const uint32_t crc_c[256] = {
 
 uint64_t _mm_crc32_u64(uint64_t a, uint64_t b )
 {
+    // Squelch warning about unusued variable crc_c
+    (void)(crc_c);
     return crc32cSlicingBy8(a, (unsigned char*)&b, sizeof(b)); 
 }
 /*
@@ -615,8 +617,6 @@ uint64_t _mm_crc32_u64(uint64_t a, uint64_t b )
 
 int main( int argc, char** argv )
 {
-    // Squelch warning about unusued variable crc_c
-    (void)(crc_c);
     uint64_t f = 0x1234;
     uint64_t a = 0x5678;
     uint32_t f1 = _mm_crc32_u64(f, a); 
