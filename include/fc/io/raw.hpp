@@ -143,6 +143,13 @@ namespace fc {
        fc::raw::pack( s, *v, _max_depth - 1 );
     }
 
+    template<typename Stream, typename T>
+    inline void pack( Stream& s, const std::shared_ptr<const T>& v, uint32_t _max_depth )
+    {
+       FC_ASSERT( _max_depth > 0 );
+       fc::raw::pack( s, *v, _max_depth - 1 );
+    }
+
     template<typename Stream, typename T, size_t N>
     inline void unpack( Stream& s, fc::array<T,N>& v, uint32_t _max_depth )
     { try {
@@ -156,6 +163,15 @@ namespace fc {
        v = std::make_shared<T>();
        fc::raw::unpack( s, *v, _max_depth - 1 );
     } FC_RETHROW_EXCEPTIONS( warn, "std::shared_ptr<T>", ("type",fc::get_typename<T>::name()) ) }
+
+    template<typename Stream, typename T>
+    inline void unpack( Stream& s, std::shared_ptr<const T>& v, uint32_t _max_depth )
+    { try {
+       FC_ASSERT( _max_depth > 0 );
+       T tmp;
+       fc::raw::unpack( s, tmp, _max_depth - 1 );
+       v = std::make_shared<const T>(std::move(tmp));
+    } FC_RETHROW_EXCEPTIONS( warn, "std::shared_ptr<const T>", ("type",fc::get_typename<T>::name()) ) }
 
     template<typename Stream> inline void pack( Stream& s, const unsigned_int& v, uint32_t _max_depth ) {
       uint64_t val = v.value;
