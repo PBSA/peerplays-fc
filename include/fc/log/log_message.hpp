@@ -147,7 +147,7 @@ FC_REFLECT_TYPENAME( fc::log_message );
  * @param LOG_LEVEL - a valid log_level::Enum name.
  */
 #define FC_LOG_CONTEXT(LOG_LEVEL) \
-   fc::log_context( fc::log_level::LOG_LEVEL, __FILE__, __LINE__, __func__ )
+   fc::log_context( fc::log_level::LOG_LEVEL, (const char*)__FILE__, __LINE__, (const char*)__func__ )
 
 /**
  * @def FC_LOG_MESSAGE(LOG_LEVEL,FORMAT,...)
