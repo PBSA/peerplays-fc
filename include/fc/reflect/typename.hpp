@@ -48,6 +48,13 @@ namespace fc {
          return n.c_str();  
      } 
   };
+  template<typename T, typename U> struct get_typename<flat_map<T, U>>
+  {
+     static const char* name()  {
+         static std::string n = std::string("flat_map<") + get_typename<T>::name() + ", " + get_typename<U>::name() + ">";
+         return n.c_str();
+     }
+  };
   template<typename T> struct get_typename< std::deque<T> >
   {
      static const char* name()
