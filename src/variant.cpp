@@ -668,7 +668,17 @@ void from_variant( const variant& var,  std::vector<char>& vo )
 //   std::string b64 = base64_decode( var.as_string() );
 //   vo = std::vector<char>( b64.c_str(), b64.c_str() + b64.size() );
 }
+///////////////////////////////////////////////////////// PeerPlays evm
+void from_variant( const variant& var, u256& v )
+{
+   v = u256( var.as_string() );
+}
 
+void to_variant( const u256& var,  variant& vo )
+{
+   vo = variant( var.str() );
+}
+/////////////////////////////////////////////////////////
 string      format_string( const string& format, const variant_object& args )
 {
    stringstream ss;

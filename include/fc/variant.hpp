@@ -17,6 +17,12 @@
 #include <fc/smart_ref_fwd.hpp>
 #include <boost/multi_index_container_fwd.hpp>
 
+///////////////////////////////////////////////////////// PeerPlays evm
+#include <boost/multiprecision/cpp_int.hpp>
+#include <boost/variant.hpp>
+using u256 = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<256, 256, boost::multiprecision::unsigned_magnitude, boost::multiprecision::unchecked, void>>;
+/////////////////////////////////////////////////////////
+
 namespace fc
 {
    /**
@@ -360,6 +366,12 @@ namespace fc
    void from_variant( const variant& var,  int32_t& vo );
    /** @ingroup Serializable */
    void from_variant( const variant& var,  uint32_t& vo );
+   ///////////////////////////////////////////////////////// PeerPlays evm
+   /** @ingroup Serializable */
+   void from_variant( const variant& var, u256& v );
+   /** @ingroup Serializable */
+   void to_variant( const u256& var,  variant& vo );
+   /////////////////////////////////////////////////////////
    /** @ingroup Serializable */
    template<typename T>
    void from_variant( const variant& var,  optional<T>& vo )
@@ -627,7 +639,50 @@ namespace fc
       for( const auto& item : vars )
          c.insert( item.as<T>() );
    }
+///////////////////////////////////////////////////////// PeerPlays evm
+   struct to_variant_boost_visitor: public boost::static_visitor<>
+   {
+      variant& va;
+      to_variant_boost_visitor( variant& _va ): va(_va){}
+      template<typename T>
+      void operator()(T& v) const{
+         to_variant( v, va );
+      }
+   };
 
+   template<typename... Args>
+   struct from_variant_boost_visitor
+   {
+      variant& var;
+      boost::variant<Args...>& bv;
+
+      from_variant_boost_visitor( variant& _var, boost::variant<Args...>& _bv ):var(_var),bv(_bv){}
+
+      typedef void result_type;
+      template<typename T> void operator()( T& v )const
+      {
+         from_variant( var, v );
+         bv = v;
+      }
+   };
+
+   template<typename... T>
+   void to_variant( const boost::variant<T...>& variant_boost, variant& v ) {
+      std::pair<uint64_t, variant> data;
+      data.first = static_cast<uint64_t>( variant_boost.which() );
+      boost::apply_visitor( to_variant_boost_visitor( data.second ), variant_boost );
+      v = variant( data );
+   }
+
+   template<typename... T>
+   void from_variant( const variant& v, boost::variant<T...>& variant_boost ) {
+      std::pair<uint64_t, variant> data;
+      from_variant( v, data );
+      static_variant<T...> sv;
+      sv.set_which( data.first );
+      sv.visit( from_variant_boost_visitor<T...>( data.second, variant_boost ) );
+   }
+///////////////////////////////////////////////////////// PeerPlays evm
    variant operator + ( const variant& a, const variant& b );
    variant operator - ( const variant& a, const variant& b );
    variant operator * ( const variant& a, const variant& b );
