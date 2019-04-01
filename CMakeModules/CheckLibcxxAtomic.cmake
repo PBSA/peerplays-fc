@@ -5,14 +5,10 @@ INCLUDE(CheckCXXSourceCompiles)
 
 # Sometimes linking against libatomic is required for atomic ops, if
 # the platform doesn't support lock-free atomics.
-#
-# We could modify LLVM's CheckAtomic module and have it check for 64-bit
-# atomics instead. However, we would like to avoid careless uses of 64-bit
-# atomics inside LLVM over time on 32-bit platforms.
 
 function(check_cxx_atomics varname)
   set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
-  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -nodefaultlibs -std=c++11 -nostdinc++ -isystem ${LIBCXX_SOURCE_DIR}/include")
+  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -std=c++11")
   if (${LIBCXX_GCC_TOOLCHAIN})
     set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} --gcc-toolchain=${LIBCXX_GCC_TOOLCHAIN}")
   endif()
@@ -24,27 +20,24 @@ function(check_cxx_atomics varname)
   endif()
   check_cxx_source_compiles("
 #include <cstdint>
-#include <atomic>
-std::atomic<uintptr_t> x;
-std::atomic<uintmax_t> y;
+#include <boost/lockfree/queue.hpp>
+
+boost::lockfree::queue<uint32_t*> q;
 int main(int, char**) {
-  return x + y;
+  uint32_t* a;
+  uint32_t* b;
+  q.push(a);
+  q.pop(b);
 }
 " ${varname})
   set(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
 endfunction(check_cxx_atomics)
 
-# Perform the check for 64bit atomics without libatomic. It may have been
-# added to the required libraries during in the configuration of LLVM, which
-# would cause the check for CXX atomics without libatomic to incorrectly pass.
-set(OLD_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
-list(REMOVE_ITEM CMAKE_REQUIRED_LIBRARIES "atomic")
+# Perform the check for 64bit atomics without libatomic.
 check_cxx_atomics(LIBCXX_HAVE_CXX_ATOMICS_WITHOUT_LIB)
-set(CMAKE_REQUIRED_LIBRARIES ${OLD_CMAKE_REQUIRED_LIBRARIES})
-
-check_library_exists(atomic __atomic_fetch_add_8 "" LIBCXX_HAS_ATOMIC_LIB)
 # If not, check if the library exists, and atomics work with it.
 if(NOT LIBCXX_HAVE_CXX_ATOMICS_WITHOUT_LIB)
+  check_library_exists(atomic __atomic_fetch_add_8 "" LIBCXX_HAS_ATOMIC_LIB)
   if(LIBCXX_HAS_ATOMIC_LIB)
     list(APPEND CMAKE_REQUIRED_LIBRARIES "atomic")
     check_cxx_atomics(LIBCXX_HAVE_CXX_ATOMICS_WITH_LIB)
