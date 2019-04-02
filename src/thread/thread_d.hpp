@@ -52,6 +52,7 @@ namespace fc {
             ~thread_d()
             {
               delete current;
+              current = nullptr;
               fc::context* temp;
               for (fc::context* ready_context : ready_heap)
                 delete ready_context;
