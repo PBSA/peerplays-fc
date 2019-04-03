@@ -11,7 +11,7 @@ websocket_api_connection::websocket_api_connection( const std::shared_ptr<fc::ht
                                                     uint32_t max_depth )
    : api_connection(max_depth),_connection(c)
 {
-   FC_ASSERT( c );
+   FC_ASSERT( _connection, "A valid websocket connection is required" );
    _rpc_state.add_method( "call", [this]( const variants& args ) -> variant
    {
       FC_ASSERT( args.size() == 3 && args[2].is_array() );
@@ -59,43 +59,41 @@ variant websocket_api_connection::send_call(
    string method_name,
    variants args /* = variants() */ )
 {
-   if( _connection )
-   {
-      auto request = _rpc_state.start_remote_call( "call", { api_id, std::move(method_name), std::move(args) } );
-      _connection->send_message( fc::json::to_string( fc::variant( request, _max_conversion_depth ),
-                                                      fc::json::stringify_large_ints_and_doubles,
-                                                      _max_conversion_depth ) );
-      return _rpc_state.wait_for_response( *request.id );
-   }
-   return variant(); // TODO return an error
+   if( !_connection ) // defensive check
+      return variant(); // TODO return an error?
+
+   auto request = _rpc_state.start_remote_call( "call", { api_id, std::move(method_name), std::move(args) } );
+   _connection->send_message( fc::json::to_string( fc::variant( request, _max_conversion_depth ),
+                                                   fc::json::stringify_large_ints_and_doubles,
+                                                   _max_conversion_depth ) );
+   return _rpc_state.wait_for_response( *request.id );
 }
 
 variant websocket_api_connection::send_callback(
    uint64_t callback_id,
    variants args /* = variants() */ )
 {
-   if( _connection )
-   {
-      auto request = _rpc_state.start_remote_call( "callback", { callback_id, std::move(args) } );
-      _connection->send_message( fc::json::to_string( fc::variant( request, _max_conversion_depth ),
-                                                      fc::json::stringify_large_ints_and_doubles,
-                                                      _max_conversion_depth ) );
-      return _rpc_state.wait_for_response( *request.id );
-   }
-   return variant(); // TODO return an error
+   if( !_connection ) // defensive check
+      return variant(); // TODO return an error?
+
+   auto request = _rpc_state.start_remote_call( "callback", { callback_id, std::move(args) } );
+   _connection->send_message( fc::json::to_string( fc::variant( request, _max_conversion_depth ),
+                                                   fc::json::stringify_large_ints_and_doubles,
+                                                   _max_conversion_depth ) );
+   return _rpc_state.wait_for_response( *request.id );
 }
 
 void websocket_api_connection::send_notice(
    uint64_t callback_id,
    variants args /* = variants() */ )
 {
-   if( _connection )
-   {
-      fc::rpc::request req{ optional<uint64_t>(), "notice", { callback_id, std::move(args) } };
-      _connection->send_message( fc::json::to_string( fc::variant( req, _max_conversion_depth ),
-                                                      fc::json::stringify_large_ints_and_doubles,
-                                                      _max_conversion_depth ) );
-   }
+   if( !_connection ) // defensive check
+      return;
+
+   fc::rpc::request req{ optional<uint64_t>(), "notice", { callback_id, std::move(args) } };
+   _connection->send_message( fc::json::to_string( fc::variant( req, _max_conversion_depth ),
+                                                   fc::json::stringify_large_ints_and_doubles,
+                                                   _max_conversion_depth ) );
 }
 
 std::string websocket_api_connection::on_message(
