@@ -676,6 +676,18 @@ namespace fc {
        }
     }
 
+    template<typename Stream, boost::endian::order O, class T, std::size_t N, boost::endian::align A>
+    void pack( Stream& s, const boost::endian::endian_buffer<O,T,N,A>& v, uint32_t _max_depth )
+    {
+       FC_ASSERT( _max_depth > 0 );
+       s.write( v.data(), sizeof(v) );
+    }
+    template<typename Stream, boost::endian::order O, class T, std::size_t N, boost::endian::align A>
+    void unpack( Stream& s, boost::endian::endian_buffer<O,T,N,A>& v, uint32_t _max_depth )
+    {
+       FC_ASSERT( _max_depth > 0 );
+       s.read( v.data(), sizeof(v) );
+    }
 
 
     template<typename Stream, typename T>
