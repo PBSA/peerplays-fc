@@ -125,14 +125,18 @@ std::string websocket_api_connection::on_message(
                auto end = time_point::now();
 
                if( end - start > fc::milliseconds( LOG_LONG_API_MAX_MS ) )
-                  elog( "API call execution time limit exceeded. method: ${m} params: ${p} time: ${t}", ("m",call.method)("p",call.params)("t", end - start) );
+                  elog( "API call execution time limit exceeded. method: ${m} params: ${p} time: ${t}",
+                        ("m",call.method)("p",call.params)("t", end - start) );
                else if( end - start > fc::milliseconds( LOG_LONG_API_WARN_MS ) )
-                  wlog( "API call execution time nearing limit. method: ${m} params: ${p} time: ${t}", ("m",call.method)("p",call.params)("t", end - start) );
+                  wlog( "API call execution time nearing limit. method: ${m} params: ${p} time: ${t}",
+                        ("m",call.method)("p",call.params)("t", end - start) );
 #endif
 
                if( call.id )
                {
-                  auto reply = fc::json::to_string( response( *call.id, result, "2.0" ), fc::json::stringify_large_ints_and_doubles, _max_conversion_depth );
+                  auto reply = fc::json::to_string( response( *call.id, result, "2.0" ),
+                                                    fc::json::stringify_large_ints_and_doubles,
+                                                    _max_conversion_depth );
                   if( send_message && _connection )
                      _connection->send_message( reply );
                   return reply;
