@@ -25,6 +25,9 @@ namespace fc
                            (overflow_exception)
                            (underflow_exception)
                            (divide_by_zero_exception)
+///////////////////////////////////////////////////// PeerPlays
+                           (root_hashes_doesnt_match_exception)
+///////////////////////////////////////////////////// PeerPlays
                          )
 
    namespace detail
