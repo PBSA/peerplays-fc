@@ -7,9 +7,11 @@ websocket_api_connection::~websocket_api_connection()
 {
 }
 
-websocket_api_connection::websocket_api_connection( fc::http::websocket_connection& c, uint32_t max_depth )
+websocket_api_connection::websocket_api_connection( const std::shared_ptr<fc::http::websocket_connection>& c,
+                                                    uint32_t max_depth )
    : api_connection(max_depth),_connection(c)
 {
+   FC_ASSERT( c );
    _rpc_state.add_method( "call", [this]( const variants& args ) -> variant
    {
       FC_ASSERT( args.size() == 3 && args[2].is_array() );
@@ -47,9 +49,9 @@ websocket_api_connection::websocket_api_connection( fc::http::websocket_connecti
       return this->receive_call( 0, method_name, args );
    } );
 
-   _connection.on_message_handler( [&]( const std::string& msg ){ on_message(msg,true); } );
-   _connection.on_http_handler( [&]( const std::string& msg ){ return on_message(msg,false); } );
-   _connection.closed.connect( [this](){ closed(); } );
+   _connection->on_message_handler( [this]( const std::string& msg ){ on_message(msg,true); } );
+   _connection->on_http_handler( [this]( const std::string& msg ){ return on_message(msg,false); } );
+   _connection->closed.connect( [this](){ closed(); } );
 }
 
 variant websocket_api_connection::send_call(
@@ -57,29 +59,43 @@ variant websocket_api_connection::send_call(
    string method_name,
    variants args /* = variants() */ )
 {
-   auto request = _rpc_state.start_remote_call(  "call", {api_id, std::move(method_name), std::move(args) } );
-   _connection.send_message( fc::json::to_string(fc::variant(request, _max_conversion_depth),
-                                                 fc::json::stringify_large_ints_and_doubles, _max_conversion_depth ) );
-   return _rpc_state.wait_for_response( *request.id );
+   if( _connection )
+   {
+      auto request = _rpc_state.start_remote_call( "call", { api_id, std::move(method_name), std::move(args) } );
+      _connection->send_message( fc::json::to_string( fc::variant( request, _max_conversion_depth ),
+                                                      fc::json::stringify_large_ints_and_doubles,
+                                                      _max_conversion_depth ) );
+      return _rpc_state.wait_for_response( *request.id );
+   }
+   return variant(); // TODO return an error
 }
 
 variant websocket_api_connection::send_callback(
    uint64_t callback_id,
    variants args /* = variants() */ )
 {
-   auto request = _rpc_state.start_remote_call( "callback", {callback_id, std::move(args) } );
-   _connection.send_message( fc::json::to_string(fc::variant(request, _max_conversion_depth),
-                                                 fc::json::stringify_large_ints_and_doubles, _max_conversion_depth ) );
-   return _rpc_state.wait_for_response( *request.id );
+   if( _connection )
+   {
+      auto request = _rpc_state.start_remote_call( "callback", { callback_id, std::move(args) } );
+      _connection->send_message( fc::json::to_string( fc::variant( request, _max_conversion_depth ),
+                                                      fc::json::stringify_large_ints_and_doubles,
+                                                      _max_conversion_depth ) );
+      return _rpc_state.wait_for_response( *request.id );
+   }
+   return variant(); // TODO return an error
 }
 
 void websocket_api_connection::send_notice(
    uint64_t callback_id,
    variants args /* = variants() */ )
 {
-   fc::rpc::request req{ optional<uint64_t>(), "notice", {callback_id, std::move(args)}};
-   _connection.send_message( fc::json::to_string(fc::variant(req, _max_conversion_depth),
-                                                 fc::json::stringify_large_ints_and_doubles, _max_conversion_depth ) );
+   if( _connection )
+   {
+      fc::rpc::request req{ optional<uint64_t>(), "notice", { callback_id, std::move(args) } };
+      _connection->send_message( fc::json::to_string( fc::variant( req, _max_conversion_depth ),
+                                                      fc::json::stringify_large_ints_and_doubles,
+                                                      _max_conversion_depth ) );
+   }
 }
 
 std::string websocket_api_connection::on_message(
@@ -117,8 +133,8 @@ std::string websocket_api_connection::on_message(
                if( call.id )
                {
                   auto reply = fc::json::to_string( response( *call.id, result, "2.0" ), fc::json::stringify_large_ints_and_doubles, _max_conversion_depth );
-                  if( send_message )
-                     _connection.send_message( reply );
+                  if( send_message && _connection )
+                     _connection->send_message( reply );
                   return reply;
                }
             }
@@ -135,8 +151,8 @@ std::string websocket_api_connection::on_message(
 
                auto reply = fc::json::to_string( variant(response( *call.id, error_object{ 1, optexcept->to_string(), fc::variant(*optexcept, _max_conversion_depth)}, "2.0" ), _max_conversion_depth ),
                                                  fc::json::stringify_large_ints_and_doubles, _max_conversion_depth );
-               if( send_message )
-                  _connection.send_message( reply );
+               if( send_message && _connection )
+                  _connection->send_message( reply );
 
                return reply;
          }
