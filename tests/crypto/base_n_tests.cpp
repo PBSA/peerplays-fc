@@ -1,7 +1,6 @@
 #include <boost/test/unit_test.hpp>
 
 #include <fc/crypto/hex.hpp>
-#include <fc/crypto/base36.hpp>
 #include <fc/crypto/base58.hpp>
 #include <fc/crypto/base64.hpp>
 #include <fc/exception/exception.hpp>
@@ -40,29 +39,6 @@ BOOST_AUTO_TEST_CASE(hex_test)
     test_16( TEST3, "4142434445464748494a4b4c4d4e4f505152535455565758595a" );
     test_16( TEST4, "fffe00fd01fc" );
     test_16( TEST5, "000000" );
-}
-
-
-static void test_36( const std::string& test, const std::string& expected )
-{
-    std::vector<char> vec( test.begin(), test.end() );
-    std::string enc1 = fc::to_base36( vec );
-    std::string enc2 = fc::to_base36( test.c_str(), test.size() );
-    BOOST_CHECK_EQUAL( enc1, enc2 );
-    BOOST_CHECK_EQUAL( expected, enc2 );
-
-    std::vector<char> dec = fc::from_base36( enc1 );
-    BOOST_CHECK_EQUAL( vec.size(), dec.size() );
-    BOOST_CHECK( vec == dec );
-}
-
-BOOST_AUTO_TEST_CASE(base36_test)
-{
-    test_36( TEST1, "" );
-    test_36( TEST2, "01o35" );
-    test_36( TEST3, "l4ksdleyi5pnl0un5raue268ptj43dwjwmz15ie2" );
-    test_36( TEST4, "2rrrvpb7y4" );
-    test_36( TEST5, "000" );
 }
 
 
