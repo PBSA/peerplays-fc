@@ -24,7 +24,6 @@ SET( DEFAULT_LIBRARY_INSTALL_DIR lib/ )
 SET( DEFAULT_EXECUTABLE_INSTALL_DIR bin/ )
 SET( CMAKE_DEBUG_POSTFIX _debug )
 SET( BUILD_SHARED_LIBS NO )
-SET( ECC_IMPL secp256k1 CACHE STRING "secp256k1 or openssl or mixed" )
 
 set(platformBitness 32)
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -36,17 +35,6 @@ SET (ORIGINAL_LIB_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
 SET(BOOST_COMPONENTS)
 LIST(APPEND BOOST_COMPONENTS thread date_time filesystem system program_options chrono unit_test_framework context iostreams regex)
 SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
-
-IF( ECC_IMPL STREQUAL openssl )
-  SET( ECC_REST src/crypto/elliptic_impl_pub.cpp )
-ELSE( ECC_IMPL STREQUAL openssl )
-  SET( ECC_LIB secp256k1 )
-  IF( ECC_IMPL STREQUAL mixed )
-    SET( ECC_REST src/crypto/elliptic_impl_priv.cpp src/crypto/elliptic_impl_pub.cpp )
-  ELSE( ECC_IMPL STREQUAL mixed )
-    SET( ECC_REST src/crypto/elliptic_impl_priv.cpp )
-  ENDIF( ECC_IMPL STREQUAL mixed )
-ENDIF( ECC_IMPL STREQUAL openssl )
 
 # Configure secp256k1-zkp
 if ( MSVC )
@@ -263,8 +251,8 @@ set( fc_sources
      src/crypto/sha512.cpp
      src/crypto/dh.cpp
      src/crypto/elliptic_common.cpp
-     ${ECC_REST}
-     src/crypto/elliptic_${ECC_IMPL}.cpp
+     src/crypto/elliptic_impl_priv.cpp
+     src/crypto/elliptic_secp256k1.cpp
      src/crypto/rand.cpp
      src/network/tcp_socket.cpp
      src/network/udp_socket.cpp
@@ -394,7 +382,7 @@ target_include_directories(fc
 IF(NOT WIN32)
   set(LINK_USR_LOCAL_LIB -L/usr/local/lib)
 ENDIF()
-target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${editline_libraries} ${ECC_LIB} )
+target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${editline_libraries} secp256k1 )
 
 if(MSVC)
   set_source_files_properties( src/network/http/websocket.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
