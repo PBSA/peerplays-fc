@@ -1,10 +1,9 @@
 #pragma once
-#include <fc/vector.hpp>
-#include <fc/string.hpp>
+#include <vector>
 
 namespace fc
 {
-    std::vector<char> from_base36( const fc::string& b36 );
-    fc::string to_base36( const std::vector<char>& vec );
-    fc::string to_base36( const char* data, size_t len );
+    std::vector<char> from_base36( const std::string& b36 );
+    std::string to_base36( const std::vector<char>& vec );
+    std::string to_base36( const char* data, size_t len );
 }

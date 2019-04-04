@@ -8,12 +8,12 @@ bstate::~bstate()
    close();
 }
 
-void bstate::add_method( const fc::string& name, method m )
+void bstate::add_method( const std::string& name, method m )
 {
-   _methods.emplace(std::pair<std::string,method>(name,fc::move(m)));
+   _methods.emplace(std::pair<std::string,method>(name,std::move(m)));
 }
 
-void bstate::remove_method( const fc::string& name )
+void bstate::remove_method( const std::string& name )
 {
    _methods.erase(name);
 }

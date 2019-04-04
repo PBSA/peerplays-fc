@@ -1,7 +1,4 @@
 
-add_executable( bip_lock bip_lock.cpp )
-target_link_libraries( bip_lock fc )
-
 add_executable( api api.cpp )
 target_link_libraries( api fc )
 

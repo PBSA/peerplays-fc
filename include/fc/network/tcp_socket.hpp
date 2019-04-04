@@ -1,5 +1,4 @@
 #pragma once
-#include <fc/utility.hpp>
 #include <fc/fwd.hpp>
 #include <fc/io/iostream.hpp>
 #include <fc/time.hpp>

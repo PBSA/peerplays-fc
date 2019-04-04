@@ -32,8 +32,8 @@ namespace fc { namespace rpc {
          typedef std::function<result_type(const params_type&)>  method;
          ~bstate();
 
-         void add_method( const fc::string& name, method m );
-         void remove_method( const fc::string& name );
+         void add_method( const std::string& name, method m );
+         void remove_method( const std::string& name );
 
          result_type local_call( const string& method_name, const params_type& args );
          void    handle_reply( const bresponse& response );

@@ -50,7 +50,7 @@ namespace fc {
        fc::raw::unpack( s, what, _max_depth );
        fc::raw::unpack( s, msgs, _max_depth );
 
-       e = fc::exception( fc::move(msgs), code, name, what );
+       e = fc::exception( std::move(msgs), code, name, what );
     }
 
     template<typename Stream>
@@ -206,7 +206,7 @@ namespace fc {
     template<typename Stream> inline void pack( Stream& s, const char* v, uint32_t _max_depth )
     {
        FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, fc::string(v), _max_depth - 1 );
+       fc::raw::pack( s, std::string(v), _max_depth - 1 );
     }
 
     template<typename Stream, typename T>
@@ -270,18 +270,18 @@ namespace fc {
     }
 
     // fc::string
-    template<typename Stream> inline void pack( Stream& s, const fc::string& v, uint32_t _max_depth )  {
+    template<typename Stream> inline void pack( Stream& s, const std::string& v, uint32_t _max_depth )  {
        FC_ASSERT( _max_depth > 0 );
        fc::raw::pack( s, unsigned_int(v.size()), _max_depth - 1 );
        if( v.size() ) s.write( v.c_str(), v.size() );
     }
 
-    template<typename Stream> inline void unpack( Stream& s, fc::string& v, uint32_t _max_depth )  {
+    template<typename Stream> inline void unpack( Stream& s, std::string& v, uint32_t _max_depth )  {
        FC_ASSERT( _max_depth > 0 );
        std::vector<char> tmp; fc::raw::unpack( s, tmp, _max_depth - 1 );
        if( tmp.size() )
-          v = fc::string( tmp.data(), tmp.data()+tmp.size() );
-       else v = fc::string();
+          v = std::string( tmp.data(), tmp.data()+tmp.size() );
+       else v = std::string();
     }
 
     // bool
