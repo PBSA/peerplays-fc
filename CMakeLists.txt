@@ -238,7 +238,6 @@ set( fc_sources
      src/interprocess/file_mapping.cpp
      src/rpc/cli.cpp
      src/rpc/http_api.cpp
-     src/rpc/json_connection.cpp
      src/rpc/state.cpp
      src/rpc/websocket_api.cpp
      src/log/log_message.cpp
