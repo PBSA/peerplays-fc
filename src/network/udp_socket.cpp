@@ -6,7 +6,7 @@
 
 namespace fc {
   
-  class udp_socket::impl : public fc::retainable {
+  class udp_socket::impl {
     public:
       impl():_sock( fc::asio::default_io_service() ){}
       ~impl(){

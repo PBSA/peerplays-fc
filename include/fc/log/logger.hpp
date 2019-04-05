@@ -1,14 +1,12 @@
 #pragma once
 #include <fc/config.hpp>
 #include <fc/time.hpp>
-#include <fc/shared_ptr.hpp>
+#include <fc/log/appender.hpp>
 #include <fc/log/log_message.hpp>
+#include <memory>
 
 namespace fc
 {
-
-   class appender;
-
    /**
     *
     *
@@ -43,16 +41,16 @@ namespace fc
          void  set_name( const std::string& n );
          const std::string& name()const;
 
-         void add_appender( const fc::shared_ptr<appender>& a );
-         std::vector<fc::shared_ptr<appender> > get_appenders()const;
-         void remove_appender( const fc::shared_ptr<appender>& a );
+         void add_appender( const appender::ptr& a );
+         std::vector<appender::ptr> get_appenders()const;
+         void remove_appender( const appender::ptr& a );
 
          bool is_enabled( log_level e )const;
          void log( log_message m );
 
       private:
          class impl;
-         fc::shared_ptr<impl> my;
+         std::shared_ptr<impl> my;
    };
 
 } // namespace fc

@@ -1,6 +1,5 @@
 #pragma once 
 #include <fc/network/http/connection.hpp>
-#include <fc/shared_ptr.hpp>
 #include <functional>
 #include <memory>
 
@@ -28,7 +27,7 @@ namespace fc { namespace http {
           class impl;
 
           response();
-          response( const fc::shared_ptr<impl>& my);
+          response( const std::shared_ptr<impl>& my);
           response( const response& r);
           response( response&& r );
           ~response();
@@ -42,7 +41,7 @@ namespace fc { namespace http {
           void write( const char* data, uint64_t len )const;
 
         private:
-          fc::shared_ptr<impl> my;
+          std::shared_ptr<impl> my;
       };
 
       void listen( const fc::ip::endpoint& p );

@@ -13,7 +13,7 @@
 
 namespace fc {
 
-   class file_appender::impl : public fc::retainable
+   class file_appender::impl
    {
       public:
          config                     cfg;
