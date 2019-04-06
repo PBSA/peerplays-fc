@@ -35,6 +35,7 @@
 #include <fc/crypto/city.hpp>
 #include <fc/uint128.hpp>
 #include <fc/array.hpp>
+#include <boost/endian/buffers.hpp>
 
 #if defined(__SSE4_2__) && defined(__x86_64__)
 #include <nmmintrin.h>
@@ -61,18 +62,6 @@ inline uint64_t Hash128to64(const uint128& x) {
   b ^= (b >> 47);
   b *= kMul;
   return b;
-}
-
-static uint64_t UNALIGNED_LOAD64(const char *p) {
-  uint64_t result;
-  memcpy(&result, p, sizeof(result));
-  return result;
-}
-
-static uint32_t UNALIGNED_LOAD32(const char *p) {
-  uint32_t result;
-  memcpy(&result, p, sizeof(result));
-  return result;
 }
 
 #ifdef _WIN32
@@ -121,14 +110,6 @@ static uint32_t UNALIGNED_LOAD32(const char *p) {
 
 #endif
 
-#ifdef WORDS_BIGENDIAN
-#define uint32_in_expected_order(x) (bswap_32(x))
-#define uint64_in_expected_order(x) (bswap_64(x))
-#else
-#define uint32_in_expected_order(x) (x)
-#define uint64_in_expected_order(x) (x)
-#endif
-
 #if !defined(LIKELY)
 #if HAVE_BUILTIN_EXPECT
 #define LIKELY(x) (__builtin_expect(!!(x), 1))
@@ -138,11 +119,15 @@ static uint32_t UNALIGNED_LOAD32(const char *p) {
 #endif
 
 static uint64_t Fetch64(const char *p) {
-  return uint64_in_expected_order(UNALIGNED_LOAD64(p));
+  boost::endian::little_uint64_buf_t result;
+  memcpy(&result, p, sizeof(result));
+  return result.value();
 }
 
 static uint32_t Fetch32(const char *p) {
-  return uint32_in_expected_order(UNALIGNED_LOAD32(p));
+  boost::endian::little_uint32_buf_t result;
+  memcpy(&result, p, sizeof(result));
+  return result.value();
 }
 
 // Some primes between 2^63 and 2^64 for various uses.
