@@ -152,6 +152,13 @@ namespace fc {
     } FC_RETHROW_EXCEPTIONS( warn, "fc::array<unsigned char,${length}>", ("length",N) ) }
 
     template<typename Stream, typename T>
+    inline void pack( Stream& s, const std::shared_ptr<T>& v, uint32_t _max_depth )
+    {
+       FC_ASSERT( _max_depth > 0 );
+       fc::raw::pack( s, *v, _max_depth - 1 );
+    }
+
+    template<typename Stream, typename T>
     inline void unpack( Stream& s, std::shared_ptr<T>& v, uint32_t _max_depth )
     { try {
        FC_ASSERT( _max_depth > 0 );
