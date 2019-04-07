@@ -76,11 +76,11 @@ ripemd160 operator << ( const ripemd160& h1, uint32_t i ) {
 }
 ripemd160 operator ^ ( const ripemd160& h1, const ripemd160& h2 ) {
   ripemd160 result;
-  result._hash[0] = h1._hash[0] ^ h2._hash[0];
-  result._hash[1] = h1._hash[1] ^ h2._hash[1];
-  result._hash[2] = h1._hash[2] ^ h2._hash[2];
-  result._hash[3] = h1._hash[3] ^ h2._hash[3];
-  result._hash[4] = h1._hash[4] ^ h2._hash[4];
+  result._hash[0] = h1._hash[0].value() ^ h2._hash[0].value();
+  result._hash[1] = h1._hash[1].value() ^ h2._hash[1].value();
+  result._hash[2] = h1._hash[2].value() ^ h2._hash[2].value();
+  result._hash[3] = h1._hash[3].value() ^ h2._hash[3].value();
+  result._hash[4] = h1._hash[4].value() ^ h2._hash[4].value();
   return result;
 }
 bool operator >= ( const ripemd160& h1, const ripemd160& h2 ) {

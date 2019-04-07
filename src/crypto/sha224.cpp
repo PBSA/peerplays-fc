@@ -60,7 +60,7 @@ namespace fc {
     sha224 operator ^ ( const sha224& h1, const sha224& h2 ) {
       sha224 result;
       for( uint32_t i = 0; i < 7; ++i )
-         result._hash[i] = h1._hash[i] ^ h2._hash[i];
+         result._hash[i] = h1._hash[i].value() ^ h2._hash[i].value();
       return result;
     }
     bool operator >= ( const sha224& h1, const sha224& h2 ) {

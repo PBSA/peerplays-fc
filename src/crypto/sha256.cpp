@@ -77,10 +77,10 @@ namespace fc {
     }
     sha256 operator ^ ( const sha256& h1, const sha256& h2 ) {
       sha256 result;
-      result._hash[0] = h1._hash[0] ^ h2._hash[0];
-      result._hash[1] = h1._hash[1] ^ h2._hash[1];
-      result._hash[2] = h1._hash[2] ^ h2._hash[2];
-      result._hash[3] = h1._hash[3] ^ h2._hash[3];
+      result._hash[0] = h1._hash[0].value() ^ h2._hash[0].value();
+      result._hash[1] = h1._hash[1].value() ^ h2._hash[1].value();
+      result._hash[2] = h1._hash[2].value() ^ h2._hash[2].value();
+      result._hash[3] = h1._hash[3].value() ^ h2._hash[3].value();
       return result;
     }
     bool operator >= ( const sha256& h1, const sha256& h2 ) {

@@ -1,5 +1,5 @@
 #pragma once
-
+#include <boost/endian/buffers.hpp>
 #include <fc/fwd.hpp>
 #include <fc/io/raw_fwd.hpp>
 #include <fc/reflect/typename.hpp>
@@ -68,7 +68,7 @@ class ripemd160
     friend bool      operator >  ( const ripemd160& h1, const ripemd160& h2 );
     friend bool      operator <  ( const ripemd160& h1, const ripemd160& h2 );
 
-    uint32_t _hash[5];
+    boost::endian::little_uint32_buf_t _hash[5];
 };
 
 namespace raw {

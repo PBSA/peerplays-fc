@@ -1,4 +1,5 @@
 #pragma once
+#include <boost/endian/buffers.hpp>
 #include <fc/fwd.hpp>
 
 namespace fc
@@ -62,7 +63,7 @@ class sha512
     friend bool   operator >  ( const sha512& h1, const sha512& h2 ); 
     friend bool   operator <  ( const sha512& h1, const sha512& h2 ); 
                              
-    uint64_t _hash[8]; 
+    boost::endian::little_uint64_buf_t _hash[8];
 };
 
 namespace raw {

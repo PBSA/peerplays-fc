@@ -1,6 +1,7 @@
 #pragma once
+#include <boost/endian/buffers.hpp>
 #include <fc/fwd.hpp>
-#include <fc/platform_independence.hpp>
+#include <fc/string.hpp>
 #include <fc/io/raw_fwd.hpp>
 
 namespace fc
@@ -67,7 +68,7 @@ class sha256
     friend bool   operator >  ( const sha256& h1, const sha256& h2 ); 
     friend bool   operator <  ( const sha256& h1, const sha256& h2 ); 
 
-    uint64_t _hash[4];
+    boost::endian::little_uint64_buf_t _hash[4];
 };
 
 namespace raw {
