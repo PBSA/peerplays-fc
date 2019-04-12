@@ -27,6 +27,7 @@ namespace fc
                            (divide_by_zero_exception)
 ///////////////////////////////////////////////////// PeerPlays
                            (root_hashes_doesnt_match_exception)
+                           (block_gas_limit_reached_exception)
 ///////////////////////////////////////////////////// PeerPlays
                          )
 

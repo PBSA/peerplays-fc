@@ -37,7 +37,8 @@ namespace fc
        underflow_code                    = 20,
        divide_by_zero_code               = 21,
 ///////////////////////////////////////////////////// PeerPlays
-       root_hashes_doesnt_match_code     = 22
+       root_hashes_doesnt_match_code     = 22,
+       block_gas_limit_reached_code      = 23
 ///////////////////////////////////////////////////// PeerPlays
    };
 
@@ -303,6 +304,7 @@ namespace fc
   
 //////////////////////////////////// PeerPlays
   FC_DECLARE_EXCEPTION( root_hashes_doesnt_match_exception, root_hashes_doesnt_match_code, "Root hashes doesn't match" );
+  FC_DECLARE_EXCEPTION( block_gas_limit_reached_exception, block_gas_limit_reached_code, "Gas limit has been reached")
 //////////////////////////////////// PeerPlays
 
   std::string except_str();
