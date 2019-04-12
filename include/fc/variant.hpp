@@ -17,11 +17,11 @@
 #include <fc/smart_ref_fwd.hpp>
 #include <boost/multi_index_container_fwd.hpp>
 
-///////////////////////////////////////////////////////// PeerPlays evm
+////////////////////////////////////////////////////////////////////////////// // PeerPlays begin
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/variant.hpp>
 using u256 = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<256, 256, boost::multiprecision::unsigned_magnitude, boost::multiprecision::unchecked, void>>;
-/////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////// // PeerPlays end
 
 namespace fc
 {
@@ -366,12 +366,12 @@ namespace fc
    void from_variant( const variant& var,  int32_t& vo );
    /** @ingroup Serializable */
    void from_variant( const variant& var,  uint32_t& vo );
-   ///////////////////////////////////////////////////////// PeerPlays evm
+////////////////////////////////////////////////////////////////////////////// // PeerPlays begin
    /** @ingroup Serializable */
    void from_variant( const variant& var, u256& v );
    /** @ingroup Serializable */
    void to_variant( const u256& var,  variant& vo );
-   /////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////// // PeerPlays end
    /** @ingroup Serializable */
    template<typename T>
    void from_variant( const variant& var,  optional<T>& vo )
@@ -639,7 +639,7 @@ namespace fc
       for( const auto& item : vars )
          c.insert( item.as<T>() );
    }
-///////////////////////////////////////////////////////// PeerPlays evm
+////////////////////////////////////////////////////////////////////////////// // PeerPlays begin
    struct to_variant_boost_visitor: public boost::static_visitor<>
    {
       variant& va;
@@ -682,7 +682,7 @@ namespace fc
       sv.set_which( data.first );
       sv.visit( from_variant_boost_visitor<T...>( data.second, variant_boost ) );
    }
-///////////////////////////////////////////////////////// PeerPlays evm
+////////////////////////////////////////////////////////////////////////////// // PeerPlays end
    variant operator + ( const variant& a, const variant& b );
    variant operator - ( const variant& a, const variant& b );
    variant operator * ( const variant& a, const variant& b );

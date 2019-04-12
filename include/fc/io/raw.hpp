@@ -653,7 +653,7 @@ namespace fc {
        sv.visit( unpack_static_variant<Stream>(s) );
     }
 
-//////////////////////////////////// PeerPlays
+////////////////////////////////////////////////////////////////////////////// // PeerPlays begin
     template<typename T>
     inline std::vector<unsigned char> unsigned_pack( const T& v ) {
       datastream<size_t> ps;
@@ -750,7 +750,7 @@ namespace fc {
        sv.set_which(w.value);
        sv.visit( unpack_boost_variant<Stream, T...>(s, v) );
     }
-//////////////////////////////////// PeerPlays
+////////////////////////////////////////////////////////////////////////////// // PeerPlays end
 
 } } // namespace fc::raw
 

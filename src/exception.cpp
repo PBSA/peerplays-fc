@@ -25,10 +25,10 @@ namespace fc
                            (overflow_exception)
                            (underflow_exception)
                            (divide_by_zero_exception)
-///////////////////////////////////////////////////// PeerPlays
+////////////////////////////////////////////////////////////////////////////// // PeerPlays begin
                            (root_hashes_doesnt_match_exception)
                            (block_gas_limit_reached_exception)
-///////////////////////////////////////////////////// PeerPlays
+////////////////////////////////////////////////////////////////////////////// // PeerPlays end
                          )
 
    namespace detail
