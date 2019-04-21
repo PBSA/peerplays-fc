@@ -129,8 +129,6 @@ namespace fc {
        usec = fc::microseconds(usec_as_int64);
     } FC_RETHROW_EXCEPTIONS( warn, "" ) }
 
-    template<typename Stream, typename T, size_t N>
-    inline void pack( Stream& s, const fc::array<T,N>& v, uint32_t _max_depth ) = delete;
     template<typename Stream, size_t N>
     inline void pack( Stream& s, const fc::array<char,N>& v, uint32_t _max_depth ) {
        s.write( &v.data[0], N );
@@ -140,8 +138,6 @@ namespace fc {
        s.write( (char*)&v.data[0], N );
     }
 
-    template<typename Stream, typename T, size_t N>
-    inline void unpack( Stream& s, fc::array<T,N>& v, uint32_t _max_depth ) = delete;
     template<typename Stream, size_t N>
     inline void unpack( Stream& s, fc::array<char,N>& v, uint32_t _max_depth ) { try {
        s.read( &v.data[0], N );

@@ -123,8 +123,10 @@ namespace fc {
     template<typename Stream, boost::endian::order O, class T, std::size_t N, boost::endian::align A>
     inline void unpack( Stream& s, boost::endian::endian_buffer<O,T,N,A>& v, uint32_t _max_depth );
 
-    template<typename Stream, typename T, size_t N> inline void pack( Stream& s, const fc::array<T,N>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
-    template<typename Stream, typename T, size_t N> inline void unpack( Stream& s, fc::array<T,N>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH);
+    template<typename Stream, typename T, size_t N>
+    inline void pack( Stream& s, const fc::array<T,N>& v, uint32_t _max_depth ) = delete;
+    template<typename Stream, typename T, size_t N>
+    inline void unpack( Stream& s, fc::array<T,N>& v, uint32_t _max_depth ) = delete;
     template<typename Stream, size_t N> inline void pack( Stream& s, const fc::array<char,N>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream, size_t N> inline void unpack( Stream& s, fc::array<char,N>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH);
     template<typename Stream, size_t N> inline void pack( Stream& s, const fc::array<unsigned char,N>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
