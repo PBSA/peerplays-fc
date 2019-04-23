@@ -31,7 +31,6 @@ script:
  - set -o pipefail
  - tests/run-parallel-tests.sh tests/all_tests
  - "tests/api 2>&1 | grep -vE 'callback result 9|remote_calc->add. 4, 5 .: 9|set callback|] \\.$'"
- - tests/bip_lock 2>&1 | cat
  - tests/hmac_test 2>&1 | cat
  - tests/ecc_test README.md 2>&1 | cat
  - tests/log_test 2>&1 | cat

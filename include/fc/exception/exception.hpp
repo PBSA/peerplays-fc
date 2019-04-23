@@ -240,9 +240,9 @@ namespace fc
        TYPE( const std::string& what_value, const fc::log_messages& m ) \
        :BASE( m, CODE, BOOST_PP_STRINGIZE(TYPE), what_value ){} \
        TYPE( fc::log_message&& m ) \
-       :BASE( fc::move(m), CODE, BOOST_PP_STRINGIZE(TYPE), WHAT ){}\
+       :BASE( std::move(m), CODE, BOOST_PP_STRINGIZE(TYPE), WHAT ){}\
        TYPE( fc::log_messages msgs ) \
-       :BASE( fc::move( msgs ), CODE, BOOST_PP_STRINGIZE(TYPE), WHAT ) {} \
+       :BASE( std::move( msgs ), CODE, BOOST_PP_STRINGIZE(TYPE), WHAT ) {} \
        TYPE( const TYPE& c ) \
        :BASE(c){} \
        TYPE( const BASE& c ) \
