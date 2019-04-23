@@ -38,8 +38,6 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   set(platformBitness 64)
 endif()
 
-SET (ORIGINAL_LIB_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
-
 SET(BOOST_COMPONENTS)
 LIST(APPEND BOOST_COMPONENTS coroutine thread date_time filesystem system program_options chrono unit_test_framework context iostreams regex)
 # boost::endian is also required, but FindBoost can't handle header-only libs
@@ -145,21 +143,18 @@ IF( WIN32 )
   LIST(APPEND PLATFORM_SPECIFIC_LIBS ws2_32 crypt32 mswsock userenv)
 
   # iphlpapi.lib
-
-ELSE(WIN32)
-  MESSAGE(STATUS "Configuring fc to build on Unix/Apple")
-
-  SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
-
-  IF(NOT APPLE)
-    # Linux or other unix
-    SET(rt_library rt )
-    SET(pthread_library pthread)
-  ENDIF(NOT APPLE)
 ENDIF(WIN32)
 
 FIND_PACKAGE(Boost CONFIG COMPONENTS ${BOOST_COMPONENTS})
 
+IF(NOT WIN32)
+    MESSAGE(STATUS "Configuring fc to build on Unix/Apple")
+
+    if(NOT APPLE)
+        SET(rt_library rt)
+        SET(pthread_library pthread)
+    endif(NOT APPLE)
+ENDIF(NOT WIN32)
 
 IF($ENV{OPENSSL_ROOT_DIR})
   set(OPENSSL_ROOT_DIR $ENV{OPENSSL_ROOT_DIR} )
@@ -172,8 +167,6 @@ IF( LIBCXX_HAVE_CXX_ATOMICS_WITH_LIB )
 ENDIF( LIBCXX_HAVE_CXX_ATOMICS_WITH_LIB )
 
 find_package(OpenSSL REQUIRED)
-
-set( CMAKE_FIND_LIBRARY_SUFFIXES ${ORIGINAL_LIB_SUFFIXES} )
 
 option( UNITY_BUILD OFF )
 
