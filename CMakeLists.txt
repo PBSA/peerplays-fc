@@ -44,7 +44,7 @@ LIST(APPEND BOOST_COMPONENTS coroutine thread date_time filesystem system progra
 SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
 
 # Configure secp256k1-zkp
-if ( MSVC )
+if ( WIN32 )
     # autoconf won't work here, hard code the defines
     set( SECP256K1_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp" )
 
@@ -60,18 +60,9 @@ if ( MSVC )
         USE_SCALAR_8X32
         USE_SCALAR_INV_BUILTIN )
     set_target_properties( secp256k1 PROPERTIES COMPILE_DEFINITIONS "${SECP256K1_BUILD_DEFINES}" LINKER_LANGUAGE C )
-else ( MSVC )
+else ( WIN32 )
     include(ExternalProject)
-    if ( MINGW )
-    ExternalProject_Add( project_secp256k1
-     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp
-     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
-     CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --with-bignum=no  --host=x86_64-w64-mingw32
-     BUILD_COMMAND make
-     INSTALL_COMMAND true
-     BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp/src/project_secp256k1-build/.libs/libsecp256k1.a
-    )
-    else ( MINGW )
+
     ExternalProject_Add( project_secp256k1
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp
      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
@@ -80,7 +71,7 @@ else ( MSVC )
      INSTALL_COMMAND true
      BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp/src/project_secp256k1-build/.libs/libsecp256k1.a
     )
-    endif ( MINGW )
+
     ExternalProject_Add_Step(project_secp256k1 autogen
      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
      COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/autogen.sh
@@ -94,15 +85,13 @@ else ( MSVC )
     set_property(TARGET secp256k1 PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/include)
     add_dependencies(secp256k1 project_secp256k1)
     install( FILES ${binary_dir}/.libs/libsecp256k1${CMAKE_STATIC_LIBRARY_SUFFIX} DESTINATION lib/cryptonomex )
-endif ( MSVC )
+endif ( WIN32 )
 # End configure secp256k1-zkp
 
 # Configure editline
 if ( NOT WIN32 )
     include(ExternalProject)
-    if ( MINGW )
-# Editline is not avalible in MINGW
-    else ( MINGW )
+
     ExternalProject_Add( project_editline
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/editline
      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline
@@ -111,6 +100,7 @@ if ( NOT WIN32 )
      INSTALL_COMMAND true
      BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/editline/src/project_editline-build/src/.libs/libeditline.a
     )
+
     ExternalProject_Add_Step(project_editline autogen
      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline
      COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline/autogen.sh
@@ -122,7 +112,6 @@ if ( NOT WIN32 )
     set_property(TARGET editline PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline/include)
     add_dependencies(editline project_editline)
     install( FILES ${binary_dir}/src/.libs/libeditline${CMAKE_STATIC_LIBRARY_SUFFIX} DESTINATION lib/cryptonomex )
-	endif ( MINGW )
 endif ( NOT WIN32 )
 # End configure editline
 
@@ -316,6 +305,7 @@ ENDIF(APPLE)
 
 if( ZLIB_FOUND )
   MESSAGE( STATUS "zlib found" )
+  target_include_directories(fc PUBLIC ${ZLIB_INCLUDE_DIRS})
   add_definitions( -DHAS_ZLIB )
 else()
   MESSAGE( STATUS "zlib not found" )
