@@ -87,10 +87,10 @@ namespace fc {
       auto async( Functor&& f, const char* desc FC_TASK_NAME_DEFAULT_ARG, priority prio = priority()) -> fc::future<decltype(f())> {
          typedef decltype(f()) Result;
          typedef typename fc::deduce<Functor>::type FunctorType;
-         fc::task<Result,sizeof(FunctorType)>* tsk = 
-              new fc::task<Result,sizeof(FunctorType)>( fc::forward<Functor>(f), desc );
-         fc::future<Result> r(fc::shared_ptr< fc::promise<Result> >(tsk,true) );
-         async_task(tsk,prio);
+         typename task<Result,sizeof(FunctorType)>::ptr tsk = 
+              task<Result,sizeof(FunctorType)>::create( fc::forward<Functor>(f), desc );
+         fc::future<Result> r( std::dynamic_pointer_cast< promise<Result> >(tsk) );
+         async_task(tsk.get(),prio);
          return r;
       }
       void poke();
@@ -109,10 +109,10 @@ namespace fc {
       auto schedule( Functor&& f, const fc::time_point& when, 
                      const char* desc FC_TASK_NAME_DEFAULT_ARG, priority prio = priority()) -> fc::future<decltype(f())> {
          typedef decltype(f()) Result;
-         fc::task<Result,sizeof(Functor)>* tsk = 
-              new fc::task<Result,sizeof(Functor)>( fc::forward<Functor>(f), desc );
-         fc::future<Result> r(fc::shared_ptr< fc::promise<Result> >(tsk,true) );
-         async_task(tsk,prio,when);
+         typename task<Result,sizeof(Functor)>::ptr tsk = 
+              task<Result,sizeof(Functor)>::create( fc::forward<Functor>(f), desc );
+         fc::future<Result> r( std::dynamic_pointer_cast< promise<Result> >(tsk) );
+         async_task(tsk.get(),prio,when);
          return r;
       }
      
@@ -147,8 +147,8 @@ namespace fc {
        template<typename T1, typename T2>
        int wait_any( const fc::future<T1>& f1, const fc::future<T2>& f2, const microseconds& timeout_us = microseconds::maximum()) {
           std::vector<fc::promise_base::ptr> proms(2);
-          proms[0] = fc::static_pointer_cast<fc::promise_base>(f1.m_prom);
-          proms[1] = fc::static_pointer_cast<fc::promise_base>(f2.m_prom);
+          proms[0] = std::static_pointer_cast<fc::promise_base>(f1.m_prom);
+          proms[1] = std::static_pointer_cast<fc::promise_base>(f2.m_prom);
           return wait_any_until(std::move(proms), fc::time_point::now()+timeout_us );
        }
     private:

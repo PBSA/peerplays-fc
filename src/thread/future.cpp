@@ -19,7 +19,8 @@ namespace fc {
    _cancellation_reason(nullptr),
 #endif
    _desc(desc),
-   _compl(nullptr)
+   _compl(nullptr),
+   _retain_count(0)
   { }
 
   const char* promise_base::get_desc()const{
@@ -72,7 +73,7 @@ namespace fc {
     // See https://github.com/cryptonomex/graphene/issues/597
     //
 
-    ptr p_this = ptr( this, true );
+    ptr p_this = shared_from_this();
 
     try
     {
@@ -123,7 +124,7 @@ namespace fc {
       blocked_thread = _blocked_thread;
     }
     if( blocked_thread ) 
-      blocked_thread->notify(ptr(this,true));
+      blocked_thread->notify( shared_from_this() );
   }
   promise_base::~promise_base() { }
   void promise_base::_set_timeout(){
@@ -149,6 +150,14 @@ namespace fc {
         delete _compl; 
         _compl = c;
     }
+  }
+  void promise_base::retain() {
+    if( _retain_count.fetch_add(1, boost::memory_order_relaxed) == 0 )
+      _self = shared_from_this();
+  }
+  void promise_base::release() {
+    if( _retain_count.fetch_sub(1, boost::memory_order_release) == 1 )
+      _self.reset();
   }
 }
 

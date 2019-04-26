@@ -31,9 +31,9 @@ namespace fc {
     public:
               void run(); 
       virtual void cancel(const char* reason FC_CANCELATION_REASON_DEFAULT_ARG) override;
+      ~task_base();
 
     protected:
-      ~task_base();
       /// Task priority looks like unsupported feature.
       uint64_t    _posted_num;
       priority    _prio;
@@ -90,6 +90,19 @@ namespace fc {
   template<typename R,uint64_t FunctorSize=64>
   class task : virtual public task_base, virtual public promise<R> {
     public:
+      typedef std::shared_ptr<task<R,FunctorSize>> ptr;
+
+      virtual ~task(){}
+
+      template<typename Functor>
+      static ptr create( Functor&& f, const char* desc )
+      {
+         return ptr( new task<R,FunctorSize>( std::move(f), desc ) );
+      }
+      virtual void cancel(const char* reason FC_CANCELATION_REASON_DEFAULT_ARG) override { task_base::cancel(reason); }
+
+      alignas(double) char _functor[FunctorSize];      
+    private:
       template<typename Functor>
       task( Functor&& f, const char* desc ):promise_base(desc), task_base(&_functor), promise<R>(desc) {
         typedef typename fc::deduce<Functor>::type FunctorType;
@@ -100,16 +113,24 @@ namespace fc {
         _promise_impl = static_cast<promise<R>*>(this);
         _run_functor  = &detail::functor_run<FunctorType>::run;
       }
-      virtual void cancel(const char* reason FC_CANCELATION_REASON_DEFAULT_ARG) override { task_base::cancel(reason); }
-
-      alignas(double) char _functor[FunctorSize];      
-    private:
-      ~task(){}
   };
 
   template<uint64_t FunctorSize>
-  class task<void,FunctorSize> : virtual public task_base, virtual public promise<void> {
+  class task<void,FunctorSize> : public task_base, public promise<void> {
     public:
+      typedef std::shared_ptr<task<void,FunctorSize>> ptr;
+
+      virtual ~task(){}
+      
+      template<typename Functor>
+      static ptr create( Functor&& f, const char* desc )
+      {
+         return ptr( new task<void,FunctorSize>( std::move(f), desc ) );
+      }
+      virtual void cancel(const char* reason FC_CANCELATION_REASON_DEFAULT_ARG) override { task_base::cancel(reason); }
+
+      alignas(double) char _functor[FunctorSize];
+    private:
       template<typename Functor>
       task( Functor&& f, const char* desc ):promise_base(desc), task_base(&_functor), promise<void>(desc) {
         typedef typename fc::deduce<Functor>::type FunctorType;
@@ -120,11 +141,6 @@ namespace fc {
         _promise_impl = static_cast<promise<void>*>(this);
         _run_functor  = &detail::void_functor_run<FunctorType>::run;
       }
-      virtual void cancel(const char* reason FC_CANCELATION_REASON_DEFAULT_ARG) override { task_base::cancel(reason); }
-
-      alignas(double) char _functor[FunctorSize];      
-    private:
-      ~task(){}
   };
 
 }
