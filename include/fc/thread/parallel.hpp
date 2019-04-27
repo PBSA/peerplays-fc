@@ -99,6 +99,7 @@ namespace fc {
       typedef typename fc::deduce<Functor>::type FunctorType;
       typename task<Result,sizeof(FunctorType)>::ptr tsk =
          task<Result,sizeof(FunctorType)>::create( fc::forward<Functor>(f), desc );
+      tsk->retain(); // HERE BE DRAFONS
       fc::future<Result> r( std::dynamic_pointer_cast< promise<Result> >(tsk) );
       detail::get_worker_pool().post( tsk.get() );
       return r;

@@ -89,6 +89,7 @@ namespace fc {
          typedef typename fc::deduce<Functor>::type FunctorType;
          typename task<Result,sizeof(FunctorType)>::ptr tsk = 
               task<Result,sizeof(FunctorType)>::create( fc::forward<Functor>(f), desc );
+         tsk->retain(); // HERE BE DRAFONS
          fc::future<Result> r( std::dynamic_pointer_cast< promise<Result> >(tsk) );
          async_task(tsk.get(),prio);
          return r;
@@ -111,6 +112,7 @@ namespace fc {
          typedef decltype(f()) Result;
          typename task<Result,sizeof(Functor)>::ptr tsk = 
               task<Result,sizeof(Functor)>::create( fc::forward<Functor>(f), desc );
+         tsk->retain(); // HERE BE DRAFONS
          fc::future<Result> r( std::dynamic_pointer_cast< promise<Result> >(tsk) );
          async_task(tsk.get(),prio,when);
          return r;

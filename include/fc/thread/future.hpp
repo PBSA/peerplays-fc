@@ -72,6 +72,7 @@ namespace fc {
 
       void set_exception( const fc::exception_ptr& e );
 
+      // HERE BE DRAGONS
       void retain();
       void release();
 
