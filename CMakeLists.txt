@@ -116,15 +116,7 @@ if ( MSVC )
 else ( MSVC )
     include(ExternalProject)
     if ( MINGW )
-	# Editline is not avalible in MINGW
-    # ExternalProject_Add( project_editline
-     # PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/editline
-     # SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline
-     # CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/editline --host=x86_64-w64-mingw32
-     # BUILD_COMMAND make
-     # INSTALL_COMMAND true
-     # BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/editline/src/project_editline-build/src/.libs/libeditline.a
-    # )
+# Editline is not avalible in MINGW
     else ( MINGW )
     ExternalProject_Add( project_editline
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/editline
