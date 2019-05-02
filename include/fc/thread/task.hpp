@@ -33,6 +33,25 @@ namespace fc {
       virtual void cancel(const char* reason FC_CANCELATION_REASON_DEFAULT_ARG) override;
       ~task_base();
 
+      /* HERE BE DRAGONS
+       *
+       * Tasks are handled by an fc::thread . To avoid concurrency issues, fc::thread keeps a reference to tha
+       * task in the form of a simple pointer.
+       * At the same time, a task is also a promise that will be fulfilled with the task result, so typically the
+       * creator of the task also keeps a reference to the task (but not necessarily always).
+       *
+       * Because effectively neither fc::thread nor the task creator are responsible for releasing resources
+       * associated with a task, and neither can delete the task without knowing if the other still needs it,
+       * the task object is managed by a shared_ptr.
+       * However, fc::thread doesn't hold a shared_ptr but a native pointer. To work around this, the task can
+       * be made to contain a shared_ptr holding itself (by calling retain()), which happens before the task
+       * is handed to an fc::thread, e. g. in fc::async(). Once the thread has processed the task, it calls
+       * release() which deletes the self-referencing shared_ptr and deletes the task object if it's no longer
+       * in use anywhere.
+       */
+      void retain();
+      void release();
+
     protected:
       /// Task priority looks like unsupported feature.
       uint64_t    _posted_num;
@@ -65,6 +84,9 @@ namespace fc {
       void          run_impl(); 
 
       void cleanup_task_specific_data();
+    private:
+      std::shared_ptr<promise_base> _self;
+      boost::atomic<int32_t>        _retain_count;
   };
 
   namespace detail {

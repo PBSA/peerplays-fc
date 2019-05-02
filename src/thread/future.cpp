@@ -19,8 +19,7 @@ namespace fc {
    _cancellation_reason(nullptr),
 #endif
    _desc(desc),
-   _compl(nullptr),
-   _retain_count(0)
+   _compl(nullptr)
   { }
 
   const char* promise_base::get_desc()const{
@@ -150,14 +149,6 @@ namespace fc {
         delete _compl; 
         _compl = c;
     }
-  }
-  void promise_base::retain() {
-    if( _retain_count.fetch_add(1, boost::memory_order_relaxed) == 0 )
-      _self = shared_from_this();
-  }
-  void promise_base::release() {
-    if( _retain_count.fetch_sub(1, boost::memory_order_release) == 1 )
-      _self.reset();
   }
 }
 

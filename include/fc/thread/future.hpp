@@ -72,10 +72,6 @@ namespace fc {
 
       void set_exception( const fc::exception_ptr& e );
 
-      // HERE BE DRAGONS
-      void retain();
-      void release();
-
     protected:
       promise_base(const char* desc FC_TASK_NAME_DEFAULT_ARG);
 
@@ -108,8 +104,6 @@ namespace fc {
 #endif
       const char*                   _desc;
       detail::completion_handler*   _compl;
-      std::shared_ptr<promise_base> _self;
-      boost::atomic<int32_t>        _retain_count;
   };
 
   template<typename T = void> 
