@@ -3,6 +3,10 @@
 #include <functional>
 #include <boost/any.hpp>
 #include <boost/config.hpp>
+#include <boost/hana/tuple.hpp>
+#include <boost/hana/take_back.hpp>
+#include <boost/hana/transform.hpp>
+#include <boost/hana/concat.hpp>
 
 // ms visual c++ (as of 2013) doesn't accept the standard syntax for calling a 
 // templated member function (foo->template bar();)
@@ -13,13 +17,67 @@
 #endif
 
 namespace fc {
-  struct identity_member { 
+  namespace detail {
+    namespace hana = boost::hana;
+
+    /// This metafunction determines whether its template argument is an instantiation of fc::optional
+    template<typename T> struct is_optional : public std::false_type {};
+    template<typename T> struct is_optional<fc::optional<T>> : public std::true_type {};
+    /// This metafunction determines whether all of its template arguments are instantiations of fc::optional
+    template<typename... Ts> struct all_optionals;
+    template<> struct all_optionals<> : public std::true_type {};
+    template<typename T, typename... Ts> struct all_optionals<T, Ts...> : public std::false_type {};
+    template<typename T, typename... Ts> struct all_optionals<fc::optional<T>, Ts...> : public all_optionals<Ts...> {};
+
+    /// A wrapper of std::function allowing callers to omit the last several arguments if those arguments are
+    /// fc::optional types. i.e. given a function taking (int, double, bool, fc::optional<string>, fc::optional<char>),
+    /// whereas normally the last two arguments must be provided, this template allows them to be omitted.
+    /// Note that this only applies to trailing optional arguments, i.e. given a callable taking
+    /// (fc::optional<int>, int, fc::optional<int>), only the last argument can be omitted.
+    template<typename R, typename... Parameters>
+    struct optionals_callable : public std::function<R(Parameters...)> {
+       using std::function<R(Parameters...)>::operator();
+
+       /// Overload the function call operator, enabled if the caller provides fewer arguments than there are parameters.
+       /// Pads out the provided arguments with default-constructed optionals, checking that they are indeed optional types
+       template<class... Args>
+       std::enable_if_t<sizeof...(Args) < sizeof...(Parameters), R> operator()(Args... args) {
+           auto arguments = hana::make_tuple(std::forward<Args>(args)...);
+           // Get the parameter types corresponding to the omitted arguments
+           auto optional_types = hana::take_back(hana::tuple_t<Parameters...>,
+                                                 hana::size_c<sizeof...(Parameters) - sizeof...(Args)>);
+           // Transform the types into default-constructed values, checking that they are optional types
+           auto optional_values = hana::transform(optional_types, [](auto hanatype) {
+               using type = std::decay_t<typename decltype(hanatype)::type>;
+               static_assert(is_optional<type>::value,
+                             "All omitted arguments must correspond to optional parameters.");
+               return type();
+           });
+           auto padded_arguments = hana::concat(arguments, optional_values);
+           return hana::unpack(padded_arguments,
+                               [this](auto... params) { return (*this)(std::forward<decltype(params)>(params)...); });
+       }
+    };
+  }
+
+  // This is no longer used and probably no longer can be used without generalizing the infrastructure around it, but I
+  // kept it because it is informative.
+//  struct identity_member {
+//       template<typename R, typename C, typename P, typename... Args>
+//       static std::function<R(Args...)> functor( P&& p, R (C::*mem_func)(Args...) );
+//       template<typename R, typename C, typename P, typename... Args>
+//       static std::function<R(Args...)> functor( P&& p, R (C::*mem_func)(Args...)const );
+//  };
+  /// Used as the Transform template parameter for APIs, this type has two main purposes: first, it reads the argument
+  /// list and return type of a method into template parameters; and second, it uses those types in conjunction with the
+  /// optionals_callable template above to create a function pointer which supports optional arguments.
+  struct identity_member_with_optionals {
        template<typename R, typename C, typename P, typename... Args>
-       static std::function<R(Args...)> functor( P&& p, R (C::*mem_func)(Args...) );
+       static detail::optionals_callable<R, Args...> functor( P&& p, R (C::*mem_func)(Args...) );
        template<typename R, typename C, typename P, typename... Args>
-       static std::function<R(Args...)> functor( P&& p, R (C::*mem_func)(Args...)const );
+       static detail::optionals_callable<R, Args...> functor( P&& p, R (C::*mem_func)(Args...)const );
   };
-   
+
   template< typename Interface, typename Transform  >
   struct vtable  : public std::enable_shared_from_this<vtable<Interface,Transform>> 
   { private: vtable(); };
@@ -57,13 +115,13 @@ namespace fc {
 
         // defined in api_connection.hpp
         template< typename T >
-        api<T, identity_member> as();
+        api<T, identity_member_with_optionals> as();
   };
   typedef std::shared_ptr< api_base > api_ptr;
 
   class api_connection;
 
-  template<typename Interface, typename Transform = identity_member >
+  template<typename Interface, typename Transform = identity_member_with_optionals >
   class api : public api_base {
     public:
       typedef vtable<Interface,Transform> vtable_type;
