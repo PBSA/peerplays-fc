@@ -108,14 +108,7 @@ if ( MSVC )
 else ( MSVC )
     include(ExternalProject)
     if ( MINGW )
-    ExternalProject_Add( project_editline
-     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/editline
-     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline
-     CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/editline --host=x86_64-w64-mingw32
-     BUILD_COMMAND make
-     INSTALL_COMMAND true
-     BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/editline/src/project_editline-build/src/.libs/libeditline.a
-    )
+# Editline is not avalible in MINGW
     else ( MINGW )
     ExternalProject_Add( project_editline
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/editline
@@ -124,21 +117,19 @@ else ( MSVC )
      BUILD_COMMAND make
      INSTALL_COMMAND true
      BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/editline/src/project_editline-build/src/.libs/libeditline.a
-    )
-    endif ( MINGW )
+    )  
     ExternalProject_Add_Step(project_editline autogen
      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline
      COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline/autogen.sh
      DEPENDERS configure
     )
-
     ExternalProject_Get_Property(project_editline binary_dir)
-
     add_library(editline STATIC IMPORTED)
     set_property(TARGET editline PROPERTY IMPORTED_LOCATION ${binary_dir}/src/.libs/libeditline${CMAKE_STATIC_LIBRARY_SUFFIX})
     set_property(TARGET editline PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline/include)
     add_dependencies(editline project_editline)
     install( FILES ${binary_dir}/src/.libs/libeditline${CMAKE_STATIC_LIBRARY_SUFFIX} DESTINATION lib/cryptonomex )
+	endif ( MINGW )
 endif ( MSVC )
 # End configure editline
 
@@ -286,10 +277,10 @@ setup_library( fc SOURCES ${sources} LIBRARY_TYPE STATIC )
 install( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" DESTINATION include )
 
 # begin editline stuff
-if(NOT MSVC)
+if(NOT (MSVC OR MINGW))
   target_compile_definitions (fc PRIVATE HAVE_EDITLINE)
   set(editline_libraries editline)
-endif(NOT MSVC)
+endif(NOT (MSVC OR MINGW))
 if(WIN32)
   target_compile_definitions( fc PRIVATE _CRT_NONSTDC_NO_DEPRECATE )
 endif(WIN32)
