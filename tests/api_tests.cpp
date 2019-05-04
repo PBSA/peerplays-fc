@@ -73,12 +73,14 @@ BOOST_AUTO_TEST_CASE(login_test) {
                c->set_session_data( wsc );
           });
 
-      server->listen( 8090 );
+      server->listen( 0 );
+      auto listen_port = server->get_listening_port();
       server->start_accept();
 
       try {
          auto client = std::make_shared<fc::http::websocket_client>();
-         auto con  = client->connect( "ws://localhost:8090" );
+         auto con  = client->connect( "ws://localhost:" + std::to_string(listen_port) );
+         server->stop_listening();
          auto apic = std::make_shared<websocket_api_connection>(con, MAX_DEPTH);
          auto remote_login_api = apic->get_remote_api<login_api>();
          auto remote_calc = remote_login_api->get_calc();
@@ -87,8 +89,10 @@ BOOST_AUTO_TEST_CASE(login_test) {
          BOOST_CHECK_EQUAL(remote_calc->add( 4, 5 ), 9);
          BOOST_CHECK(remote_triggered);
 
+         client->synchronous_close();
+         server->synchronous_close();
+         fc::usleep(fc::milliseconds(50));
          client.reset();
-         fc::usleep(fc::milliseconds(100));
          server.reset();
       } FC_LOG_AND_RETHROW()
    } FC_LOG_AND_RETHROW()
@@ -110,12 +114,14 @@ BOOST_AUTO_TEST_CASE(optionals_test) {
                c->set_session_data( wsc );
           });
 
-      server->listen( 8090 );
+      server->listen( 0 );
+      auto listen_port = server->get_listening_port();
       server->start_accept();
 
       try {
          auto client = std::make_shared<fc::http::websocket_client>();
-         auto con  = client->connect( "ws://localhost:8090" );
+         auto con  = client->connect( "ws://localhost:" + std::to_string(listen_port) );
+         server->stop_listening();
          auto apic = std::make_shared<websocket_api_connection>(*con, MAX_DEPTH);
          auto remote_optionals = apic->get_remote_api<optionals_api>();
 
@@ -124,8 +130,10 @@ BOOST_AUTO_TEST_CASE(optionals_test) {
          BOOST_CHECK_EQUAL(remote_optionals->foo("a", "b", "c"), "[\"a\",\"b\",\"c\"]");
          BOOST_CHECK_EQUAL(remote_optionals->foo("a", {}, "c"), "[\"a\",null,\"c\"]");
 
+         client->synchronous_close();
+         server->synchronous_close();
+         fc::usleep(fc::milliseconds(50));
          client.reset();
-         fc::usleep(fc::milliseconds(100));
          server.reset();
       } FC_LOG_AND_RETHROW()
    } FC_LOG_AND_RETHROW()

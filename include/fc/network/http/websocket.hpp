@@ -50,7 +50,12 @@ namespace fc { namespace http {
          void on_connection( const on_connection_handler& handler);
          void listen( uint16_t port );
          void listen( const fc::ip::endpoint& ep );
+         uint16_t get_listening_port();
          void start_accept();
+
+         void stop_listening();
+         void close();
+         void synchronous_close();
 
       private:
          friend class detail::websocket_server_impl;
@@ -83,6 +88,9 @@ namespace fc { namespace http {
 
          websocket_connection_ptr connect( const std::string& uri );
          websocket_connection_ptr secure_connect( const std::string& uri );
+
+         void close();
+         void synchronous_close();
       private:
          std::unique_ptr<detail::websocket_client_impl> my;
          std::unique_ptr<detail::websocket_tls_client_impl> smy;

@@ -431,6 +431,7 @@ namespace fc { namespace http {
 
       typedef websocket_client_type::connection_ptr  websocket_client_connection_type;
       typedef websocket_tls_client_type::connection_ptr  websocket_tls_client_connection_type;
+      using websocketpp::connection_hdl;
 
       class websocket_client_impl
       {
@@ -484,6 +485,7 @@ namespace fc { namespace http {
             websocket_client_type              _client;
             websocket_connection_ptr           _connection;
             std::string                        _uri;
+            fc::optional<connection_hdl>       _hdl;
       };
 
 
@@ -625,11 +627,35 @@ namespace fc { namespace http {
    }
    void websocket_server::listen( const fc::ip::endpoint& ep )
    {
-      my->_server.listen( boost::asio::ip::tcp::endpoint( boost::asio::ip::address_v4(uint32_t(ep.get_address())),ep.port()) );
+       my->_server.listen( boost::asio::ip::tcp::endpoint( boost::asio::ip::address_v4(uint32_t(ep.get_address())),ep.port()) );
+   }
+
+   uint16_t websocket_server::get_listening_port()
+   {
+       websocketpp::lib::asio::error_code ec;
+       return my->_server.get_local_endpoint(ec).port();
    }
 
    void websocket_server::start_accept() {
-      my->_server.start_accept();
+       my->_server.start_accept();
+   }
+
+   void websocket_server::stop_listening()
+   {
+       my->_server.stop_listening();
+   }
+
+   void websocket_server::close()
+   {
+       for (auto& connection : my->_connections)
+           my->_server.close(connection.first, websocketpp::close::status::normal, "Goodbye");
+   }
+
+   void websocket_server::synchronous_close()
+   {
+      close();
+      while (!my->_connections.empty())
+          fc::yield();
    }
 
 
@@ -678,6 +704,7 @@ namespace fc { namespace http {
        my->_connected = fc::promise<void>::ptr( new fc::promise<void>("websocket::connect") );
 
        my->_client.set_open_handler( [=]( websocketpp::connection_hdl hdl ){
+          my->_hdl = hdl;
           auto con =  my->_client.get_con_from_hdl(hdl);
           my->_connection = std::make_shared<detail::websocket_connection_impl<detail::websocket_client_connection_type>>( con );
           my->_closed = fc::promise<void>::ptr( new fc::promise<void>("websocket::closed") );
@@ -717,7 +744,20 @@ namespace fc { namespace http {
        smy->_client.connect(con);
        smy->_connected->wait();
        return smy->_connection;
-   } FC_CAPTURE_AND_RETHROW( (uri) ) }
+       } FC_CAPTURE_AND_RETHROW( (uri) ) }
+
+   void websocket_client::close()
+   {
+       if (my->_hdl)
+           my->_client.close(*my->_hdl, websocketpp::close::status::normal, "Goodbye");
+   }
+
+   void websocket_client::synchronous_close()
+   {
+       close();
+       if (my->_closed)
+          my->_closed->wait();
+   }
 
    websocket_connection_ptr websocket_tls_client::connect( const std::string& uri )
    { try {
