@@ -1,7 +1,3 @@
-
-add_executable( api api.cpp )
-target_link_libraries( api fc )
-
 if( ECC_IMPL STREQUAL secp256k1 )
     add_executable( blind all_tests.cpp crypto/blind.cpp )
     target_link_libraries( blind fc )
@@ -55,5 +51,6 @@ add_executable( all_tests all_tests.cpp
                           utf8_test.cpp
                           variant_test.cpp
                           logging_tests.cpp
+                          api_tests.cpp
                           )
 target_link_libraries( all_tests fc )

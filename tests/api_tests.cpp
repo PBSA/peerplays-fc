@@ -1,3 +1,5 @@
+#include <boost/test/unit_test.hpp>
+
 #include <fc/api.hpp>
 #include <fc/log/logger.hpp>
 #include <fc/rpc/api_connection.hpp>
@@ -50,23 +52,15 @@ class some_calculator
       void    on_result2(  const std::function<void(int32_t)>& cb, int test ){}
       std::function<void(int32_t)> _cb;
 };
-class variant_calculator
-{
-   public:
-      double add( fc::variant a, fc::variant b ) { return a.as_double()+b.as_double(); }
-      double sub( fc::variant a, fc::variant b ) { return a.as_double()-b.as_double(); }
-      void    on_result( const std::function<void(int32_t)>& cb ) { wlog("set callback"); _cb = cb; return ; }
-      void    on_result2(  const std::function<void(int32_t)>& cb, int test ){}
-      std::function<void(int32_t)> _cb;
-};
 
 using namespace fc::http;
 using namespace fc::rpc;
 
 #define MAX_DEPTH 10
 
-int main( int argc, char** argv )
-{
+BOOST_AUTO_TEST_SUITE(api_tests)
+
+BOOST_AUTO_TEST_CASE(login_test) {
    try {
       fc::api<calculator> calc_api( std::make_shared<some_calculator>() );
 
@@ -90,22 +84,24 @@ int main( int argc, char** argv )
          auto remote_calc = remote_login_api->get_calc();
          bool remote_triggered = false;
          remote_calc->on_result( [&remote_triggered]( uint32_t r ) { remote_triggered = true; } );
-         FC_ASSERT(remote_calc->add( 4, 5 ) == 9);
-         FC_ASSERT(remote_triggered);
+         BOOST_CHECK_EQUAL(remote_calc->add( 4, 5 ), 9);
+         BOOST_CHECK(remote_triggered);
 
          client.reset();
          fc::usleep(fc::milliseconds(100));
          server.reset();
       } FC_LOG_AND_RETHROW()
    } FC_LOG_AND_RETHROW()
+}
 
+BOOST_AUTO_TEST_CASE(optionals_test) {
    try {
       auto optionals = std::make_shared<optionals_api>();
       fc::api<optionals_api> oapi(optionals);
-      FC_ASSERT(oapi->foo("a") == "[\"a\",null,null]");
-      FC_ASSERT(oapi->foo("a", "b") == "[\"a\",\"b\",null]");
-      FC_ASSERT(oapi->foo("a", "b", "c") == "[\"a\",\"b\",\"c\"]");
-      FC_ASSERT(oapi->foo("a", {}, "c") == "[\"a\",null,\"c\"]");
+      BOOST_CHECK_EQUAL(oapi->foo("a"), "[\"a\",null,null]");
+      BOOST_CHECK_EQUAL(oapi->foo("a", "b"), "[\"a\",\"b\",null]");
+      BOOST_CHECK_EQUAL(oapi->foo("a", "b", "c"), "[\"a\",\"b\",\"c\"]");
+      BOOST_CHECK_EQUAL(oapi->foo("a", {}, "c"), "[\"a\",null,\"c\"]");
 
       auto server = std::make_shared<fc::http::websocket_server>();
       server->on_connection([&]( const websocket_connection_ptr& c ){
@@ -123,16 +119,16 @@ int main( int argc, char** argv )
          auto apic = std::make_shared<websocket_api_connection>(*con, MAX_DEPTH);
          auto remote_optionals = apic->get_remote_api<optionals_api>();
 
-         FC_ASSERT(remote_optionals->foo("a") == "[\"a\",null,null]");
-         FC_ASSERT(remote_optionals->foo("a", "b") == "[\"a\",\"b\",null]");
-         FC_ASSERT(remote_optionals->foo("a", "b", "c") == "[\"a\",\"b\",\"c\"]");
-         FC_ASSERT(remote_optionals->foo("a", {}, "c") == "[\"a\",null,\"c\"]");
+         BOOST_CHECK_EQUAL(remote_optionals->foo("a"), "[\"a\",null,null]");
+         BOOST_CHECK_EQUAL(remote_optionals->foo("a", "b"), "[\"a\",\"b\",null]");
+         BOOST_CHECK_EQUAL(remote_optionals->foo("a", "b", "c"), "[\"a\",\"b\",\"c\"]");
+         BOOST_CHECK_EQUAL(remote_optionals->foo("a", {}, "c"), "[\"a\",null,\"c\"]");
 
          client.reset();
          fc::usleep(fc::milliseconds(100));
          server.reset();
       } FC_LOG_AND_RETHROW()
    } FC_LOG_AND_RETHROW()
-
-   return 0;
 }
+
+BOOST_AUTO_TEST_SUITE_END()
