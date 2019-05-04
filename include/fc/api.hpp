@@ -3,10 +3,6 @@
 #include <functional>
 #include <boost/any.hpp>
 #include <boost/config.hpp>
-#include <boost/hana/tuple.hpp>
-#include <boost/hana/take_back.hpp>
-#include <boost/hana/transform.hpp>
-#include <boost/hana/concat.hpp>
 
 // ms visual c++ (as of 2013) doesn't accept the standard syntax for calling a 
 // templated member function (foo->template bar();)
@@ -18,8 +14,6 @@
 
 namespace fc {
   namespace detail {
-    namespace hana = boost::hana;
-
     /// This metafunction determines whether its template argument is an instantiation of fc::optional
     template<typename T> struct is_optional : public std::false_type {};
     template<typename T> struct is_optional<fc::optional<T>> : public std::true_type {};
@@ -38,24 +32,47 @@ namespace fc {
     struct optionals_callable : public std::function<R(Parameters...)> {
        using std::function<R(Parameters...)>::operator();
 
+       template<typename... CutList>
+       struct short_pack {};
+       /// This metafunction removes the first several types from a variadic parameter pack of types.
+       /// The first parameter is the number of arguments to remove from the beginning of the pack.
+       /// All subsequent parameters are types in the list to be cut
+       /// The result pack_cutter<...>::type is a short_pack<RemainingTypes>
+       template<unsigned RemoveCount, typename... Types>
+       struct pack_cutter;
+       template<unsigned RemoveCount, typename, typename... Types>
+       struct pack_cutter_impl;
+       template<typename... Types>
+       struct pack_cutter_impl<0, void, Types...> {
+           static_assert(all_optionals<Types...>::value, "All omitted arguments must correspond to optional parameters.");
+           using type = short_pack<Types...>;
+       };
+       template<unsigned RemoveCount, typename T, typename... Types>
+       struct pack_cutter_impl<RemoveCount, std::enable_if_t<RemoveCount>, T, Types...>
+               : public pack_cutter_impl<RemoveCount - 1, void, Types...> {};
+       template<unsigned RemoveCount, typename... Types>
+       struct pack_cutter : public pack_cutter_impl<RemoveCount, void, Types...> {};
+       template<unsigned RemoveCount, typename... Types>
+       using pack_cutter_t = typename pack_cutter<RemoveCount, Types...>::type;
+
+       template<typename F, typename... OptionalTypes>
+       R call_function(F&& f, short_pack<OptionalTypes...>) {
+           return f(OptionalTypes()...);
+       }
+
        /// Overload the function call operator, enabled if the caller provides fewer arguments than there are parameters.
        /// Pads out the provided arguments with default-constructed optionals, checking that they are indeed optional types
        template<class... Args>
        std::enable_if_t<sizeof...(Args) < sizeof...(Parameters), R> operator()(Args... args) {
-           auto arguments = hana::make_tuple(std::forward<Args>(args)...);
-           // Get the parameter types corresponding to the omitted arguments
-           auto optional_types = hana::take_back(hana::tuple_t<Parameters...>,
-                                                 hana::size_c<sizeof...(Parameters) - sizeof...(Args)>);
-           // Transform the types into default-constructed values, checking that they are optional types
-           auto optional_values = hana::transform(optional_types, [](auto hanatype) {
-               using type = std::decay_t<typename decltype(hanatype)::type>;
-               static_assert(is_optional<type>::value,
-                             "All omitted arguments must correspond to optional parameters.");
-               return type();
-           });
-           auto padded_arguments = hana::concat(arguments, optional_values);
-           return hana::unpack(padded_arguments,
-                               [this](auto... params) { return (*this)(std::forward<decltype(params)>(params)...); });
+           // Partially apply with the arguments provided
+           auto partial_function = [this, &args...](auto&&... rest) {
+               return (*this)(std::forward<decltype(args)>(args)..., std::move(rest)...);
+           };
+           // Cut the provided arguments' types out of the Parameters list, and store the rest in a dummy type
+           pack_cutter_t<sizeof...(Args), std::decay_t<Parameters>...> dummy;
+           // Pass the partially applied function and the dummy type to another function which can deduce the optional
+           // types and call the function with default instantiations of those types
+           return call_function(std::move(partial_function), dummy);
        }
     };
   }
