@@ -28,6 +28,17 @@ class login_api
 };
 FC_API( login_api, (get_calc)(test) );
 
+
+class optionals_api
+{
+public:
+    std::string foo( const std::string& first, const fc::optional<std::string>& second,
+                     const fc::optional<std::string>& third ) {
+        return fc::json::to_string(fc::variants{first, {second, 2}, {third, 2}});
+    }
+};
+FC_API( optionals_api, (foo) );
+
 using namespace fc;
 
 class some_calculator
@@ -59,8 +70,8 @@ int main( int argc, char** argv )
    try {
       fc::api<calculator> calc_api( std::make_shared<some_calculator>() );
 
-      fc::http::websocket_server server;
-      server.on_connection([&]( const websocket_connection_ptr& c ){
+      auto server = std::make_shared<fc::http::websocket_server>();
+      server->on_connection([&]( const websocket_connection_ptr& c ){
                auto wsc = std::make_shared<websocket_api_connection>(c, MAX_DEPTH);
                auto login = std::make_shared<login_api>();
                login->calc = calc_api;
@@ -68,124 +79,60 @@ int main( int argc, char** argv )
                c->set_session_data( wsc );
           });
 
-      server.listen( 8090 );
-      server.start_accept();
+      server->listen( 8090 );
+      server->start_accept();
 
-      for( uint32_t i = 0; i < 5000; ++i )
-      {
-         try { 
-            fc::http::websocket_client client;
-            auto con  = client.connect( "ws://localhost:8090" );
-            auto apic = std::make_shared<websocket_api_connection>(con, MAX_DEPTH);
-            auto remote_login_api = apic->get_remote_api<login_api>();
-            auto remote_calc = remote_login_api->get_calc();
-            remote_calc->on_result( []( uint32_t r ) { elog( "callback result ${r}", ("r",r) ); } );
-            wdump((remote_calc->add( 4, 5 )));
-         } catch ( const fc::exception& e )
-         {
-            edump((e.to_detail_string()));
-         }
-      }
-      wlog( "exit scope" );
-   } 
-   catch( const fc::exception& e )
-   {
-      edump((e.to_detail_string()));
-   }
-   wlog( "returning now..." );
-   
-   return 0;
+      try {
+         auto client = std::make_shared<fc::http::websocket_client>();
+         auto con  = client->connect( "ws://localhost:8090" );
+         auto apic = std::make_shared<websocket_api_connection>(con, MAX_DEPTH);
+         auto remote_login_api = apic->get_remote_api<login_api>();
+         auto remote_calc = remote_login_api->get_calc();
+         bool remote_triggered = false;
+         remote_calc->on_result( [&remote_triggered]( uint32_t r ) { remote_triggered = true; } );
+         FC_ASSERT(remote_calc->add( 4, 5 ) == 9);
+         FC_ASSERT(remote_triggered);
 
-   some_calculator calc;
-   variant_calculator vcalc;
+         client.reset();
+         fc::usleep(fc::milliseconds(100));
+         server.reset();
+      } FC_LOG_AND_RETHROW()
+   } FC_LOG_AND_RETHROW()
 
-   fc::api<calculator> api_calc( &calc );
-   fc::api<calculator> api_vcalc( &vcalc );
-   fc::api<calculator> api_nested_calc( api_calc );
-
-   wdump( (api_calc->add(5,4)) );
-   wdump( (api_calc->sub(5,4)) );
-   wdump( (api_vcalc->add(5,4)) );
-   wdump( (api_vcalc->sub(5,4)) );
-   wdump( (api_nested_calc->sub(5,4)) );
-   wdump( (api_nested_calc->sub(5,4)) );
-
-   /*
-   variants v = { 4, 5 };
-   auto g = to_generic( api_calc->add );
-   auto r = call_generic( api_calc->add, v.begin(), v.end() );
-   wdump((r));
-   wdump( (g(v)) );
-   */
-
-   /*
    try {
-      fc::api_server server;
-      auto api_id = server.register_api( api_calc );
-      wdump( (api_id) );
-      auto result = server.call( api_id, "add", {4, 5} );
-      wdump( (result) );
-   } catch ( const fc::exception& e )
-   {
-      elog( "${e}", ("e",e.to_detail_string() ) );
-   }
+      auto optionals = std::make_shared<optionals_api>();
+      fc::api<optionals_api> oapi(optionals);
+      FC_ASSERT(oapi->foo("a") == "[\"a\",null,null]");
+      FC_ASSERT(oapi->foo("a", "b") == "[\"a\",\"b\",null]");
+      FC_ASSERT(oapi->foo("a", "b", "c") == "[\"a\",\"b\",\"c\"]");
+      FC_ASSERT(oapi->foo("a", {}, "c") == "[\"a\",null,\"c\"]");
 
-   ilog( "------------------ NESTED TEST --------------" );
-   try {
-      login_api napi_impl;
-      napi_impl.calc = api_calc;
-      fc::api<login_api>  napi(&napi_impl);
+      auto server = std::make_shared<fc::http::websocket_server>();
+      server->on_connection([&]( const websocket_connection_ptr& c ){
+               auto wsc = std::make_shared<websocket_api_connection>(*c, MAX_DEPTH);
+               wsc->register_api(fc::api<optionals_api>(optionals));
+               c->set_session_data( wsc );
+          });
 
-      fc::api_server server;
-      auto api_id = server.register_api( napi );
-      wdump( (api_id) );
-      auto result = server.call( api_id, "get_calc" );
-      wdump( (result) );
-      result = server.call( result.as_uint64(), "add", {4,5} );
-      wdump( (result) );
+      server->listen( 8090 );
+      server->start_accept();
 
+      try {
+         auto client = std::make_shared<fc::http::websocket_client>();
+         auto con  = client->connect( "ws://localhost:8090" );
+         auto apic = std::make_shared<websocket_api_connection>(*con, MAX_DEPTH);
+         auto remote_optionals = apic->get_remote_api<optionals_api>();
 
-      fc::api<api_server> serv( &server );
+         FC_ASSERT(remote_optionals->foo("a") == "[\"a\",null,null]");
+         FC_ASSERT(remote_optionals->foo("a", "b") == "[\"a\",\"b\",null]");
+         FC_ASSERT(remote_optionals->foo("a", "b", "c") == "[\"a\",\"b\",\"c\"]");
+         FC_ASSERT(remote_optionals->foo("a", {}, "c") == "[\"a\",null,\"c\"]");
 
-      fc::api_client<login_api> apic( serv );
-
-      fc::api<login_api> remote_api = apic;
-
-
-      auto remote_calc = remote_api->get_calc();
-      int r = remote_calc->add( 4, 5 );
-      idump( (r) );
-
-   } catch ( const fc::exception& e )
-   {
-      elog( "${e}", ("e",e.to_detail_string() ) );
-   }
-   */
-
-   ilog( "------------------ NESTED TEST --------------" );
-   try {
-      login_api napi_impl;
-      napi_impl.calc = api_calc;
-      fc::api<login_api>  napi(&napi_impl);
-
-
-      auto client_side = std::make_shared<local_api_connection>(MAX_DEPTH);
-      auto server_side = std::make_shared<local_api_connection>(MAX_DEPTH);
-      server_side->set_remote_connection( client_side );
-      client_side->set_remote_connection( server_side );
-
-      server_side->register_api( napi );
-
-      fc::api<login_api> remote_api = client_side->get_remote_api<login_api>();
-
-      auto remote_calc = remote_api->get_calc();
-      int r = remote_calc->add( 4, 5 );
-      idump( (r) );
-
-   } catch ( const fc::exception& e )
-   {
-      elog( "${e}", ("e",e.to_detail_string() ) );
-   }
+         client.reset();
+         fc::usleep(fc::milliseconds(100));
+         server.reset();
+      } FC_LOG_AND_RETHROW()
+   } FC_LOG_AND_RETHROW()
 
    return 0;
 }

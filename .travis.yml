@@ -30,7 +30,7 @@ script:
  - 'which build-wrapper-linux-x86-64 && build-wrapper-linux-x86-64 --out-dir bw-output make -j 2 || make -j 2'
  - set -o pipefail
  - tests/run-parallel-tests.sh tests/all_tests
- - "tests/api 2>&1 | grep -vE 'callback result 9|remote_calc->add. 4, 5 .: 9|set callback|] \\.$'"
+ - tests/api 2>&1 | cat
  - tests/hmac_test 2>&1 | cat
  - tests/ecc_test README.md 2>&1 | cat
  - 'find CMakeFiles/fc.dir -type d | while read d; do gcov -o "$d" "${d/CMakeFiles*.dir/./}"/*.cpp; done >/dev/null'

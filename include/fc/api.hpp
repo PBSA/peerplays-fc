@@ -48,7 +48,7 @@ namespace fc {
            using type = short_pack<Types...>;
        };
        template<unsigned RemoveCount, typename T, typename... Types>
-       struct pack_cutter_impl<RemoveCount, std::enable_if_t<RemoveCount>, T, Types...>
+       struct pack_cutter_impl<RemoveCount, std::enable_if_t<RemoveCount != 0>, T, Types...>
                : public pack_cutter_impl<RemoveCount - 1, void, Types...> {};
        template<unsigned RemoveCount, typename... Types>
        struct pack_cutter : public pack_cutter_impl<RemoveCount, void, Types...> {};
