@@ -1,5 +1,6 @@
 #pragma once
 #include <boost/endian/buffers.hpp>
+
 #include <fc/io/raw_variant.hpp>
 #include <fc/reflect/reflect.hpp>
 #include <fc/io/datastream.hpp>
@@ -22,6 +23,24 @@ namespace fc {
        --_max_depth;
        pack( s, a0, _max_depth );
        pack( s, args..., _max_depth );
+    }
+
+    template<typename Stream>
+    inline void pack( Stream& s, const uint128_t& v, uint32_t _max_depth )
+    {
+        boost::endian::little_uint64_buf_at hilo[2];
+        hilo[0] = static_cast<uint64_t>(v >> 64);
+        hilo[1] = static_cast<uint64_t>(v & 0xffffffffffffffffULL);
+        s.write( hilo[0].data(), sizeof(hilo) );
+    }
+    template<typename Stream>
+    inline void unpack( Stream& s, uint128_t& v, uint32_t _max_depth )
+    {
+        boost::endian::little_uint64_buf_at hilo[2];
+        s.read( (char*) hilo, sizeof(hilo) );
+        v = hilo[0].value();
+        v <<= 64;
+        v += hilo[1].value();
     }
 
     template<typename Stream>

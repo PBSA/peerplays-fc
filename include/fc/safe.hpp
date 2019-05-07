@@ -11,8 +11,7 @@ namespace fc {
     *  integer overflow and default initialization. It will
     *  throw an exception on overflow conditions.
     *
-    *  It can only be used on built-in types.  In particular,
-    *  safe<uint128_t> is buggy and should not be used.
+    *  It can only be used on built-in types.
     *
     *  Implemented using spec from:
     *  https://www.securecoding.cert.org/confluence/display/c/INT32-C.+Ensure+that+operations+on+signed+integers+do+not+result+in+overflow

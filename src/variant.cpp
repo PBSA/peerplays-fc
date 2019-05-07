@@ -13,6 +13,7 @@
 
 namespace fc
 {
+
 /**
  *  The TypeID is stored in the 'last byte' of the variant.
  */
@@ -670,6 +671,16 @@ void from_variant( const variant& var, std::vector<char>& vo, uint32_t max_depth
         size_t r = from_hex( str, vo.data(), vo.size() );
         FC_ASSERT( r == vo.size() );
      }
+}
+
+void to_variant( const uint128_t& var, variant& vo, uint32_t max_depth )
+{
+   vo = var.str();
+}
+
+void from_variant( const variant& var, uint128_t& vo, uint32_t max_depth )
+{
+   vo = uint128_t( var.as_string() );
 }
 
 #ifdef __APPLE__

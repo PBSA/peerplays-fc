@@ -11,6 +11,7 @@
 #include <string.h> // memset
 
 #include <fc/optional.hpp>
+#include <fc/uint128.hpp>
 #include <fc/container/flat_fwd.hpp>
 #include <boost/endian/buffers.hpp>
 #include <boost/multi_index_container_fwd.hpp>
@@ -145,6 +146,9 @@ namespace fc
 
    void to_variant( const microseconds& input_microseconds,   variant& output_variant, uint32_t max_depth );
    void from_variant( const variant& input_variant, microseconds& output_microseconds, uint32_t max_depth );
+
+   void to_variant( const uint128_t& var, variant& vo, uint32_t max_depth = 1 );
+   void from_variant( const variant& var, uint128_t& vo, uint32_t max_depth = 1 );
 
    #ifdef __APPLE__
    void to_variant( size_t s, variant& v, uint32_t max_depth = 1 );

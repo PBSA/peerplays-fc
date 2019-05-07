@@ -24,10 +24,17 @@
 
 #pragma once
 
-#include <boost/multiprecision/integer.hpp>
+#include <fc/platform_independence.hpp>
+#include <fc/uint128.hpp>
 
 namespace fc {
 
-using boost::multiprecision::uint128_t;
- 
+#if _MSC_VER || __GNUC__ || __clang__
+inline uint8_t popcount( uint64_t v ) { return __builtin_popcountll(v); }
+#else
+uint8_t popcount( uint64_t v );
+#endif
+
+uint8_t popcount( const fc::uint128_t& v );
+
 } // namespace fc

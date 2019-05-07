@@ -1,10 +1,12 @@
 #pragma once
 #include <boost/endian/buffers.hpp>
+
 #include <fc/config.hpp>
 #include <fc/container/flat_fwd.hpp>
 #include <fc/io/varint.hpp>
 #include <fc/array.hpp>
 #include <fc/safe.hpp>
+#include <fc/uint128.hpp>
 #include <deque>
 #include <memory>
 #include <vector>
@@ -42,7 +44,10 @@ namespace fc {
     template<typename Stream, typename IntType, typename EnumType>
     inline void unpack( Stream& s, fc::enum_type<IntType,EnumType>& tp, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
 
-
+    template<typename Stream>
+    inline void pack( Stream& s, const uint128_t& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream>
+    inline void unpack( Stream& s, uint128_t& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
 
     template<typename Stream, typename T> inline void pack( Stream& s, const std::set<T>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream, typename T> inline void unpack( Stream& s, std::set<T>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
