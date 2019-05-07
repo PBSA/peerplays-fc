@@ -649,14 +649,6 @@ namespace fc { namespace http {
            my->_server.close(connection.first, websocketpp::close::status::normal, "Goodbye");
    }
 
-   void websocket_server::synchronous_close()
-   {
-      close();
-      if (my->_closed)
-         my->_closed->wait();
-   }
-
-
 
 
    websocket_tls_server::websocket_tls_server( const string& server_pem, const string& ssl_password ):my( new detail::websocket_tls_server_impl(server_pem, ssl_password) ) {}

@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE(login_test) {
          BOOST_CHECK(remote_triggered);
 
          client->synchronous_close();
-         server->synchronous_close();
+         server->close();
          fc::usleep(fc::milliseconds(50));
          client.reset();
          server.reset();
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE(optionals_test) {
          BOOST_CHECK_EQUAL(remote_optionals->foo("a", {}, "c"), "[\"a\",null,\"c\"]");
 
          client->synchronous_close();
-         server->synchronous_close();
+         server->close();
          fc::usleep(fc::milliseconds(50));
          client.reset();
          server.reset();

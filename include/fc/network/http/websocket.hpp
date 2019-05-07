@@ -55,7 +55,6 @@ namespace fc { namespace http {
 
          void stop_listening();
          void close();
-         void synchronous_close();
 
       private:
          friend class detail::websocket_server_impl;
