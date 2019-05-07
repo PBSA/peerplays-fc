@@ -9,6 +9,7 @@
 
 #ifdef HAVE_EDITLINE
 # include "editline.h"
+# include <signal.h>
 # ifdef WIN32
 #  include <io.h>
 # endif
@@ -53,21 +54,22 @@ void cli::send_notice( uint64_t callback_id, variants args /* = variants() */ )
    FC_ASSERT(false);
 }
 
-void cli::start()
-{
-   cli_commands() = get_method_names(0);
-
-#ifdef HAVE_EDITLINE
-el_hist_size = 256;
-#endif
-
-   _run_complete = fc::async( [&](){ run(); } );
-}
-
 void cli::stop()
 {
-   _run_complete.cancel();
+   cancel();
    _run_complete.wait();
+}
+
+void cli::cancel()
+{
+   _run_complete.cancel();
+#ifdef HAVE_EDITLINE
+   if( _getline_thread )
+   {
+      _getline_thread->signal(SIGINT);
+      _getline_thread = nullptr;
+   }
+#endif
 }
 
 void cli::wait()
@@ -103,6 +105,20 @@ void cli::run()
          }
          catch ( const fc::eof_exception& e )
          {
+            if( _getline_thread )
+            {
+               _getline_thread->quit();
+               _getline_thread = nullptr;
+            }
+            break;
+         }
+         catch ( const fc::canceled_exception& e )
+         {
+            if( _getline_thread )
+            {
+               _getline_thread->quit();
+               _getline_thread = nullptr;
+            }
             break;
          }
 
@@ -128,6 +144,11 @@ void cli::run()
 
          if (e.code() == fc::canceled_exception_code)
          {
+            if( _getline_thread )
+            {
+               _getline_thread->quit();
+               _getline_thread = nullptr;
+            }
             break;
          }
       }
@@ -237,6 +258,39 @@ static int cli_check_secret(const char *source)
    return 0;
 }
 
+/**
+ * Get next character from stdin, or EOF if got a SIGINT signal
+ */
+static int interruptable_getc(void)
+{
+   int r;
+   char c;
+
+   r = read(0, &c, 1); // read from stdin, will return -1 on SIGINT
+
+   return r == 1 ? c : EOF;
+}
+
+void cli::start()
+{
+
+#ifdef HAVE_EDITLINE
+   el_hist_size = 256;
+
+   rl_set_complete_func(my_rl_complete);
+   rl_set_list_possib_func(cli_completion);
+   rl_set_check_secret_func(cli_check_secret);
+   rl_set_getc_func(interruptable_getc);
+
+   static fc::thread getline_thread("getline");
+   _getline_thread = &getline_thread;
+
+   cli_commands() = get_method_names(0);
+#endif
+
+   _run_complete = fc::async( [&](){ run(); } );
+}
+
 /***
  * @brief Read input from the user
  * @param prompt the prompt to display
@@ -258,21 +312,19 @@ void cli::getline( const fc::string& prompt, fc::string& line)
    if( _isatty( _fileno( stdin ) ) )
 #endif
    {
-      rl_set_complete_func(my_rl_complete);
-      rl_set_list_possib_func(cli_completion);
-      rl_set_check_secret_func(cli_check_secret);
-
-      static fc::thread getline_thread("getline");
-      getline_thread.async( [&](){
-         char* line_read = nullptr;
-         std::cout.flush(); //readline doesn't use cin, so we must manually flush _out
-         line_read = readline(prompt.c_str());
-         if( line_read == nullptr )
-            FC_THROW_EXCEPTION( fc::eof_exception, "" );
-         line = line_read;
-         // we don't need here to add line in editline's history, cause it will be doubled
-         free(line_read);
-      }).wait();
+      if( _getline_thread )
+      {
+         _getline_thread->async( [&prompt,&line](){
+            char* line_read = nullptr;
+            std::cout.flush(); //readline doesn't use cin, so we must manually flush _out
+            line_read = readline(prompt.c_str());
+            if( line_read == nullptr )
+               FC_THROW_EXCEPTION( fc::eof_exception, "" );
+            line = line_read;
+            // we don't need here to add line in editline's history, cause it will be doubled
+            free(line_read);
+         }).wait();
+      }
    }
    else
 #endif
@@ -280,7 +332,6 @@ void cli::getline( const fc::string& prompt, fc::string& line)
       std::cout << prompt;
       // sync_call( cin_thread, [&](){ std::getline( *input_stream, line ); }, "getline");
       fc::getline( fc::cin, line );
-      return;
    }
 }
 
