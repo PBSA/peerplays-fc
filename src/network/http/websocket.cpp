@@ -207,8 +207,6 @@ namespace fc { namespace http {
                     _server_thread.async( [&](){
                        auto new_con = std::make_shared<websocket_connection_impl<websocket_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
                        _on_connection( _connections[hdl] = new_con );
-                       if ( !_closed || _closed->ready() )
-                          _closed = new fc::promise<void>();
                     }).wait();
                });
                _server.set_message_handler( [&]( connection_hdl hdl, websocket_server_type::message_ptr msg ){
@@ -290,6 +288,9 @@ namespace fc { namespace http {
             {
                if( _server.is_listening() )
                   _server.stop_listening();
+
+               if ( _connections.size() )
+                  _closed = new fc::promise<void>();
 
                auto cpy_con = _connections;
                for( auto item : cpy_con )

@@ -28,6 +28,9 @@ namespace fc {
     /// whereas normally the last two arguments must be provided, this template allows them to be omitted.
     /// Note that this only applies to trailing optional arguments, i.e. given a callable taking
     /// (fc::optional<int>, int, fc::optional<int>), only the last argument can be omitted.
+    ///
+    /// A discussion of how exactly this works is available here:
+    /// https://github.com/bitshares/bitshares-fc/pull/126#issuecomment-490566060
     template<typename R, typename... Parameters>
     struct optionals_callable : public std::function<R(Parameters...)> {
        using std::function<R(Parameters...)>::operator();
