@@ -278,7 +278,7 @@ void cli::start()
 
    rl_set_complete_func(my_rl_complete);
    rl_set_list_possib_func(cli_completion);
-   rl_set_check_secret_func(cli_check_secret);
+   //rl_set_check_secret_func(cli_check_secret);
    rl_set_getc_func(interruptable_getc);
 
    static fc::thread getline_thread("getline");
