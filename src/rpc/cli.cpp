@@ -257,15 +257,23 @@ static int cli_check_secret(const char *source)
    return 0;
 }
 
+static int cli_quitting = false;
+
 /**
  * Get next character from stdin, or EOF if got a SIGINT signal
  */
 static int interruptible_getc(void)
 {
+   if( cli_quitting )
+      return EOF;
+
    int r;
    char c;
 
    r = read(0, &c, 1); // read from stdin, will return -1 on SIGINT
+
+   if( r == -1 && errno == EINTR )
+      cli_quitting = true;
 
    return r == 1 ? c : EOF;
 }
