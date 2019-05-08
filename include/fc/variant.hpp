@@ -12,6 +12,7 @@
 
 #include <fc/optional.hpp>
 #include <fc/container/flat_fwd.hpp>
+#include <boost/endian/buffers.hpp>
 #include <boost/multi_index_container_fwd.hpp>
 
 #ifdef FC_ASSERT
@@ -164,6 +165,19 @@ namespace fc
    void to_variant( const std::pair<A,B>& t,   variant& v, uint32_t max_depth );
    template<typename A, typename B>
    void from_variant( const variant& v, std::pair<A,B>& p, uint32_t max_depth );
+
+   template<boost::endian::order O, class T, std::size_t N, boost::endian::align A>
+   void to_variant( const boost::endian::endian_buffer<O,T,N,A>& var, variant& vo,  uint32_t max_depth )
+   {
+      to_variant( var.value(), vo, max_depth );
+   }
+   template<boost::endian::order O, class T, std::size_t N, boost::endian::align A>
+   void from_variant( const variant& var, boost::endian::endian_buffer<O,T,N,A>& vo, uint32_t max_depth )
+   {
+      T tmp;
+      from_variant( var, tmp, max_depth );
+      vo = tmp;
+   }
 
    /**
     * @brief stores null, int64, uint64, double, bool, string, std::vector<variant>,

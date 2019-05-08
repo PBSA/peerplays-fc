@@ -32,6 +32,10 @@ namespace fc {
 
          uint64_t to_uint64()const;
 
+         template<typename Stream>
+         inline void pack( Stream& s, uint32_t _max_depth=FC_PACK_MAX_DEPTH ) {
+            pack( s, fixed, _max_depth );
+         }
       private:
          uint128  fixed;
    };
@@ -43,13 +47,15 @@ namespace fc {
   {
     template<typename Stream>
     inline void pack( Stream& s, const real128& value_to_pack, uint32_t _max_depth=FC_PACK_MAX_DEPTH )
-    { s.write( (char*)&value_to_pack, sizeof(value_to_pack) ); }
+    { value_to_pack.pack( s, _max_depth ); }
 
     template<typename Stream>
     inline void unpack( Stream& s, real128& value_to_unpack, uint32_t _max_depth=FC_PACK_MAX_DEPTH )
-    { s.read( (char*)&value_to_unpack, sizeof(value_to_unpack) ); }
+    {
+       uint128_t delegate;
+       unpack( s, delegate, _max_depth );
+       value_to_unpack = fc::real128::from_fixed( delegate );
+    }
   }
-
-
 
 } // namespace fc

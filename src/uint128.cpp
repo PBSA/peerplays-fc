@@ -1,10 +1,10 @@
 #include <fc/uint128.hpp>
 #include <fc/variant.hpp>
 #include <fc/crypto/bigint.hpp>
+#include <boost/endian/buffers.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
 
 #include <stdexcept>
-#include "byteswap.hpp"
 
 namespace fc 
 {
@@ -119,7 +119,9 @@ namespace fc
 
     uint128::operator bigint()const
     {
-       auto tmp  = uint128( bswap_64( hi ), bswap_64( lo ) );
+       boost::endian::big_uint64_buf_t tmp[2];
+       tmp[0] = hi;
+       tmp[1] = lo;
        bigint bi( (char*)&tmp, sizeof(tmp) );
        return bi;
     }
@@ -367,6 +369,15 @@ namespace fc
 
 } // namespace fc
 
+namespace std {
+   size_t hash<fc::uint128>::operator()( const fc::uint128& s )const
+   {
+      boost::endian::little_uint64_buf_t tmp[2];
+      tmp[0] = s.hi;
+      tmp[1] = s.lo;
+      return fc::city_hash_size_t((char*)&tmp, sizeof(tmp));
+   }
+}
 
 /*
  * Portions of the above code were adapted from the work of Evan Teran.

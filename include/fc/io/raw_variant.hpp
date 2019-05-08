@@ -26,7 +26,7 @@ namespace fc { namespace raw {
          }
          virtual void handle( const double& v )const
          {
-            fc::raw::pack( s, v, max_depth );
+            FC_THROW_EXCEPTION( invalid_arg_exception, "Can't pack double!" );
          }
          virtual void handle( const bool& v )const
          {
@@ -86,10 +86,7 @@ namespace fc { namespace raw {
          }
          case variant::double_type:
          {
-            double val;
-            raw::unpack( s, val, _max_depth );
-            v = val;
-            return;
+            FC_THROW_EXCEPTION( invalid_arg_exception, "Can't unpack double!" );
          }
          case variant::bool_type:
          {

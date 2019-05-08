@@ -33,7 +33,6 @@ script:
  - "tests/api 2>&1 | grep -vE 'callback result 9|remote_calc->add. 4, 5 .: 9|set callback|] \\.$'"
  - tests/hmac_test 2>&1 | cat
  - tests/ecc_test README.md 2>&1 | cat
- - tests/log_test 2>&1 | cat
  - 'find CMakeFiles/fc.dir -type d | while read d; do gcov -o "$d" "${d/CMakeFiles*.dir/./}"/*.cpp; done >/dev/null'
  - 'which sonar-scanner && sonar-scanner || true'
  - ccache -s

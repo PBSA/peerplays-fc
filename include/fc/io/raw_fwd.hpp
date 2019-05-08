@@ -1,4 +1,5 @@
 #pragma once
+#include <boost/endian/buffers.hpp>
 #include <fc/config.hpp>
 #include <fc/container/flat_fwd.hpp>
 #include <fc/io/varint.hpp>
@@ -117,9 +118,19 @@ namespace fc {
     template<typename Stream> inline void pack( Stream& s, const char* v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream> inline void pack( Stream& s, const std::vector<char>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream> inline void unpack( Stream& s, std::vector<char>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream, boost::endian::order O, class T, std::size_t N, boost::endian::align A>
+    inline void pack( Stream& s, const boost::endian::endian_buffer<O,T,N,A>& v, uint32_t _max_depth );
+    template<typename Stream, boost::endian::order O, class T, std::size_t N, boost::endian::align A>
+    inline void unpack( Stream& s, boost::endian::endian_buffer<O,T,N,A>& v, uint32_t _max_depth );
 
-    template<typename Stream, typename T, size_t N> inline void pack( Stream& s, const fc::array<T,N>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
-    template<typename Stream, typename T, size_t N> inline void unpack( Stream& s, fc::array<T,N>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH);
+    template<typename Stream, typename T, size_t N>
+    inline void pack( Stream& s, const fc::array<T,N>& v, uint32_t _max_depth ) = delete;
+    template<typename Stream, typename T, size_t N>
+    inline void unpack( Stream& s, fc::array<T,N>& v, uint32_t _max_depth ) = delete;
+    template<typename Stream, size_t N> inline void pack( Stream& s, const fc::array<char,N>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream, size_t N> inline void unpack( Stream& s, fc::array<char,N>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH);
+    template<typename Stream, size_t N> inline void pack( Stream& s, const fc::array<unsigned char,N>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream, size_t N> inline void unpack( Stream& s, fc::array<unsigned char,N>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH);
 
     template<typename Stream, typename T> inline void pack( Stream& s, const shared_ptr<T>& v,
                                                             uint32_t _max_depth=FC_PACK_MAX_DEPTH );

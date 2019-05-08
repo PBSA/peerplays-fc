@@ -9,6 +9,7 @@
 #include <fc/log/logger.hpp>
 
 #include <fc/thread/thread.hpp>
+#include <boost/endian/buffers.hpp>
 #include <boost/thread/mutex.hpp>
 #include <openssl/opensslconf.h>
 #ifndef OPENSSL_THREADS
@@ -52,7 +53,10 @@ void aes_encoder::init( const fc::sha256& key, const fc::uint128& init_value )
     *    In this example we are using 256 bit AES (i.e. a 256 bit key). The
     *    IV size for *most* modes is the same as the block size. For AES this
     *    is 128 bits */
-    if(1 != EVP_EncryptInit_ex(my->ctx, EVP_aes_256_cbc(), NULL, (unsigned char*)&key, (unsigned char*)&init_value))
+    boost::endian::little_uint64_buf_t iv[2];
+    iv[0] = init_value.hi;
+    iv[1] = init_value.lo;
+    if(1 != EVP_EncryptInit_ex(my->ctx, EVP_aes_256_cbc(), NULL, (unsigned char*)&key, (const unsigned char*)iv[0].data()))
     {
         FC_THROW_EXCEPTION( aes_exception, "error during aes 256 cbc encryption init", 
                            ("s", ERR_error_string( ERR_get_error(), nullptr) ) );
@@ -117,7 +121,10 @@ void aes_decoder::init( const fc::sha256& key, const fc::uint128& init_value )
     *    In this example we are using 256 bit AES (i.e. a 256 bit key). The
     *    IV size for *most* modes is the same as the block size. For AES this
     *    is 128 bits */
-    if(1 != EVP_DecryptInit_ex(my->ctx, EVP_aes_256_cbc(), NULL, (unsigned char*)&key, (unsigned char*)&init_value))
+    boost::endian::little_uint64_buf_t iv[2];
+    iv[0] = init_value.hi;
+    iv[1] = init_value.lo;
+    if(1 != EVP_DecryptInit_ex(my->ctx, EVP_aes_256_cbc(), NULL, (unsigned char*)&key, (const unsigned char*)iv[0].data()))
     {
         FC_THROW_EXCEPTION( aes_exception, "error during aes 256 cbc encryption init", 
                            ("s", ERR_error_string( ERR_get_error(), nullptr) ) );

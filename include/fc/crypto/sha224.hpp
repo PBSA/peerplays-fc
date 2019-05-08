@@ -1,5 +1,5 @@
 #pragma once
-#include <unordered_map>
+#include <boost/endian/buffers.hpp>
 #include <fc/fwd.hpp>
 #include <fc/io/raw_fwd.hpp>
 
@@ -64,9 +64,8 @@ class sha224
     friend bool   operator >= ( const sha224& h1, const sha224& h2 );
     friend bool   operator >  ( const sha224& h1, const sha224& h2 ); 
     friend bool   operator <  ( const sha224& h1, const sha224& h2 ); 
-    friend std::size_t hash_value( const sha224& v ) { return uint64_t(v._hash[1])<<32 | v._hash[2]; }
                              
-    uint32_t _hash[7]; 
+    boost::endian::little_uint32_buf_t _hash[7];
 };
 
 namespace raw {
