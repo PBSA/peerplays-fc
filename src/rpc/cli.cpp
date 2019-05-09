@@ -105,20 +105,12 @@ void cli::run()
          }
          catch ( const fc::eof_exception& e )
          {
-            if( _getline_thread )
-            {
-               _getline_thread->quit();
-               _getline_thread = nullptr;
-            }
+            _getline_thread = nullptr;
             break;
          }
          catch ( const fc::canceled_exception& e )
          {
-            if( _getline_thread )
-            {
-               _getline_thread->quit();
-               _getline_thread = nullptr;
-            }
+            _getline_thread = nullptr;
             break;
          }
 
@@ -142,11 +134,7 @@ void cli::run()
       {
          if (e.code() == fc::canceled_exception_code)
          {
-            if( _getline_thread )
-            {
-               _getline_thread->quit();
-               _getline_thread = nullptr;
-            }
+            _getline_thread = nullptr;
             break;
          }
          std::cout << e.to_detail_string() << "\n";
@@ -257,6 +245,10 @@ static int cli_check_secret(const char *source)
    return 0;
 }
 
+/***
+ * Indicates whether CLI is quitting after got a SIGINT signal.
+ * In order to be used by editline which is C-style, this is a global variable.
+ */
 static int cli_quitting = false;
 
 /**
@@ -291,6 +283,8 @@ void cli::start()
 
    static fc::thread getline_thread("getline");
    _getline_thread = &getline_thread;
+
+   cli_quitting = false;
 
    cli_commands() = get_method_names(0);
 #endif
