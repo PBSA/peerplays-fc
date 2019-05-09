@@ -289,7 +289,7 @@ void cli::start()
    cli_commands() = get_method_names(0);
 #endif
 
-   _run_complete = fc::async( [&](){ run(); } );
+   _run_complete = fc::async( [this](){ run(); } );
 }
 
 /***
