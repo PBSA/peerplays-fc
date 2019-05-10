@@ -155,6 +155,17 @@ namespace fc {
 
    void          thread::debug( const std::string& d ) { /*my->debug(d);*/ }
 
+#if defined(__linux__) || defined(__APPLE__)
+#include <signal.h>
+#endif
+
+   void thread::signal(int sig)
+   {
+#if defined(__linux__) || defined(__APPLE__)
+      pthread_kill( my->boost_thread->native_handle(), sig );
+#endif
+   }
+
   void thread::quit()
   {
     //if quitting from a different thread, start quit task on thread.

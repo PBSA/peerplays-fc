@@ -129,6 +129,11 @@ namespace fc {
        *  @todo make quit non-blocking of the calling thread by eliminating the call to <code>boost::thread::join</code>
        */
       void quit();
+
+      /**
+       * Send signal to underlying native thread. Only for Linux and macOS
+       */
+      void signal(int);
      
       /**
        *  @return true unless quit() has been called.

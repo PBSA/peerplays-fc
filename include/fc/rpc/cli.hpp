@@ -25,6 +25,7 @@ namespace fc { namespace rpc {
 
          void start();
          void stop();
+         void cancel();
          void wait();
          void format_result( const string& method, std::function<string(variant,const variants&)> formatter);
 
@@ -40,5 +41,6 @@ namespace fc { namespace rpc {
          std::string _prompt = ">>>";
          std::map<string,std::function<string(variant,const variants&)> > _result_formatters;
          fc::future<void> _run_complete;
+         fc::thread* _getline_thread = nullptr; ///< Wait for user input in this thread
    };
 } } 
