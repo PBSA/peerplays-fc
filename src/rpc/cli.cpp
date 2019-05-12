@@ -54,29 +54,6 @@ void cli::send_notice( uint64_t callback_id, variants args /* = variants() */ )
    FC_ASSERT(false);
 }
 
-void cli::stop()
-{
-   cancel();
-   _run_complete.wait();
-}
-
-void cli::cancel()
-{
-   _run_complete.cancel();
-#ifdef HAVE_EDITLINE
-   if( _getline_thread )
-   {
-      _getline_thread->signal(SIGINT);
-      _getline_thread = nullptr;
-   }
-#endif
-}
-
-void cli::wait()
-{
-   _run_complete.wait();
-}
-
 void cli::format_result( const string& method, std::function<string(variant,const variants&)> formatter)
 {
    _result_formatters[method] = formatter;
@@ -290,6 +267,30 @@ void cli::start()
 #endif
 
    _run_complete = fc::async( [this](){ run(); } );
+}
+
+void cli::cancel()
+{
+   _run_complete.cancel();
+#ifdef HAVE_EDITLINE
+   cli_quitting = true;
+   if( _getline_thread )
+   {
+      _getline_thread->signal(SIGINT);
+      _getline_thread = nullptr;
+   }
+#endif
+}
+
+void cli::stop()
+{
+   cancel();
+   _run_complete.wait();
+}
+
+void cli::wait()
+{
+   _run_complete.wait();
 }
 
 /***
