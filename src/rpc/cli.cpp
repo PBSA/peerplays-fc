@@ -244,7 +244,7 @@ static int interruptible_getc(void)
    if( r == -1 && errno == EINTR )
       cli_quitting = true;
 
-   return r == 1 ? c : EOF;
+   return r == 1 && !cli_quitting ? c : EOF;
 }
 
 void cli::start()
