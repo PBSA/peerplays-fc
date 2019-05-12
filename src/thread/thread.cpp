@@ -77,6 +77,7 @@ namespace fc {
           try {
             set_thread_name(name.c_str()); // set thread's name for the debugger to display
             this->my = new thread_d( *this, notifier );
+            cleanup();
             current_thread() = this;
             p->set_value();
             exec();
@@ -126,8 +127,10 @@ namespace fc {
    }
 
    void thread::cleanup() {
-     delete current_thread();
-     current_thread() = nullptr;
+     if ( current_thread() ) {
+        delete current_thread();
+        current_thread() = nullptr;
+     }
    }
 
    const string& thread::name()const
