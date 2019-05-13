@@ -524,11 +524,11 @@ namespace fc {
 
 
     template<typename Stream, typename T>
-    inline void pack( Stream& s, const T& v ) {
+    void pack( Stream& s, const T& v ) {
       fc::raw::detail::if_reflected< typename fc::reflector<T>::is_defined >::pack(s,v);
     }
     template<typename Stream, typename T>
-    inline void unpack( Stream& s, T& v )
+    void unpack( Stream& s, T& v )
     { try {
       fc::raw::detail::if_reflected< typename fc::reflector<T>::is_defined >::unpack(s,v);
     } FC_RETHROW_EXCEPTIONS( warn, "error unpacking ${type}", ("type",fc::get_typename<T>::name() ) ) }
