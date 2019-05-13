@@ -106,8 +106,8 @@ namespace fc {
     template<typename Stream> inline void unpack( Stream& s, fc::ripemd160&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream> inline void pack( Stream& s, const fc::ripemd160&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
 
-    template<typename Stream, typename T> inline void pack( Stream& s, const T& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
-    template<typename Stream, typename T> inline void unpack( Stream& s, T& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream, typename T> void pack( Stream& s, const T& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream, typename T> void unpack( Stream& s, T& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
 
     template<typename Stream, typename T> inline void pack( Stream& s, const std::vector<T>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream, typename T> inline void unpack( Stream& s, std::vector<T>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
