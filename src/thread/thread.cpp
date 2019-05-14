@@ -114,8 +114,10 @@ namespace fc {
    }
 
    thread::~thread() {
-      if( my )
+      if( my && is_running() )
+      {
         quit();
+      }
 
       delete my;
    }
@@ -342,6 +344,10 @@ namespace fc {
 
    void thread::async_task( task_base* t, const priority& p, const time_point& tp ) {
       assert(my);
+      if ( !is_running() )
+      {
+         FC_THROW_EXCEPTION( canceled_exception, "Thread is not running.");
+      }
       t->_when = tp;
       task_base* stale_head = my->task_in_queue.load(boost::memory_order_relaxed);
       do { t->_next = stale_head;
