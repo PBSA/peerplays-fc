@@ -689,7 +689,7 @@ namespace fc {
     void unpack( Stream& s, boost::endian::endian_buffer<O,T,N,A>& v, uint32_t _max_depth )
     {
        FC_ASSERT( _max_depth > 0 );
-       s.read( v.data(), sizeof(v) );
+       s.read( (char*)&v, sizeof(v) );
     }
 
 
