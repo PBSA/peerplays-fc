@@ -83,12 +83,12 @@ namespace fc {
   namespace raw 
   {
     template<typename Stream> 
-    inline void pack( Stream& s, const ip::address& v )
+    void pack( Stream& s, const ip::address& v )
     {
        fc::raw::pack( s, uint32_t(v) );
     }
     template<typename Stream> 
-    inline void unpack( Stream& s, ip::address& v )
+    void unpack( Stream& s, ip::address& v )
     {
        uint32_t _ip;
        fc::raw::unpack( s, _ip );

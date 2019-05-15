@@ -522,7 +522,6 @@ namespace fc {
     }
 
 
-
     template<typename Stream, typename T>
     void pack( Stream& s, const T& v ) {
       fc::raw::detail::if_reflected< typename fc::reflector<T>::is_defined >::pack(s,v);
