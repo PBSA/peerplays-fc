@@ -49,7 +49,7 @@ public:
      */
     int wait(pid_type pid)
     {
-        return this->service.wait(this->implementation, pid);
+        return this->get_service().wait(this->get_implementation(), pid);
     }
 
     /**
@@ -58,7 +58,7 @@ public:
     template <typename Handler>
     void async_wait(pid_type pid, Handler handler)
     {
-        this->service.async_wait(this->implementation, pid, handler);
+        this->get_service().async_wait(this->get_implementation(), pid, handler);
     }
 };
 

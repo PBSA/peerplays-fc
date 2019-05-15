@@ -1,10 +1,10 @@
 #
-# Defines fc library target.
+# Defines fc_pp library target.
 
-PROJECT( fc )
+PROJECT( fc_pp )
 CMAKE_MINIMUM_REQUIRED( VERSION 2.8.12 )
 
-MESSAGE(STATUS "Configuring project fc located in: ${CMAKE_CURRENT_SOURCE_DIR}")
+MESSAGE(STATUS "Configuring project fc_pp located in: ${CMAKE_CURRENT_SOURCE_DIR}")
 SET( CMAKE_AUTOMOC OFF )
 
 # Setup module path to make visible used CMake extensions
@@ -24,7 +24,7 @@ SET( DEFAULT_LIBRARY_INSTALL_DIR lib/ )
 SET( DEFAULT_EXECUTABLE_INSTALL_DIR bin/ )
 SET( CMAKE_DEBUG_POSTFIX _debug )
 SET( BUILD_SHARED_LIBS NO )
-SET( ECC_IMPL secp256k1 CACHE STRING "secp256k1 or openssl or mixed" )
+SET( ECC_IMPL_PP pp_secp256k1 CACHE STRING "pp_secp256k1 or openssl or mixed" )
 SET( FC_USE_FULL_ZLIB FALSE CACHE BOOL "TRUE to try to use full zlib for compression, FALSE to use miniz.c")
 
 if( FC_USE_FULL_ZLIB )
@@ -43,16 +43,16 @@ SET(BOOST_COMPONENTS)
 LIST(APPEND BOOST_COMPONENTS thread date_time system filesystem program_options signals serialization chrono unit_test_framework context locale iostreams)
 SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
 
-IF( ECC_IMPL STREQUAL openssl )
+IF( ECC_IMPL_PP STREQUAL openssl )
   SET( ECC_REST src/crypto/elliptic_impl_pub.cpp )
-ELSE( ECC_IMPL STREQUAL openssl )
-  SET( ECC_LIB secp256k1 )
-  IF( ECC_IMPL STREQUAL mixed )
+ELSE( ECC_IMPL_PP STREQUAL openssl )
+  SET( ECC_LIB pp_secp256k1 )
+  IF( ECC_IMPL_PP STREQUAL mixed )
     SET( ECC_REST src/crypto/elliptic_impl_priv.cpp src/crypto/elliptic_impl_pub.cpp )
-  ELSE( ECC_IMPL STREQUAL mixed )
+  ELSE( ECC_IMPL_PP STREQUAL mixed )
     SET( ECC_REST src/crypto/elliptic_impl_priv.cpp )
-  ENDIF( ECC_IMPL STREQUAL mixed )
-ENDIF( ECC_IMPL STREQUAL openssl )
+  ENDIF( ECC_IMPL_PP STREQUAL mixed )
+ENDIF( ECC_IMPL_PP STREQUAL openssl )
 
 # Configure secp256k1-zkp
 if ( MSVC )
@@ -60,9 +60,9 @@ if ( MSVC )
     set( SECP256K1_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp" )
 
     file( GLOB SECP256K1_SOURCES "${SECP256K1_DIR}/src/secp256k1.c" )
-    add_library( secp256k1 ${SECP256K1_SOURCES} )
+    add_library( pp_secp256k1 ${SECP256K1_SOURCES} )
 
-    target_include_directories( secp256k1 PRIVATE "${SECP256K1_DIR}" PUBLIC "${SECP256K1_DIR}/include" )
+    target_include_directories( pp_secp256k1 PRIVATE "${SECP256K1_DIR}" PUBLIC "${SECP256K1_DIR}/include" )
 
     set( SECP256K1_BUILD_DEFINES
         USE_FIELD_10X26
@@ -70,7 +70,7 @@ if ( MSVC )
         USE_NUM_NONE
         USE_SCALAR_8X32
         USE_SCALAR_INV_BUILTIN )
-    set_target_properties( secp256k1 PROPERTIES COMPILE_DEFINITIONS "${SECP256K1_BUILD_DEFINES}" LINKER_LANGUAGE C )
+    set_target_properties( pp_secp256k1 PROPERTIES COMPILE_DEFINITIONS "${SECP256K1_BUILD_DEFINES}" LINKER_LANGUAGE C )
 else ( MSVC )
     include(ExternalProject)
     if ( MINGW )
@@ -86,6 +86,7 @@ else ( MSVC )
     ExternalProject_Add( project_secp256k1
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp
      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
+     PATCH_COMMAND patch -N <SOURCE_DIR>/include/secp256k1.h < ${CMAKE_CURRENT_LIST_DIR}/cmake/secp256k1.patch || true
      CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --with-bignum=no
      BUILD_COMMAND make
      INSTALL_COMMAND true
@@ -100,16 +101,16 @@ else ( MSVC )
 
     ExternalProject_Get_Property(project_secp256k1 binary_dir)
 
-    add_library(secp256k1 STATIC IMPORTED)
-    set_property(TARGET secp256k1 PROPERTY IMPORTED_LOCATION ${binary_dir}/.libs/libsecp256k1${CMAKE_STATIC_LIBRARY_SUFFIX})
-    set_property(TARGET secp256k1 PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/include)
-    add_dependencies(secp256k1 project_secp256k1)
+    add_library(pp_secp256k1 STATIC IMPORTED)
+    set_property(TARGET pp_secp256k1 PROPERTY IMPORTED_LOCATION ${binary_dir}/.libs/libsecp256k1${CMAKE_STATIC_LIBRARY_SUFFIX})
+    set_property(TARGET pp_secp256k1 PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/include)
+    add_dependencies(pp_secp256k1 project_secp256k1)
     install( FILES ${binary_dir}/.libs/libsecp256k1${CMAKE_STATIC_LIBRARY_SUFFIX} DESTINATION lib/cryptonomex )
 endif ( MSVC )
 # End configure secp256k1-zkp
 
 IF( WIN32 )
-  MESSAGE(STATUS "Configuring fc to build on Win32")
+  MESSAGE(STATUS "Configuring fc_pp to build on Win32")
 
   set( RPCRT4 rpcrt4 )
 
@@ -132,7 +133,7 @@ IF( WIN32 )
   # iphlpapi.lib
 
 ELSE(WIN32)
-  MESSAGE(STATUS "Configuring fc to build on Unix/Apple")
+  MESSAGE(STATUS "Configuring fc_pp to build on Unix/Apple")
 
   LIST(APPEND BOOST_COMPONENTS coroutine)
 
@@ -228,7 +229,7 @@ set( fc_sources
      src/crypto/blowfish.cpp
      src/crypto/elliptic_common.cpp
      ${ECC_REST}
-     src/crypto/elliptic_${ECC_IMPL}.cpp
+     src/crypto/elliptic_${ECC_IMPL_PP}.cpp
      src/crypto/rand.cpp
      src/network/tcp_socket.cpp
      src/network/udp_socket.cpp
@@ -256,7 +257,7 @@ list(APPEND sources ${fc_headers})
 
 add_subdirectory( vendor/websocketpp EXCLUDE_FROM_ALL )
 
-setup_library( fc SOURCES ${sources} LIBRARY_TYPE STATIC )
+setup_library( fc_pp SOURCES ${sources} LIBRARY_TYPE STATIC )
 install( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" DESTINATION include )
 
 # begin readline stuff
@@ -266,7 +267,7 @@ find_package(Readline)
 file(GLOB HEADERS "include/bts/cli/*.hpp")
 
 if (READLINE_FOUND)
-  target_compile_definitions (fc PRIVATE HAVE_READLINE)
+  target_compile_definitions (fc_pp PRIVATE HAVE_READLINE)
   set(readline_libraries ${Readline_LIBRARY})
   if (CURSES_FOUND)
     list(APPEND readline_libraries ${CURSES_LIBRARY})
@@ -274,7 +275,7 @@ if (READLINE_FOUND)
   set(readline_includes ${Readline_INCLUDE_DIR})
 endif()
 if(WIN32)
-  target_compile_definitions( fc PRIVATE _CRT_NONSTDC_NO_DEPRECATE )
+  target_compile_definitions( fc_pp PRIVATE _CRT_NONSTDC_NO_DEPRECATE )
 endif(WIN32)
 # end readline stuff
 
@@ -283,7 +284,7 @@ if( NOT CPP_STANDARD )
 endif()
 
 IF(WIN32)
-  target_compile_definitions(fc PUBLIC WIN32 NOMINMAX _WIN32_WINNT=0x0501 _CRT_SECURE_NO_WARNINGS
+  target_compile_definitions(fc_pp PUBLIC WIN32 NOMINMAX _WIN32_WINNT=0x0501 _CRT_SECURE_NO_WARNINGS
     _SCL_SERCURE_NO_WARNINGS
     # Needed to disable MSVC autolinking feature (#pragma comment)
     BOOST_ALL_NO_LIB
@@ -295,24 +296,24 @@ IF(WIN32)
   if( MSVC )
     # Activate C++ exception handling, assume extern C calls don't throw
     # Add /U options to be sure settings specific to dynamic boost link are ineffective
-    target_compile_options(fc PUBLIC /EHsc /UBOOST_ALL_DYN_LINK /UBOOST_LINKING_PYTHON /UBOOST_DEBUG_PYTHON)
+    target_compile_options(fc_pp PUBLIC /EHsc /UBOOST_ALL_DYN_LINK /UBOOST_LINKING_PYTHON /UBOOST_DEBUG_PYTHON)
   elseif( MINGW )
      # Put MinGW specific compiler settings here
   endif()
 ELSE()
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -Wall")
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c++11 -Wall")
 
   IF(APPLE)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CPP_STANDARD} -stdlib=libc++ -Wall")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CPP_STANDARD} -stdlib=libc++ -std=c++11 -Wall")
   ELSE()
     if( NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" )
-      target_compile_options(fc PUBLIC ${CPP_STANDARD} -Wall -fnon-call-exceptions)
+      target_compile_options(fc_pp PUBLIC ${CPP_STANDARD} -Wall -fnon-call-exceptions)
     endif()
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CPP_STANDARD} -Wall -fnon-call-exceptions")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CPP_STANDARD} -std=c++11 -Wall -fnon-call-exceptions")
 
     if( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" )
         if( CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 4.0.0 OR CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.0.0 )
-            set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-invalid-partial-specialization" )
+            set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-invalid-partial-specialization" )
         endif()
     endif()
   ENDIF()
@@ -364,9 +365,9 @@ if( LOG_LONG_API )
   SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLOG_LONG_API -DLOG_LONG_API_MAX_MS=${LOG_LONG_API_MAX_MS} -DLOG_LONG_API_WARN_MS=${LOG_LONG_API_WARN_MS}" )
 endif()
 
-target_include_directories(fc
+target_include_directories(fc_pp
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${Boost_INCLUDE_DIR}
+    #${Boost_INCLUDE_DIR}
     ${OPENSSL_INCLUDE_DIR}
     "vendor/diff-match-patch-cpp-stl"
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/websocketpp
@@ -375,13 +376,15 @@ target_include_directories(fc
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/boost_1.51/include
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
+    ${Boost_INCLUDE_DIR}
   )
 
-#target_link_libraries( fc PUBLIC ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${ECC_LIB} )
+#target_link_libraries( fc_pp PUBLIC ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${ECC_LIB} )
 IF(NOT WIN32)
   set(LINK_USR_LOCAL_LIB -L/usr/local/lib)
 ENDIF()
-target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${readline_libraries} ${ECC_LIB} )
+
+target_link_libraries( fc_pp PUBLIC ${LINK_USR_LOCAL_LIB} ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${readline_libraries} ${ECC_LIB} ${pthread_library} )
 
 if(MSVC)
   set_source_files_properties( src/network/http/websocket.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
@@ -402,7 +405,7 @@ add_subdirectory(tests)
 
 if(WIN32)
    # add addtional import library on windows platform
-   target_link_libraries( fc PUBLIC crypt32.lib)
+   target_link_libraries( fc_pp PUBLIC crypt32.lib)
 
    # now generate a list of the DLLs we're using to use during the install process
    include (ParseLibraryList)
@@ -412,7 +415,7 @@ if(WIN32)
                         OPT   Boost_LIBRARIES_RELEASE
                         GENERAL Boost_LIBRARIES_GENERAL)
 
-   #Variable will hold list of .pdb files generated for libraries the 'fc' module is linked to
+   #Variable will hold list of .pdb files generated for libraries the 'fc_pp' module is linked to
    set(INTERFACE_LINK_PDB_RELEASE)
 
    set(SHARED_LIBRARIES_RELEASE)
@@ -475,10 +478,10 @@ if(WIN32)
       endif()
    endforeach()
 
-   set_property(TARGET fc PROPERTY INTERFACE_LINK_PDB_RELEASE ${INTERFACE_LINK_PDB_RELEASE})
-   set_property(TARGET fc PROPERTY INTERFACE_LINK_PDB_DEBUG ${INTERFACE_LINK_PDB_DEBUG})
-   set_property(TARGET fc PROPERTY SHARED_LIBRARIES_DEBUG ${SHARED_LIBRARIES_DEBUG})
-   set_property(TARGET fc PROPERTY SHARED_LIBRARIES_RELEASE ${SHARED_LIBRARIES_RELEASE})
+   set_property(TARGET fc_pp PROPERTY INTERFACE_LINK_PDB_RELEASE ${INTERFACE_LINK_PDB_RELEASE})
+   set_property(TARGET fc_pp PROPERTY INTERFACE_LINK_PDB_DEBUG ${INTERFACE_LINK_PDB_DEBUG})
+   set_property(TARGET fc_pp PROPERTY SHARED_LIBRARIES_DEBUG ${SHARED_LIBRARIES_DEBUG})
+   set_property(TARGET fc_pp PROPERTY SHARED_LIBRARIES_RELEASE ${SHARED_LIBRARIES_RELEASE})
 
 endif(WIN32)
 
@@ -501,8 +504,8 @@ ENDIF()
            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENSSL_CONF_SOURCE}" "${OPENSSL_CONF_TARGET}/openssl.cnf")
     ENDIF(WIN32)
 
-ADD_CUSTOM_COMMAND(TARGET fc POST_BUILD ${POST_BUILD_STEP_COMMANDS}
+ADD_CUSTOM_COMMAND(TARGET fc_pp POST_BUILD ${POST_BUILD_STEP_COMMANDS}
   COMMENT "Copying OpenSSL/ssl/openssl.cnf into target directory."
 )
 
-MESSAGE(STATUS "Finished fc module configuration...")
+MESSAGE(STATUS "Finished fc_pp module configuration...")

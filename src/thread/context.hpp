@@ -8,7 +8,11 @@
 
 #if BOOST_VERSION >= 105400
 # include <boost/coroutine/stack_context.hpp>
-  namespace bc  = boost::context;
+  #if BOOST_VERSION >= 106100
+    namespace bc  = boost::context::detail;
+  # else
+    namespace bc  = boost::context;
+  # endif
   namespace bco = boost::coroutines;
 # if BOOST_VERSION >= 105600 && !defined(NDEBUG)
 #  include <boost/assert.hpp>
@@ -47,8 +51,11 @@ namespace fc {
     bco::stack_context stack_ctx;
 #endif
 
-
+  #if BOOST_VERSION >= 106100
+    context( void (*sf)(bc::transfer_t), stack_allocator& alloc, fc::thread* t )
+  #else
     context( void (*sf)(intptr_t), stack_allocator& alloc, fc::thread* t )
+  #endif
     : caller_context(0),
       stack_alloc(&alloc),
       next_blocked(0), 
