@@ -141,7 +141,6 @@ IF(NOT WIN32)
 
     if(NOT APPLE)
         SET(rt_library rt)
-        SET(pthread_library pthread)
     endif(NOT APPLE)
 ENDIF(NOT WIN32)
 
