@@ -8,6 +8,25 @@
 
 namespace fc
 {
+   FC_IMPLEMENT_EXCEPTION( timeout_exception, timeout_exception_code, "Timeout" )
+   FC_IMPLEMENT_EXCEPTION( file_not_found_exception, file_not_found_exception_code, "File Not Found" )
+   FC_IMPLEMENT_EXCEPTION( parse_error_exception, parse_error_exception_code, "Parse Error" )
+   FC_IMPLEMENT_EXCEPTION( invalid_arg_exception, invalid_arg_exception_code, "Invalid Argument" )
+   FC_IMPLEMENT_EXCEPTION( key_not_found_exception, key_not_found_exception_code, "Key Not Found" )
+   FC_IMPLEMENT_EXCEPTION( bad_cast_exception, bad_cast_exception_code, "Bad Cast" )
+   FC_IMPLEMENT_EXCEPTION( out_of_range_exception, out_of_range_exception_code, "Out of Range" )
+   FC_IMPLEMENT_EXCEPTION( method_not_found_exception, method_not_found_exception_code, "Method Not Found" );
+   FC_IMPLEMENT_EXCEPTION( invalid_operation_exception, invalid_operation_exception_code, "Invalid Operation" )
+   FC_IMPLEMENT_EXCEPTION( unknown_host_exception, unknown_host_exception_code, "Unknown Host" )
+   FC_IMPLEMENT_EXCEPTION( canceled_exception, canceled_exception_code, "Canceled" )
+   FC_IMPLEMENT_EXCEPTION( assert_exception, assert_exception_code, "Assert Exception" )
+   FC_IMPLEMENT_EXCEPTION( eof_exception, eof_exception_code, "End Of File" )
+   FC_IMPLEMENT_EXCEPTION( null_optional, null_optional_code, "null optional" )
+   FC_IMPLEMENT_EXCEPTION( aes_exception, aes_error_code, "AES error" )
+   FC_IMPLEMENT_EXCEPTION( overflow_exception, overflow_code, "Integer Overflow" )
+   FC_IMPLEMENT_EXCEPTION( underflow_exception, underflow_code, "Integer Underflow" )
+   FC_IMPLEMENT_EXCEPTION( divide_by_zero_exception, divide_by_zero_code, "Integer Divide By Zero" )
+
    FC_REGISTER_EXCEPTIONS( (timeout_exception)
                            (file_not_found_exception)
                            (parse_error_exception)
