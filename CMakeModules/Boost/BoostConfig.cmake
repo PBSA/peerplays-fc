@@ -1,9 +1,9 @@
 # This overrides `find_package(Boost ... CONFIG ... )` calls
-#  - calls the CMAke's built-in `FindBoost.cmake` and adds `pthread` library dependency
+#  - calls the CMake's built-in `FindBoost.cmake` and adds `pthread` library dependency
 
 MESSAGE(STATUS "Using custom FindBoost config")
 
-find_package(Boost 1.57 REQUIRED COMPONENTS ${Boost_FIND_COMPONENTS})
+find_package(Boost 1.58 REQUIRED COMPONENTS ${Boost_FIND_COMPONENTS})
 
 #  Inject `pthread` dependency to Boost if needed
 if (UNIX AND NOT CYGWIN)
