@@ -45,5 +45,3 @@ mark_as_advanced(
     Readline_INCLUDE_DIR
     Readline_LIBRARY
 )
-
-MESSAGE( STATUS "Found Readline: ${Readline_LIBRARY}" )
