@@ -228,6 +228,7 @@ static int cli_check_secret(const char *source)
  */
 static int cli_quitting = false;
 
+#ifndef WIN32
 /**
  * Get next character from stdin, or EOF if got a SIGINT signal
  */
@@ -246,6 +247,7 @@ static int interruptible_getc(void)
 
    return r == 1 && !cli_quitting ? c : EOF;
 }
+#endif
 
 void cli::start()
 {
