@@ -1,5 +1,6 @@
 #pragma once 
 
+#include <array>
 #include <deque>
 #include <map>
 #include <memory>
@@ -656,6 +657,36 @@ namespace fc
       c.clear();
       for( const auto& item : vars )
          c.insert( item.as<T>( max_depth - 1 ) );
+   }
+
+   template<size_t N>
+   void to_variant( const std::array<char,N>& bi, variant& v, uint32_t max_depth = 1 )
+   {
+      to_variant( std::vector<char>( bi.begin(), bi.end() ), v, 1 );
+   }
+   template<size_t N>
+   void from_variant( const variant& v, std::array<char,N>& bi, uint32_t max_depth = 1 )
+   {
+      std::vector<char> ve = v.as< std::vector<char> >( 1 );
+      if( ve.size() )
+         memcpy( bi.data(), ve.data(), std::min<size_t>( ve.size(), bi.size() ) );
+      else
+         memset( bi.data(), 0, bi.size() );
+   }
+
+   template<size_t N>
+   void to_variant( const std::array<unsigned char,N>& bi, variant& v, uint32_t max_depth = 1 )
+   {
+      to_variant( std::vector<char>( bi.begin(), bi.end() ), v, 1 );
+   }
+   template<size_t N>
+   void from_variant( const variant& v, std::array<unsigned char,N>& bi, uint32_t max_depth = 1 )
+   {
+      std::vector<char> ve = v.as< std::vector<char> >( 1 );
+      if( ve.size() )
+         memcpy( bi.data(), ve.data(), std::min<size_t>( ve.size(), bi.size() ) );
+      else
+         memset( bi.data(), 0, bi.size() );
    }
 
    variant operator + ( const variant& a, const variant& b );

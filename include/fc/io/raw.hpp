@@ -146,22 +146,22 @@ namespace fc {
     } FC_RETHROW_EXCEPTIONS( warn, "" ) }
 
     template<typename Stream, size_t N>
-    inline void pack( Stream& s, const fc::array<char,N>& v, uint32_t _max_depth ) {
-       s.write( &v.data[0], N );
+    inline void pack( Stream& s, const std::array<char,N>& v, uint32_t _max_depth ) {
+       s.write( v.data(), N );
     }
     template<typename Stream, size_t N>
-    inline void pack( Stream& s, const fc::array<unsigned char,N>& v, uint32_t _max_depth ) {
-       s.write( (char*)&v.data[0], N );
+    inline void pack( Stream& s, const std::array<unsigned char,N>& v, uint32_t _max_depth ) {
+       s.write( (char*)v.data(), N );
     }
 
     template<typename Stream, size_t N>
-    inline void unpack( Stream& s, fc::array<char,N>& v, uint32_t _max_depth ) { try {
-       s.read( &v.data[0], N );
-    } FC_RETHROW_EXCEPTIONS( warn, "fc::array<char,${length}>", ("length",N) ) }
+    inline void unpack( Stream& s, std::array<char,N>& v, uint32_t _max_depth ) { try {
+       s.read( v.data(), N );
+    } FC_RETHROW_EXCEPTIONS( warn, "std::array<char,${length}>", ("length",N) ) }
     template<typename Stream, size_t N>
-    inline void unpack( Stream& s, fc::array<unsigned char,N>& v, uint32_t _max_depth ) { try {
-       s.read( (char*)&v.data[0], N );
-    } FC_RETHROW_EXCEPTIONS( warn, "fc::array<unsigned char,${length}>", ("length",N) ) }
+    inline void unpack( Stream& s, std::array<unsigned char,N>& v, uint32_t _max_depth ) { try {
+       s.read( (char*)v.data(), N );
+    } FC_RETHROW_EXCEPTIONS( warn, "std::array<unsigned char,${length}>", ("length",N) ) }
 
     template<typename Stream, typename T>
     inline void pack( Stream& s, const std::shared_ptr<T>& v, uint32_t _max_depth )

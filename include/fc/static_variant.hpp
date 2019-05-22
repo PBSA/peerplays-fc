@@ -11,11 +11,11 @@
  **/
 #pragma once
 
+#include <array>
 #include <functional>
 #include <stdexcept>
 #include <typeinfo>
 
-#include <fc/array.hpp>
 #include <fc/exception/exception.hpp>
 
 namespace fc {
@@ -216,17 +216,17 @@ public:
 } // namespace impl
 
 template<int L,typename Visitor,typename Data>
-static const fc::array<typename Visitor::result_type(*)(Visitor&,Data),L>
+static const std::array<typename Visitor::result_type(*)(Visitor&,Data),L>
       init_wrappers( Visitor& v, Data d, typename Visitor::result_type(**funcs)(Visitor&,Data) = 0)
 {
-   return fc::array<typename Visitor::result_type(*)(Visitor&,Data),L>();
+   return std::array<typename Visitor::result_type(*)(Visitor&,Data),L>();
 }
 
 template<int L,typename Visitor,typename Data,typename T, typename ... Types>
-static const fc::array<typename Visitor::result_type(*)(Visitor&,Data),L>
+static const std::array<typename Visitor::result_type(*)(Visitor&,Data),L>
       init_wrappers( Visitor& v, Data d, typename Visitor::result_type(**funcs)(Visitor&,Data) = 0 )
 {
-   fc::array<typename Visitor::result_type(*)(Visitor&,Data),L> result{};
+   std::array<typename Visitor::result_type(*)(Visitor&,Data),L> result{};
    if( !funcs ) funcs = result.begin();
    *funcs++ = [] ( Visitor& v, Data d ) { return v( *reinterpret_cast<T*>( d ) ); };
    init_wrappers<L,Visitor,Data,Types...>( v, d, funcs );
@@ -234,17 +234,17 @@ static const fc::array<typename Visitor::result_type(*)(Visitor&,Data),L>
 }
 
 template<int L,typename Visitor,typename Data>
-static const fc::array<typename Visitor::result_type(*)(Visitor&,Data),L>
+static const std::array<typename Visitor::result_type(*)(Visitor&,Data),L>
       init_const_wrappers( Visitor& v, Data d, typename Visitor::result_type(**funcs)(Visitor&,Data) = 0 )
 {
-   return fc::array<typename Visitor::result_type(*)(Visitor&,Data),L>();
+   return std::array<typename Visitor::result_type(*)(Visitor&,Data),L>();
 }
 
 template<int L,typename Visitor,typename Data,typename T, typename ... Types>
-static const fc::array<typename Visitor::result_type(*)(Visitor&,Data),L>
+static const std::array<typename Visitor::result_type(*)(Visitor&,Data),L>
       init_const_wrappers( Visitor& v, Data d, typename Visitor::result_type(**funcs)(Visitor&,Data) = 0 )
 {
-   fc::array<typename Visitor::result_type(*)(Visitor&,Data),L> result{};
+   std::array<typename Visitor::result_type(*)(Visitor&,Data),L> result{};
    if( !funcs ) funcs = result.begin();
    *funcs++ = [] ( Visitor& v, Data d ) { return v( *reinterpret_cast<const T*>( d ) ); };
    init_const_wrappers<L,Visitor,Data,Types...>( v, d, funcs );
