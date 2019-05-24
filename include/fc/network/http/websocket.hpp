@@ -4,6 +4,7 @@
 #include <string>
 #include <boost/any.hpp>
 #include <fc/network/ip.hpp>
+#include <fc/network/http/connection.hpp>
 #include <fc/signals.hpp>
 
 namespace fc { namespace http {
@@ -12,7 +13,7 @@ namespace fc { namespace http {
       class websocket_tls_server_impl;
       class websocket_client_impl;
       class websocket_tls_client_impl;
-   } // namespace detail;
+   } // namespace detail
 
    class websocket_connection
    {
@@ -21,10 +22,10 @@ namespace fc { namespace http {
          virtual void send_message( const std::string& message ) = 0;
          virtual void close( int64_t code, const std::string& reason  ){};
          void on_message( const std::string& message ) { _on_message(message); }
-         string on_http( const std::string& message ) { return _on_http(message); }
+         fc::http::reply on_http( const std::string& message ) { return _on_http(message); }
 
          void on_message_handler( const std::function<void(const std::string&)>& h ) { _on_message = h; }
-         void on_http_handler( const std::function<std::string(const std::string&)>& h ) { _on_http = h; }
+         void on_http_handler( const std::function<fc::http::reply(const std::string&)>& h ) { _on_http = h; }
 
          void        set_session_data( boost::any d ){ _session_data = std::move(d); }
          boost::any& get_session_data() { return _session_data; }
@@ -35,7 +36,7 @@ namespace fc { namespace http {
       private:
          boost::any                                _session_data;
          std::function<void(const std::string&)>   _on_message;
-         std::function<string(const std::string&)> _on_http;
+         std::function<fc::http::reply(const std::string&)> _on_http;
    };
    typedef std::shared_ptr<websocket_connection> websocket_connection_ptr;
 

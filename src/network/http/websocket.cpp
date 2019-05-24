@@ -12,7 +12,10 @@
 #include <websocketpp/extensions/permessage_deflate/disabled.hpp>
 #endif
 
+#include <fc/io/json.hpp>
 #include <fc/optional.hpp>
+#include <fc/reflect/variant.hpp>
+#include <fc/rpc/websocket_api.hpp>
 #include <fc/variant.hpp>
 #include <fc/thread/thread.hpp>
 #include <fc/asio.hpp>
@@ -239,10 +242,10 @@ namespace fc { namespace http {
                        wdump(("server")(request_body));
 
                        fc::async([current_con, request_body, con] {
-                          std::string response = current_con->on_http(request_body);
-                          idump((response));
-                          con->set_body( response );
-                          con->set_status( websocketpp::http::status_code::ok );
+                          fc::http::reply response = current_con->on_http(request_body);
+                          idump( (response) );
+                          con->set_body( std::move( response.body_as_string ) );
+                          con->set_status( websocketpp::http::status_code::value(response.status) );
                           con->send_http_response();
                           current_con->closed();
                        }, "call on_http");
@@ -364,8 +367,8 @@ namespace fc { namespace http {
                           wdump(("server")(con->get_request_body()));
                           auto response = current_con->on_http( con->get_request_body() );
                           idump((response));
-                          con->set_body( response );
-                          con->set_status( websocketpp::http::status_code::ok );
+                          con->set_body( std::move( response.body_as_string ) );
+                          con->set_status( websocketpp::http::status_code::value( response.status ) );
                        } catch ( const fc::exception& e )
                        {
                          edump((e.to_detail_string()));

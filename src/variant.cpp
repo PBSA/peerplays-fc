@@ -678,7 +678,7 @@ void from_variant( const variant& var, std::vector<char>& vo, uint32_t max_depth
    void to_variant( unsigned long long int s, variant& v, uint32_t max_depth ) { v = variant( uint64_t(s)); }
 #endif
 
-   variant operator == ( const variant& a, const variant& b )
+   bool operator == ( const variant& a, const variant& b )
    {
       if( a.is_string()  || b.is_string() ) return a.as_string() == b.as_string();
       if( a.is_double()  || b.is_double() ) return a.as_double() == b.as_double();
@@ -687,7 +687,7 @@ void from_variant( const variant& var, std::vector<char>& vo, uint32_t max_depth
       return false;
    }
 
-   variant operator != ( const variant& a, const variant& b )
+   bool operator != ( const variant& a, const variant& b )
    {
       if( a.is_string()  || b.is_string() ) return a.as_string() != b.as_string();
       if( a.is_double()  || b.is_double() ) return a.as_double() != b.as_double();
@@ -696,12 +696,12 @@ void from_variant( const variant& var, std::vector<char>& vo, uint32_t max_depth
       return false;
    }
 
-   variant operator ! ( const variant& a )
+   bool operator ! ( const variant& a )
    {
       return !a.as_bool();
    }
 
-   variant operator < ( const variant& a, const variant& b )
+   bool operator < ( const variant& a, const variant& b )
    {
       if( a.is_string()  || b.is_string() ) return a.as_string() < b.as_string();
       if( a.is_double()  || b.is_double() ) return a.as_double() < b.as_double();
@@ -710,7 +710,7 @@ void from_variant( const variant& var, std::vector<char>& vo, uint32_t max_depth
       FC_ASSERT( false, "Invalid operation" );
    }
 
-   variant operator > ( const variant& a, const variant& b )
+   bool operator > ( const variant& a, const variant& b )
    {
       if( a.is_string()  || b.is_string() ) return a.as_string() > b.as_string();
       if( a.is_double()  || b.is_double() ) return a.as_double() > b.as_double();
@@ -719,7 +719,7 @@ void from_variant( const variant& var, std::vector<char>& vo, uint32_t max_depth
       FC_ASSERT( false, "Invalid operation" );
    }
 
-   variant operator <= ( const variant& a, const variant& b )
+   bool operator <= ( const variant& a, const variant& b )
    {
       if( a.is_string()  || b.is_string() ) return a.as_string() <= b.as_string();
       if( a.is_double()  || b.is_double() ) return a.as_double() <= b.as_double();

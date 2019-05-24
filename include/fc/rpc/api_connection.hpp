@@ -112,13 +112,17 @@ namespace fc {
          variant call( const string& name, const variants& args )
          {
             auto itr = _by_name.find(name);
-            FC_ASSERT( itr != _by_name.end(), "no method with name '${name}'", ("name",name)("api",_by_name) );
+            if( itr == _by_name.end() )
+               FC_THROW_EXCEPTION( method_not_found_exception, "No method with name '${name}'",
+                                   ("name",name)("api",_by_name) );
             return call( itr->second, args );
          }
 
          variant call( uint32_t method_id, const variants& args )
          {
-            FC_ASSERT( method_id < _methods.size() );
+            if( method_id >= _methods.size() )
+               FC_THROW_EXCEPTION( method_not_found_exception, "No method with id '${id}'",
+                                   ("id",method_id)("api",_by_name) );
             return _methods[method_id](args);
          }
 
