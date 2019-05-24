@@ -17,9 +17,9 @@ int main(int argc, char** argv)
       
       fc::http::websocket_client client;
       fc::http::websocket_connection_ptr s_conn, c_conn;
-      int port = std::stoi(argv[1]);
-      wlog( "Connecting to server at port ${port}", ("port", argv[1]) );
-      c_conn = client.connect( "ws://127.0.0.1:" + fc::to_string(port) );
+      std::string url = argv[1];
+      wlog( "Connecting to server at url ${url}", ("url", url) );
+      c_conn = client.connect( "ws://" + url );
 
       std::string echo;
       c_conn->on_message_handler([&](const std::string& s){

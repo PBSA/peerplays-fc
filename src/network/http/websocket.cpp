@@ -165,11 +165,16 @@ namespace fc { namespace http {
               return _ws_connection->get_request_header(key);
             }
 
-            virtual std::string get_remote_hostname()
+            virtual std::string get_remote_hostname(const std::string& forward_header_key)
             {
                // TODO: check headers, revert to the raw connection details
-               // Notes: T is a pointer to a websocketpp::connection (see connection.hpp)
-               return _ws_connection->get_uri()->get_host();
+               if (!forward_header_key.empty())
+               {
+                  std::string header_value = _ws_connection->get_request_header(forward_header_key);
+                  if (!header_value.empty())
+                     return header_value;
+               }
+               return _ws_connection->get_remote_endpoint();
             }
 
             T _ws_connection;
@@ -180,8 +185,8 @@ namespace fc { namespace http {
       class websocket_server_impl
       {
          public:
-            websocket_server_impl()
-            :_server_thread( fc::thread::current() )
+            websocket_server_impl(const std::string& forward_header_key = std::string() )
+               :_server_thread( fc::thread::current() )
             {
 
                _server.clear_access_channels( websocketpp::log::alevel::all );
@@ -199,7 +204,8 @@ namespace fc { namespace http {
                        assert( current_con != _connections.end() );
                        auto payload = msg->get_payload();
                        std::shared_ptr<websocket_connection> con = current_con->second;
-                       wdump( ("server") ( con->get_remote_hostname() ) (msg->get_payload()));
+                       wlog( "Websocket Server Remote: ${host} Payload: ${body}", 
+                           ("host", con->get_remote_hostname(forward_header_key)) ("body", msg->get_payload()));
                        ++_pending_messages;
                        auto f = fc::async([this,con,payload](){ if( _pending_messages ) --_pending_messages; con->on_message( payload ); });
                        if( _pending_messages > 100 ) 
@@ -584,7 +590,8 @@ namespace fc { namespace http {
 
    } // namespace detail
 
-   websocket_server::websocket_server():my( new detail::websocket_server_impl() ) {}
+   websocket_server::websocket_server(std::string forward_header_key)
+         :my( new detail::websocket_server_impl(forward_header_key) ) {}
    websocket_server::~websocket_server(){}
 
    void websocket_server::on_connection( const on_connection_handler& handler )

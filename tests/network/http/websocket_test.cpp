@@ -19,7 +19,7 @@ BOOST_AUTO_TEST_CASE(websocket_test)
     fc::http::websocket_connection_ptr s_conn, c_conn;
     int port;
     {
-        fc::http::websocket_server server;
+        fc::http::websocket_server server("MyProxyHeaderKey");
         server.on_connection([&]( const fc::http::websocket_connection_ptr& c ){
                 s_conn = c;
                 c->on_message_handler([&](const std::string& s){
