@@ -45,7 +45,7 @@ namespace fc { namespace http {
    class websocket_server
    {
       public:
-         websocket_server( std::string forward_header_key = std::string() );
+         websocket_server();
          ~websocket_server();
 
          void on_connection( const on_connection_handler& handler);
@@ -53,6 +53,7 @@ namespace fc { namespace http {
          void listen( const fc::ip::endpoint& ep );
          uint16_t get_listening_port();
          void start_accept();
+         void set_forward_header_key(const std::string& key);
 
          void stop_listening();
          void close();
@@ -74,7 +75,7 @@ namespace fc { namespace http {
          void listen( uint16_t port );
          void listen( const fc::ip::endpoint& ep );
          void start_accept();
-
+         void set_forward_header_key(const std::string& key);
       private:
          friend class detail::websocket_tls_server_impl;
          std::unique_ptr<detail::websocket_tls_server_impl> my;

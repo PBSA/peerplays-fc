@@ -190,8 +190,8 @@ namespace fc { namespace http {
       class websocket_server_impl
       {
          public:
-            websocket_server_impl(const std::string& forward_header_key = std::string() )
-               :_server_thread( fc::thread::current() ), fwd_header_key(forward_header_key)
+            websocket_server_impl()
+               :_server_thread( fc::thread::current() ), fwd_header_key("")
             {
                _server.clear_access_channels( websocketpp::log::alevel::all );
                _server.init_asio(&fc::asio::default_io_service());
@@ -293,6 +293,8 @@ namespace fc { namespace http {
                if( _closed ) _closed->wait();
             }
 
+            void set_forward_header_key(const std::string& key) { fwd_header_key = key; }
+
             typedef std::map<connection_hdl, websocket_connection_ptr,std::owner_less<connection_hdl> > con_map;
 
             con_map                  _connections;
@@ -310,7 +312,6 @@ namespace fc { namespace http {
             websocket_tls_server_impl( const string& server_pem, const string& ssl_password )
             :_server_thread( fc::thread::current() )
             {
-               //if( server_pem.size() )
                {
                   _server.set_tls_init_handler( [=]( websocketpp::connection_hdl hdl ) -> context_ptr {
                         context_ptr ctx = websocketpp::lib::make_shared<boost::asio::ssl::context>(boost::asio::ssl::context::tlsv1);
@@ -344,6 +345,8 @@ namespace fc { namespace http {
                        assert( current_con != _connections.end() );
                        auto received = msg->get_payload();
                        std::shared_ptr<websocket_connection> con = current_con->second;
+                       wlog( "Websocket TLS Server Remote: ${host} Payload: ${body}", 
+                           ("host", con->get_remote_hostname(fwd_header_key)) ("body", msg->get_payload()));
                        fc::async([con,received](){ con->on_message( received ); });
                     }).wait();
                });
@@ -390,6 +393,7 @@ namespace fc { namespace http {
                     }
                });
             }
+
             ~websocket_tls_server_impl()
             {
                if( _server.is_listening() )
@@ -399,6 +403,8 @@ namespace fc { namespace http {
                   _server.close( item.first, 0, "server exit" );
             }
 
+            void set_forward_header_key( const std::string& key ) { fwd_header_key = key; }
+
             typedef std::map<connection_hdl, websocket_connection_ptr,std::owner_less<connection_hdl> > con_map;
 
             con_map                     _connections;
@@ -406,6 +412,7 @@ namespace fc { namespace http {
             websocket_tls_server_type   _server;
             on_connection_handler       _on_connection;
             fc::promise<void>::ptr      _closed;
+            std::string fwd_header_key;
       };
 
       typedef websocketpp::client<asio_with_stub_log> websocket_client_type;
@@ -594,8 +601,8 @@ namespace fc { namespace http {
 
    } // namespace detail
 
-   websocket_server::websocket_server(std::string forward_header_key)
-         :my( new detail::websocket_server_impl(forward_header_key) ) {}
+   websocket_server::websocket_server()
+         :my( new detail::websocket_server_impl() ) {}
    websocket_server::~websocket_server(){}
 
    void websocket_server::on_connection( const on_connection_handler& handler )
@@ -633,7 +640,10 @@ namespace fc { namespace http {
            my->_server.close(connection.first, websocketpp::close::status::normal, "Goodbye");
    }
 
-
+   void websocket_server::set_forward_header_key( const std::string& key )
+   { 
+      my->set_forward_header_key( key ); 
+   }
 
    websocket_tls_server::websocket_tls_server( const string& server_pem, const string& ssl_password ):my( new detail::websocket_tls_server_impl(server_pem, ssl_password) ) {}
    websocket_tls_server::~websocket_tls_server(){}
