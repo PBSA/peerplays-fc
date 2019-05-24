@@ -91,9 +91,11 @@ namespace fc { namespace http {
 
          void close();
          void synchronous_close();
+         void append_header(const std::string& key, const std::string& value);
       private:
          std::unique_ptr<detail::websocket_client_impl> my;
          std::unique_ptr<detail::websocket_tls_client_impl> smy;
+         std::vector<std::pair<std::string,std::string>> headers;
    };
    class websocket_tls_client
    {
