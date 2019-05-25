@@ -471,12 +471,13 @@ namespace fc { namespace http {
             }
             ~websocket_client_impl()
             {
-               if(_connection )
+               if( _connection )
                {
                   _connection->close(0, "client closed");
                   _connection.reset();
-                  _closed->wait();
                }
+               if( _closed )
+                  _closed->wait();
             }
             fc::promise<void>::ptr             _connected;
             fc::promise<void>::ptr             _closed;
