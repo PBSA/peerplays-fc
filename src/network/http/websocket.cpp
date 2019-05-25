@@ -440,7 +440,8 @@ namespace fc { namespace http {
             :_client_thread( fc::thread::current() )
             {
                 _client.clear_access_channels( websocketpp::log::alevel::all );
-                _client.set_message_handler( [&]( connection_hdl hdl, typename websocketpp::client<T>::message_ptr msg ){
+                _client.set_message_handler( [&]( connection_hdl hdl,
+                                                  typename websocketpp::client<T>::message_ptr msg ){
                    _client_thread.async( [&](){
                         wdump((msg->get_payload()));
                         //std::cerr<<"recv: "<<msg->get_payload()<<"\n";
