@@ -178,11 +178,7 @@ namespace fc { namespace http {
                   // refresh the cache
                   last_forward_header_key = forward_header_key;
                   if (!forward_header_key.empty())
-                  {
                      last_ip = get_request_header(forward_header_key);
-                     if (!header_value.empty())
-                        last_ip =  header_value;
-                  }
                   if (last_ip.empty())
                      last_ip = _ws_connection->get_remote_endpoint();
                }
@@ -207,7 +203,7 @@ namespace fc { namespace http {
                _server.init_asio(&fc::asio::default_io_service());
                _server.set_reuse_addr(true);
                _server.set_open_handler( [&]( connection_hdl hdl ){
-                  _server_thread.async( [_server, _connections](){
+                  _server_thread.async( [&](){
                         auto new_con = std::make_shared<websocket_connection_impl<
                               websocket_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
                         _on_connection( _connections[hdl] = new_con );
