@@ -144,7 +144,7 @@ response websocket_api_connection::on_message( const std::string& message )
       return response( variant(), { -32600, "Invalid id" }, "2.0" );
 
    if( var_obj.contains( "method" ) && ( !var_obj["method"].is_string() || var_obj["method"].get_string() == "" ) )
-      return response( variant(), { -32602, "Missing or invalid method" }, "2.0" );
+      return response( variant(), { -32600, "Missing or invalid method" }, "2.0" );
 
    if( var_obj.contains( "jsonrpc" ) && ( !var_obj["jsonrpc"].is_string() || var_obj["jsonrpc"] != "2.0" ) )
       return response( variant(), { -32600, "Unsupported JSON-RPC version" }, "2.0" );
@@ -152,7 +152,7 @@ response websocket_api_connection::on_message( const std::string& message )
    if( var_obj.contains( "method" ) )
    {
       if( var_obj.contains( "params" ) && var_obj["params"].is_object() )
-         return response( variant(), { -32600, "Named parameters not supported" }, "2.0" );
+         return response( variant(), { -32602, "Named parameters not supported" }, "2.0" );
 
       if( var_obj.contains( "params" ) && !var_obj["params"].is_array() )
          return response( variant(), { -32600, "Invalid parameters" }, "2.0" );
@@ -170,7 +170,7 @@ response websocket_api_connection::on_message( const std::string& message )
       return response();
    }
 
-   return response( variant(), { -32602, "Missing method or result or error" }, "2.0" );
+   return response( variant(), { -32600, "Missing method or result or error" }, "2.0" );
 }
 
 void websocket_api_connection::on_response( const variant& var )
