@@ -171,18 +171,28 @@ namespace fc { namespace http {
              * @param forward_header_key the key to look at in the request header
              * @returns the value in the header, otherwise the remote endpoint
              */
-            virtual std::string get_remote_hostname(const std::string& forward_header_key)
+            virtual std::string get_remote_ip(const std::string& forward_header_key) override
             {
-               if (!forward_header_key.empty())
+               if (last_ip.empty() || last_forward_header_key != forward_header_key)
                {
-                  std::string header_value = _ws_connection->get_request_header(forward_header_key);
-                  if (!header_value.empty())
-                     return header_value;
+                  // refresh the cache
+                  last_forward_header_key = forward_header_key;
+                  if (!forward_header_key.empty())
+                  {
+                     last_ip = get_request_header(forward_header_key);
+                     if (!header_value.empty())
+                        last_ip =  header_value;
+                  }
+                  if (last_ip.empty())
+                     last_ip = _ws_connection->get_remote_endpoint();
                }
-               return _ws_connection->get_remote_endpoint();
+               return last_ip;
             }
 
             T _ws_connection;
+            // cache the value of the remote IP
+            std::string last_forward_header_key;
+            std::string last_ip;
       };
 
       typedef websocketpp::lib::shared_ptr<boost::asio::ssl::context> context_ptr;
@@ -197,8 +207,9 @@ namespace fc { namespace http {
                _server.init_asio(&fc::asio::default_io_service());
                _server.set_reuse_addr(true);
                _server.set_open_handler( [&]( connection_hdl hdl ){
-                  _server_thread.async( [&](){
-                        auto new_con = std::make_shared<websocket_connection_impl<websocket_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
+                  _server_thread.async( [_server, _connections](){
+                        auto new_con = std::make_shared<websocket_connection_impl<
+                              websocket_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
                         _on_connection( _connections[hdl] = new_con );
                      }).wait();
                });
@@ -209,7 +220,7 @@ namespace fc { namespace http {
                        auto payload = msg->get_payload();
                        std::shared_ptr<websocket_connection> con = current_con->second;
                        wlog( "Websocket Server Remote: ${host} Payload: ${body}", 
-                           ("host", con->get_remote_hostname(fwd_header_key)) ("body", msg->get_payload()));
+                           ("host", con->get_remote_ip(fwd_header_key)) ("body", msg->get_payload()));
                        ++_pending_messages;
                        auto f = fc::async([this,con,payload](){ if( _pending_messages ) --_pending_messages; con->on_message( payload ); });
                        if( _pending_messages > 100 ) 
@@ -346,7 +357,7 @@ namespace fc { namespace http {
                        auto received = msg->get_payload();
                        std::shared_ptr<websocket_connection> con = current_con->second;
                        wlog( "Websocket TLS Server Remote: ${host} Payload: ${body}", 
-                           ("host", con->get_remote_hostname(fwd_header_key)) ("body", msg->get_payload()));
+                           ("host", con->get_remote_ip(fwd_header_key)) ("body", msg->get_payload()));
                        fc::async([con,received](){ con->on_message( received ); });
                     }).wait();
                });
@@ -672,7 +683,7 @@ namespace fc { namespace http {
 
 
 
-   websocket_client::websocket_client( const std::string& ca_filename):my( new detail::websocket_client_impl() ),smy(new detail::websocket_tls_client_impl( ca_filename )) {}
+   websocket_client::websocket_client( const std::string& ca_filename ):my( new detail::websocket_client_impl() ),smy(new detail::websocket_tls_client_impl( ca_filename )) {}
    websocket_client::~websocket_client(){ }
 
    websocket_connection_ptr websocket_client::connect( const std::string& uri )

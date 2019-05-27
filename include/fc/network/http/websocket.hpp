@@ -30,7 +30,7 @@ namespace fc { namespace http {
          boost::any& get_session_data() { return _session_data; }
 
          virtual std::string get_request_header(const std::string& key) = 0;
-         virtual std::string get_remote_hostname(const std::string& forward_header_key) = 0;
+         virtual std::string get_remote_ip(const std::string& forward_header_key) = 0;
 
          fc::signal<void()> closed;
       private:
