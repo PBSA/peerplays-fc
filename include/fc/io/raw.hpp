@@ -689,17 +689,17 @@ namespace fc {
     void unpack( Stream& s, boost::endian::endian_buffer<O,T,N,A>& v, uint32_t _max_depth )
     {
        FC_ASSERT( _max_depth > 0 );
-       s.read( v.data(), sizeof(v) );
+       s.read( (char*)&v, sizeof(v) );
     }
 
 
     template<typename Stream, typename T>
-    inline void pack( Stream& s, const T& v, uint32_t _max_depth ) {
+    void pack( Stream& s, const T& v, uint32_t _max_depth ) {
        FC_ASSERT( _max_depth > 0 );
        fc::raw::detail::if_reflected< typename fc::reflector<T>::is_defined >::pack( s, v, _max_depth - 1 );
     }
     template<typename Stream, typename T>
-    inline void unpack( Stream& s, T& v, uint32_t _max_depth )
+    void unpack( Stream& s, T& v, uint32_t _max_depth )
     { try {
        FC_ASSERT( _max_depth > 0 );
        fc::raw::detail::if_reflected< typename fc::reflector<T>::is_defined >::unpack( s, v, _max_depth - 1 );
