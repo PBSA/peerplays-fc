@@ -1,6 +1,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <fc/api.hpp>
+#include <fc/io/json.hpp>
 #include <fc/log/logger.hpp>
 #include <fc/rpc/api_connection.hpp>
 #include <fc/rpc/websocket_api.hpp>

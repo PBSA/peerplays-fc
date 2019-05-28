@@ -35,7 +35,8 @@ namespace fc
        aes_error_code                    = 18,
        overflow_code                     = 19,
        underflow_code                    = 20,
-       divide_by_zero_code               = 21
+       divide_by_zero_code               = 21,
+       method_not_found_exception_code   = 22
    };
 
    /**
@@ -273,6 +274,7 @@ namespace fc
   FC_DECLARE_EXCEPTION( key_not_found_exception, key_not_found_exception_code, "Key Not Found" );
   FC_DECLARE_EXCEPTION( bad_cast_exception, bad_cast_exception_code, "Bad Cast" );
   FC_DECLARE_EXCEPTION( out_of_range_exception, out_of_range_exception_code, "Out of Range" );
+  FC_DECLARE_EXCEPTION( method_not_found_exception, method_not_found_exception_code, "Method Not Found" );
 
   /** @brief if an operation is unsupported or not valid this may be thrown */
   FC_DECLARE_EXCEPTION( invalid_operation_exception,
