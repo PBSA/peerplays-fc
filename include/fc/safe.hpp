@@ -26,11 +26,11 @@ namespace fc {
       safe(){}
       safe( const safe& o ):value(o.value){}
 
-      static safe min()
+      static constexpr safe min()
       {
           return std::numeric_limits<T>::min();
       }
-      static safe max()
+      static constexpr safe max()
       {
           return std::numeric_limits<T>::max();
       }
@@ -91,7 +91,7 @@ namespace fc {
 
       safe operator - ()const
       {
-          if( value == std::numeric_limits<T>::min() ) FC_CAPTURE_AND_THROW( overflow_exception, (*this) );
+          if( value == min() ) FC_CAPTURE_AND_THROW( overflow_exception, (*this) );
           return safe( -value );
       }
 
