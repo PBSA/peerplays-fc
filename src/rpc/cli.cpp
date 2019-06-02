@@ -316,7 +316,6 @@ void cli::getline( const std::string& prompt, std::string& line)
    if( _isatty( _fileno( stdin ) ) )
 #endif
    {
-<<<<<<< HEAD
       if( _getline_thread )
       {
          _getline_thread->async( [&prompt,&line](){
@@ -327,8 +326,8 @@ void cli::getline( const std::string& prompt, std::string& line)
                FC_THROW_EXCEPTION( fc::eof_exception, "" );
             line = line_read;
             // we don't need here to add line in editline's history, cause it will be doubled
-            free(line_read);
             if (cli_check_secret(line_read)) {
+               free(line_read);
                el_no_echo = 1;
                line_read = readline("Enter password: ");
                el_no_echo = 0;
@@ -339,31 +338,6 @@ void cli::getline( const std::string& prompt, std::string& line)
             free(line_read);
          }).wait();
       }
-=======
-      rl_set_complete_func(my_rl_complete);
-      rl_set_list_possib_func(cli_completion);
-
-      static fc::thread getline_thread("getline");
-      getline_thread.async( [&](){
-         char* line_read = nullptr;
-         std::cout.flush(); //readline doesn't use cin, so we must manually flush _out
-         line_read = readline(prompt.c_str());
-         if( line_read == nullptr )
-            FC_THROW_EXCEPTION( fc::eof_exception, "" );
-         line = line_read;
-         // we don't need here to add line in editline's history, cause it will be doubled
-         free(line_read);
-         if (cli_check_secret(line_read)) {
-            el_no_echo = 1;
-            line_read = readline("Enter password: ");
-            if( line_read == nullptr )
-               FC_THROW_EXCEPTION( fc::eof_exception, "" );
-            el_no_echo = 0;
-            line = line + ' ' + line_read;
-         }
-         free(line_read);
-      }).wait();
->>>>>>> Added little improvements: free line_read before re-using it & check for nullptr read_line before using it
    }
    else
 #endif
