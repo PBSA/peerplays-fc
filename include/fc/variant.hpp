@@ -1,6 +1,7 @@
 #pragma once 
 
 #include <array>
+#include <cstddef>
 #include <deque>
 #include <map>
 #include <memory>
@@ -212,7 +213,7 @@ namespace fc
         /// Constructs a null_type variant
         variant();
         /// Constructs a null_type variant
-        variant( nullptr_t, uint32_t max_depth = 1 );
+        variant( std::nullptr_t, uint32_t max_depth = 1 );
 
         /// @param str - UTF8 string
         variant( const char* str, uint32_t max_depth = 1 );

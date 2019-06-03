@@ -28,7 +28,7 @@ namespace fc {
     logger::logger()
     :my( new impl() ){}
 
-    logger::logger(nullptr_t){}
+    logger::logger(std::nullptr_t){}
 
     logger::logger( const string& name, const logger& parent )
     :my( new impl() )

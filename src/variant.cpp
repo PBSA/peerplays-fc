@@ -28,7 +28,7 @@ variant::variant()
    set_variant_type( this, null_type );
 }
 
-variant::variant( fc::nullptr_t, uint32_t max_depth )
+variant::variant( std::nullptr_t, uint32_t max_depth )
 {
    set_variant_type( this, null_type );
 }
