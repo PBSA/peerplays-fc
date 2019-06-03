@@ -19,12 +19,6 @@ namespace fc {
   using std::size_t;
   typedef decltype(nullptr) nullptr_t;
 
-  template<typename T> struct deduce           { typedef T type; };
-  template<typename T> struct deduce<T&>       { typedef T type; };
-  template<typename T> struct deduce<const T&> { typedef T type; };
-  template<typename T> struct deduce<T&&>      { typedef T type; };
-  template<typename T> struct deduce<const T&&>{ typedef T type; };
-
   struct true_type  { enum _value { value = 1 }; };
   struct false_type { enum _value { value = 0 }; };
 

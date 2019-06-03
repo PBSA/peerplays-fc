@@ -96,7 +96,7 @@ namespace fc {
    template<typename Functor>
    auto do_parallel( Functor&& f, const char* desc FC_TASK_NAME_DEFAULT_ARG ) -> fc::future<decltype(f())> {
       typedef decltype(f()) Result;
-      typedef typename fc::deduce<Functor>::type FunctorType;
+      typedef typename std::remove_const_t< std::remove_reference_t<Functor> > FunctorType;
       typename task<Result,sizeof(FunctorType)>::ptr tsk =
          task<Result,sizeof(FunctorType)>::create( std::forward<Functor>(f), desc );
       tsk->retain(); // HERE BE DRAFONS
