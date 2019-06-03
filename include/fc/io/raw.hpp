@@ -358,17 +358,21 @@ namespace fc {
           const uint32_t max_depth;
       };
 
-      // Default pack/unpack functions for classes (if_class<fc::true_type>) are removed due to recursion issue.
+      // Default pack/unpack functions for classes are removed due to recursion issue.
       // Classes should implement pack/unpack functions explicitly.
-      template<typename IsClass=fc::true_type>
+      template<typename T, typename Dummy = void>
       struct if_class;
 
-      template<>
-      struct if_class<fc::false_type> {
-        template<typename Stream, typename T>
+      template<typename T>
+      struct if_class<T, std::enable_if_t<!std::is_class<T>::value>> {
+        template<typename Stream>
         static inline void pack( Stream& s, const T v, uint32_t _max_depth ) = delete;
-        template<typename Stream, typename T>
+        template<typename Stream>
         static inline void unpack( Stream& s, T& v, uint32_t _max_depth ) = delete;
+      };
+
+      template<>
+      struct if_class<int64_t, void> {
         template<typename Stream>
         static inline void pack( Stream& s, const int64_t v, uint32_t _max_depth ) {
            boost::endian::little_int64_buf_t tmp;
@@ -381,6 +385,10 @@ namespace fc {
            s.read( (char*)&tmp, sizeof(tmp) );
            v = tmp.value();
         }
+      };
+
+      template<>
+      struct if_class<uint64_t, void> {
         template<typename Stream>
         static inline void pack( Stream& s, const uint64_t v, uint32_t _max_depth ) {
            boost::endian::little_uint64_buf_t tmp;
@@ -393,6 +401,10 @@ namespace fc {
            s.read( (char*)&tmp, sizeof(tmp) );
            v = tmp.value();
         }
+      };
+
+      template<>
+      struct if_class<int32_t, void> {
         template<typename Stream>
         static inline void pack( Stream& s, const int32_t v, uint32_t _max_depth ) {
            boost::endian::little_int32_buf_t tmp;
@@ -405,6 +417,10 @@ namespace fc {
            s.read( (char*)&tmp, sizeof(tmp) );
            v = tmp.value();
         }
+      };
+
+      template<>
+      struct if_class<uint32_t, void> {
         template<typename Stream>
         static inline void pack( Stream& s, const uint32_t v, uint32_t _max_depth ) {
            boost::endian::little_uint32_buf_t tmp;
@@ -417,6 +433,10 @@ namespace fc {
            s.read( (char*)&tmp, sizeof(tmp) );
            v = tmp.value();
         }
+      };
+
+      template<>
+      struct if_class<int16_t, void> {
         template<typename Stream>
         static inline void pack( Stream& s, const int16_t v, uint32_t _max_depth ) {
            boost::endian::little_int16_buf_t tmp;
@@ -429,6 +449,10 @@ namespace fc {
            s.read( (char*)&tmp, sizeof(tmp) );
            v = tmp.value();
         }
+      };
+
+      template<>
+      struct if_class<uint16_t, void> {
         template<typename Stream>
         static inline void pack( Stream& s, const uint16_t v, uint32_t _max_depth ) {
            boost::endian::little_uint16_buf_t tmp;
@@ -441,6 +465,10 @@ namespace fc {
            s.read( (char*)&tmp, sizeof(tmp) );
            v = tmp.value();
         }
+      };
+
+      template<>
+      struct if_class<int8_t, void> {
         template<typename Stream>
         static inline void pack( Stream& s, const int8_t v, uint32_t _max_depth ) {
            s.write( (char*)&v, 1 );
@@ -449,6 +477,10 @@ namespace fc {
         static inline void unpack( Stream& s, int8_t& v, uint32_t _max_depth ) {
            s.read( (char*)&v, 1 );
         }
+      };
+
+      template<>
+      struct if_class<uint8_t, void> {
         template<typename Stream>
         static inline void pack( Stream& s, const uint8_t v, uint32_t _max_depth ) {
            s.write( (char*)&v, 1 );
@@ -459,27 +491,29 @@ namespace fc {
         }
       };
 
-      template<typename IsEnum=fc::false_type>
-      struct if_enum {
-        template<typename Stream, typename T>
+      template<typename T, typename Dummy=void>
+      struct if_enum;
+      template<typename T>
+      struct if_enum<T, std::enable_if_t<!std::is_enum<T>::value>> {
+        template<typename Stream>
         static inline void pack( Stream& s, const T& v, uint32_t _max_depth ) {
           FC_ASSERT( _max_depth > 0 );
           fc::reflector<T>::visit( pack_object_visitor<Stream,T>( v, s, _max_depth - 1 ) );
         }
-        template<typename Stream, typename T>
+        template<typename Stream>
         static inline void unpack( Stream& s, T& v, uint32_t _max_depth ) {
           FC_ASSERT( _max_depth > 0 );
           fc::reflector<T>::visit( unpack_object_visitor<Stream,T>( v, s, _max_depth - 1 ) );
         }
       };
-      template<>
-      struct if_enum<fc::true_type> {
-        template<typename Stream, typename T>
+      template<typename T>
+      struct if_enum<T, std::enable_if_t<std::is_enum<T>::value>> {
+        template<typename Stream>
         static inline void pack( Stream& s, const T& v, uint32_t _max_depth ) {
           FC_ASSERT( _max_depth > 0 );
           fc::raw::pack( s, (int64_t)v, _max_depth - 1 );
         }
-        template<typename Stream, typename T>
+        template<typename Stream>
         static inline void unpack( Stream& s, T& v, uint32_t _max_depth ) {
           FC_ASSERT( _max_depth > 0 );
           int64_t temp;
@@ -488,30 +522,30 @@ namespace fc {
         }
       };
 
-      template<typename IsReflected=fc::false_type>
+      template<typename IsReflected=std::false_type>
       struct if_reflected {
         template<typename Stream, typename T>
         static inline void pack( Stream& s, const T& v, uint32_t _max_depth ) {
           FC_ASSERT( _max_depth > 0 );
-          if_class<typename fc::is_class<T>::type>::pack( s, v, _max_depth - 1 );
+          if_class<T>::pack( s, v, _max_depth - 1 );
         }
         template<typename Stream, typename T>
         static inline void unpack( Stream& s, T& v, uint32_t _max_depth ) {
           FC_ASSERT( _max_depth > 0 );
-          if_class<typename fc::is_class<T>::type>::unpack( s, v, _max_depth - 1 );
+          if_class<T>::unpack( s, v, _max_depth - 1 );
         }
       };
       template<>
-      struct if_reflected<fc::true_type> {
+      struct if_reflected<std::true_type> {
         template<typename Stream, typename T>
         static inline void pack( Stream& s, const T& v, uint32_t _max_depth ) {
           FC_ASSERT( _max_depth > 0 );
-          if_enum< typename fc::reflector<T>::is_enum >::pack( s, v, _max_depth - 1 );
+          if_enum<T>::pack( s, v, _max_depth - 1 );
         }
         template<typename Stream, typename T>
         static inline void unpack( Stream& s, T& v, uint32_t _max_depth ) {
           FC_ASSERT( _max_depth > 0 );
-          if_enum< typename fc::reflector<T>::is_enum >::unpack( s, v, _max_depth - 1 );
+          if_enum<T>::unpack( s, v, _max_depth - 1 );
         }
       };
 
