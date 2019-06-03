@@ -2,19 +2,6 @@
 #include <stdint.h>
 #include <cstdlib>
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4482) // nonstandard extension used enum Name::Val, standard in C++11
-#define NO_RETURN __declspec(noreturn)
-#else
-#define NO_RETURN __attribute__((noreturn))
-#endif
-
-
-//namespace std {
-//  typedef decltype(sizeof(int)) size_t;
-//  typedef decltype(nullptr) nullptr_t;
-//}
-
 namespace fc {
   using std::size_t;
 

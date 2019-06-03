@@ -96,7 +96,7 @@ namespace fc
 
    std::exception_ptr unhandled_exception::get_inner_exception()const { return _inner; }
 
-   NO_RETURN void     unhandled_exception::dynamic_rethrow_exception()const
+   [[noreturn]] void unhandled_exception::dynamic_rethrow_exception()const
    {
       if( !(_inner == std::exception_ptr()) ) std::rethrow_exception( _inner );
       else { fc::exception::dynamic_rethrow_exception(); }
@@ -217,7 +217,7 @@ namespace fc
       return ss.str();
    }
 
-   void NO_RETURN exception_factory::rethrow( const exception& e )const
+   [[noreturn]] void exception_factory::rethrow( const exception& e )const
    {
       auto itr = _registered_exceptions.find( e.code() );
       if( itr != _registered_exceptions.end() )
@@ -229,7 +229,7 @@ namespace fc
     * the error code.  This is used to propagate exception types
     * across conversions to/from JSON
     */
-   NO_RETURN void  exception::dynamic_rethrow_exception()const
+   [[noreturn]] void exception::dynamic_rethrow_exception()const
    {
       exception_factory::instance().rethrow( *this );
    }
