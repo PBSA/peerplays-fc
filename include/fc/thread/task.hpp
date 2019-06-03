@@ -129,7 +129,7 @@ namespace fc {
       task( Functor&& f, const char* desc ):promise_base(desc), task_base(&_functor), promise<R>(desc) {
         typedef typename fc::deduce<Functor>::type FunctorType;
         static_assert( sizeof(f) <= sizeof(_functor), "sizeof(Functor) is larger than FunctorSize" );
-        new ((char*)&_functor) FunctorType( fc::forward<Functor>(f) );
+        new ((char*)&_functor) FunctorType( std::forward<Functor>(f) );
         _destroy_functor = &detail::functor_destructor<FunctorType>::destroy;
 
         _promise_impl = static_cast<promise<R>*>(this);
@@ -157,7 +157,7 @@ namespace fc {
       task( Functor&& f, const char* desc ):promise_base(desc), task_base(&_functor), promise<void>(desc) {
         typedef typename fc::deduce<Functor>::type FunctorType;
         static_assert( sizeof(f) <= sizeof(_functor), "sizeof(Functor) is larger than FunctorSize"  );
-        new ((char*)&_functor) FunctorType( fc::forward<Functor>(f) );
+        new ((char*)&_functor) FunctorType( std::forward<Functor>(f) );
         _destroy_functor = &detail::functor_destructor<FunctorType>::destroy;
 
         _promise_impl = static_cast<promise<void>*>(this);

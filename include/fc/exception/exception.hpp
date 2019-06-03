@@ -5,7 +5,6 @@
  */
 #include <fc/log/logger.hpp>
 #include <fc/optional.hpp>
-#include <fc/utility.hpp>
 #include <exception>
 #include <functional>
 #include <unordered_map>
@@ -167,10 +166,10 @@ namespace fc
    {
 #if defined(_MSC_VER) && (_MSC_VER < 1700)
      return std::make_shared<unhandled_exception>( log_message(),
-                                                   std::copy_exception(fc::forward<T>(e)) );
+                                                   std::copy_exception(std::forward<T>(e)) );
 #else
      return std::make_shared<unhandled_exception>( log_message(),
-                                                   std::make_exception_ptr(fc::forward<T>(e)) );
+                                                   std::make_exception_ptr(std::forward<T>(e)) );
 #endif
    }
 

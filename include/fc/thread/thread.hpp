@@ -88,7 +88,7 @@ namespace fc {
          typedef decltype(f()) Result;
          typedef typename fc::deduce<Functor>::type FunctorType;
          typename task<Result,sizeof(FunctorType)>::ptr tsk = 
-              task<Result,sizeof(FunctorType)>::create( fc::forward<Functor>(f), desc );
+              task<Result,sizeof(FunctorType)>::create( std::forward<Functor>(f), desc );
          tsk->retain(); // HERE BE DRAFONS
          fc::future<Result> r( std::dynamic_pointer_cast< promise<Result> >(tsk) );
          async_task(tsk.get(),prio);
@@ -111,7 +111,7 @@ namespace fc {
                      const char* desc FC_TASK_NAME_DEFAULT_ARG, priority prio = priority()) -> fc::future<decltype(f())> {
          typedef decltype(f()) Result;
          typename task<Result,sizeof(Functor)>::ptr tsk = 
-              task<Result,sizeof(Functor)>::create( fc::forward<Functor>(f), desc );
+              task<Result,sizeof(Functor)>::create( std::forward<Functor>(f), desc );
          tsk->retain(); // HERE BE DRAFONS
          fc::future<Result> r( std::dynamic_pointer_cast< promise<Result> >(tsk) );
          async_task(tsk.get(),prio,when);
@@ -225,11 +225,11 @@ namespace fc {
 
    template<typename Functor>
    auto async( Functor&& f, const char* desc FC_TASK_NAME_DEFAULT_ARG, priority prio = priority()) -> fc::future<decltype(f())> {
-      return fc::thread::current().async( fc::forward<Functor>(f), desc, prio );
+      return fc::thread::current().async( std::forward<Functor>(f), desc, prio );
    }
    template<typename Functor>
    auto schedule( Functor&& f, const fc::time_point& t, const char* desc FC_TASK_NAME_DEFAULT_ARG, priority prio = priority()) -> fc::future<decltype(f())> {
-      return fc::thread::current().schedule( fc::forward<Functor>(f), t, desc, prio );
+      return fc::thread::current().schedule( std::forward<Functor>(f), t, desc, prio );
    }
 
   /**

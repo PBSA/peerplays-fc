@@ -1,8 +1,6 @@
 #pragma once
-#include <fc/utility.hpp>
 #include <assert.h>
 #include <utility>
-
 
 namespace fc {
 #ifdef _MSC_VER
@@ -81,14 +79,14 @@ namespace fc {
       optional( U&& u )
       :_valid(true) 
       {
-        new ((char*)ptr()) T( fc::forward<U>(u) );
+        new ((char*)ptr()) T( std::forward<U>(u) );
       }
 
       template<typename U>
       optional& operator=( U&& u ) 
       {
         reset();
-        new (ptr()) T( fc::forward<U>(u) );
+        new (ptr()) T( std::forward<U>(u) );
         _valid = true;
         return *this;
       }

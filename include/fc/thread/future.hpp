@@ -146,7 +146,7 @@ namespace fc {
 
       template<typename CompletionHandler>
       void on_complete( CompletionHandler&& c ) {
-        _on_complete( new detail::completion_handler_impl<CompletionHandler,T>(fc::forward<CompletionHandler>(c)) );
+        _on_complete( new detail::completion_handler_impl<CompletionHandler,T>(std::forward<CompletionHandler>(c)) );
       }
     protected:
       promise( const char* desc ):promise_base(desc){}
@@ -184,7 +184,7 @@ namespace fc {
 
       template<typename CompletionHandler>
       void on_complete( CompletionHandler&& c ) {
-        _on_complete( new detail::completion_handler_impl<CompletionHandler,void>(fc::forward<CompletionHandler>(c)) );
+        _on_complete( new detail::completion_handler_impl<CompletionHandler,void>(std::forward<CompletionHandler>(c)) );
       }
     protected:
       promise( const char* desc ):promise_base(desc){}
@@ -273,7 +273,7 @@ namespace fc {
        */
       template<typename CompletionHandler>
       void on_complete( CompletionHandler&& c ) {
-        m_prom->on_complete( fc::forward<CompletionHandler>(c) );
+        m_prom->on_complete( std::forward<CompletionHandler>(c) );
       }
     private:
       friend class thread;
@@ -334,7 +334,7 @@ namespace fc {
 
       template<typename CompletionHandler>
       void on_complete( CompletionHandler&& c ) {
-        m_prom->on_complete( fc::forward<CompletionHandler>(c) );
+        m_prom->on_complete( std::forward<CompletionHandler>(c) );
       }
 
     private:

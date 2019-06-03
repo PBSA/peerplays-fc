@@ -25,9 +25,6 @@ namespace fc {
   template<typename T> struct deduce<T&&>      { typedef T type; };
   template<typename T> struct deduce<const T&&>{ typedef T type; };
 
-  template<typename T, typename U>
-  inline T&& forward( U&& u ) { return static_cast<T&&>(u); }
-
   struct true_type  { enum _value { value = 1 }; };
   struct false_type { enum _value { value = 0 }; };
 

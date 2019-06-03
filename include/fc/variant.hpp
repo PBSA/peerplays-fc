@@ -350,7 +350,7 @@ namespace fc
         template<typename T>
         variant& operator=( T&& v )
         {
-           return *this = variant( fc::forward<T>(v) );
+           return *this = variant( std::forward<T>(v) );
         }
 
         template<typename T>
