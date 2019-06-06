@@ -28,6 +28,7 @@
 
 namespace fc {
 
+using boost::multiprecision::int128_t;
 using boost::multiprecision::uint128_t;
  
 } // namespace fc
