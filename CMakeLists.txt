@@ -224,7 +224,6 @@ set( fc_sources
      src/interprocess/signals.cpp
      src/interprocess/file_mapping.cpp
      src/rpc/cli.cpp
-     src/rpc/http_api.cpp
      src/rpc/state.cpp
      src/rpc/websocket_api.cpp
      src/log/log_message.cpp
@@ -256,7 +255,6 @@ set( fc_sources
      src/network/tcp_socket.cpp
      src/network/udp_socket.cpp
      src/network/http/http_connection.cpp
-     src/network/http/http_server.cpp
      src/network/http/websocket.cpp
      src/network/ip.cpp
      src/network/rate_limiting.cpp
