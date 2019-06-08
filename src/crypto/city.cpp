@@ -31,6 +31,7 @@
 //#include <city.h>
 
 #include <algorithm>
+#include <array>
 #include <string.h>  // for memcpy and memset
 #include <fc/crypto/city.hpp>
 #include <boost/endian/buffers.hpp>

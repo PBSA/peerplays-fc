@@ -675,12 +675,12 @@ void from_variant( const variant& var, std::vector<char>& vo, uint32_t max_depth
 
 void to_variant( const uint128_t& var, variant& vo, uint32_t max_depth )
 {
-   vo = var.str();
+   vo = boost::lexical_cast<std::string>( var );
 }
 
 void from_variant( const variant& var, uint128_t& vo, uint32_t max_depth )
 {
-   vo = uint128_t( var.as_string() );
+   vo = boost::lexical_cast<uint128_t>( var.as_string() );
 }
 
 #ifdef __APPLE__
