@@ -17,7 +17,7 @@ class sha1
     operator    std::string()const;
 
     char*    data()const;
-    constexpr size_t data_size()const { return 20; }
+    static constexpr size_t data_size() { return 20; }
 
     static sha1 hash( const char* d, uint32_t dlen );
     static sha1 hash( const std::string& );
