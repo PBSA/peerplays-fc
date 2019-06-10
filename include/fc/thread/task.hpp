@@ -32,7 +32,7 @@ namespace fc {
     public:
               void run(); 
       virtual void cancel(const char* reason FC_CANCELATION_REASON_DEFAULT_ARG) override;
-      ~task_base();
+      virtual ~task_base();
 
       /* HERE BE DRAGONS
        *
