@@ -99,7 +99,7 @@ namespace fc {
       typedef typename std::remove_const_t< std::remove_reference_t<Functor> > FunctorType;
       typename task<Result,sizeof(FunctorType)>::ptr tsk =
          task<Result,sizeof(FunctorType)>::create( std::forward<Functor>(f), desc );
-      tsk->retain(); // HERE BE DRAFONS
+      tsk->retain(); // HERE BE DRAGONS
       fc::future<Result> r( std::dynamic_pointer_cast< promise<Result> >(tsk) );
       detail::get_worker_pool().post( tsk.get() );
       return r;

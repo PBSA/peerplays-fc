@@ -89,7 +89,7 @@ namespace fc {
          typedef typename std::remove_const_t< std::remove_reference_t<Functor> > FunctorType;
          typename task<Result,sizeof(FunctorType)>::ptr tsk = 
               task<Result,sizeof(FunctorType)>::create( std::forward<Functor>(f), desc );
-         tsk->retain(); // HERE BE DRAFONS
+         tsk->retain(); // HERE BE DRAGONS
          fc::future<Result> r( std::dynamic_pointer_cast< promise<Result> >(tsk) );
          async_task(tsk.get(),prio);
          return r;
@@ -112,7 +112,7 @@ namespace fc {
          typedef decltype(f()) Result;
          typename task<Result,sizeof(Functor)>::ptr tsk = 
               task<Result,sizeof(Functor)>::create( std::forward<Functor>(f), desc );
-         tsk->retain(); // HERE BE DRAFONS
+         tsk->retain(); // HERE BE DRAGONS
          fc::future<Result> r( std::dynamic_pointer_cast< promise<Result> >(tsk) );
          async_task(tsk.get(),prio,when);
          return r;
