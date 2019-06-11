@@ -443,6 +443,9 @@ public:
     }
 
     tag_type which() const {return _tag;}
+
+    template<typename T>
+    bool is_type() const { return _tag == tag<T>::value; }
 };
 
    struct from_static_variant 
