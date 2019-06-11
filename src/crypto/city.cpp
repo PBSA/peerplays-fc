@@ -46,21 +46,14 @@ namespace fc {
 
 using namespace std;
 
-inline uint64_t Uint128Low64(const uint128_t& x) {
-  return static_cast<uint64_t>(x & 0xffffffffffffffffULL);
-}
-inline uint64_t Uint128High64(const uint128_t& x) {
-  return static_cast<uint64_t>( x >> 64 );
-}
-
 // Hash 128 input bits down to 64 bits of output.
 // This is intended to be a reasonably good hash function.
 inline uint64_t Hash128to64(const uint128_t& x) {
   // Murmur-inspired hashing.
   const uint64_t kMul = 0x9ddfea08eb382d69ULL;
-  uint64_t a = (Uint128Low64(x) ^ Uint128High64(x)) * kMul;
+  uint64_t a = (uint128_lo64(x) ^ uint128_hi64(x)) * kMul;
   a ^= (a >> 47);
-  uint64_t b = (Uint128High64(x) ^ a) * kMul;
+  uint64_t b = (uint128_hi64(x) ^ a) * kMul;
   b ^= (b >> 47);
   b *= kMul;
   return b;
@@ -282,7 +275,7 @@ static uint64_t ShiftMix(uint64_t val) {
 }
 
 static uint64_t HashLen16(uint64_t u, uint64_t v) {
-  return Hash128to64( ( uint128_t(u) << 64 ) + v);
+  return Hash128to64( uint128( u, v) );
 }
 
 static uint64_t HashLen16(uint64_t u, uint64_t v, uint64_t mul) {
@@ -428,8 +421,8 @@ uint64_t CityHash64WithSeed(const char *s, size_t len, uint64_t seed) {
 // A subroutine for CityHash128().  Returns a decent 128-bit hash for strings
 // of any length representable in signed long.  Based on City and Murmur.
 uint128_t CityMurmur(const char *s, size_t len, uint128_t seed) {
-  uint64_t a = Uint128Low64(seed);
-  uint64_t b = Uint128High64(seed);
+  uint64_t a = uint128_lo64(seed);
+  uint64_t b = uint128_hi64(seed);
   uint64_t c = 0;
   uint64_t d = 0;
   signed long l = len - 16;
@@ -454,7 +447,7 @@ uint128_t CityMurmur(const char *s, size_t len, uint128_t seed) {
   }
   a = HashLen16(a, c);
   b = HashLen16(d, b);
-  return ( uint128_t(a ^ b) << 64 ) + HashLen16(b, a);
+  return uint128( a ^ b, HashLen16(b, a) );
 }
 
 uint128_t CityHash128WithSeed(const char *s, size_t len, uint128_t seed) {
@@ -465,8 +458,8 @@ uint128_t CityHash128WithSeed(const char *s, size_t len, uint128_t seed) {
   // We expect len >= 128 to be the common case.  Keep 56 bytes of state:
   // v, w, x, y, and z.
   pair<uint64_t, uint64_t> v, w;
-  uint64_t x = Uint128Low64(seed);
-  uint64_t y = Uint128High64(seed);
+  uint64_t x = uint128_lo64(seed);
+  uint64_t y = uint128_hi64(seed);
   uint64_t z = len * k1;
   v.first = Rotate(y ^ k1, 49) * k1 + Fetch64(s);
   v.second = Rotate(v.first, 42) * k1 + Fetch64(s + 8);
@@ -516,15 +509,13 @@ uint128_t CityHash128WithSeed(const char *s, size_t len, uint128_t seed) {
   // different 56-byte-to-8-byte hashes to get a 16-byte final result.
   x = HashLen16(x, v.first);
   y = HashLen16(y + z, w.first);
-  return ( uint128_t( HashLen16(x + v.second, w.second) + y ) << 64 )
-         + HashLen16(x + w.second, y + v.second);
+  return uint128( HashLen16(x + v.second, w.second) + y, HashLen16(x + w.second, y + v.second) );
 }
 
 uint128_t city_hash128(const char *s, size_t len) {
   return len >= 16 ?
-      CityHash128WithSeed(s + 16, len - 16,
-                          ( uint128_t( Fetch64(s) ) << 64 ) + Fetch64(s + 8) + k0) :
-      CityHash128WithSeed(s, len, ( uint128_t(k0) << 64 ) + k1);
+      CityHash128WithSeed( s + 16, len - 16, uint128( Fetch64(s), Fetch64(s + 8) + k0 ) ) :
+      CityHash128WithSeed( s, len, uint128( k0, k1 ) );
 }
 
 //#ifdef __SSE4_2__
@@ -648,10 +639,9 @@ uint128_t CityHashCrc128WithSeed(const char *s, size_t len, uint128_t seed) {
   } else {
     uint64_t result[4];
     CityHashCrc256(s, len, result);
-    uint64_t u = Uint128High64(seed) + result[0];
-    uint64_t v = Uint128Low64(seed) + result[1];
-    return ( uint128_t( HashLen16(u, v + result[2]) ) << 64 )
-           + HashLen16(Rotate(v, 32), u * k0 + result[3]);
+    uint64_t u = uint128_hi64(seed) + result[0];
+    uint64_t v = uint128_lo64(seed) + result[1];
+    return uint128( HashLen16(u, v + result[2]), HashLen16(Rotate(v, 32), u * k0 + result[3]) );
   }
 }
 
@@ -661,7 +651,7 @@ uint128_t city_hash_crc_128(const char *s, size_t len) {
   } else {
     uint64_t result[4];
     CityHashCrc256(s, len, result);
-    return ( uint128_t(result[2]) << 64 ) + result[3];
+    return uint128( result[2], result[3] );
   }
 }
 
