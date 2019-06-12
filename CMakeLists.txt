@@ -379,7 +379,7 @@ target_include_directories(fc
 IF(NOT WIN32)
   set(LINK_USR_LOCAL_LIB -L/usr/local/lib)
 ENDIF()
-target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES}
+target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB}  ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${Boost_LIBRARIES}
                                  ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library}
                                  ${editline_libraries} secp256k1 ${CMAKE_REQUIRED_LIBRARIES} )
 
