@@ -36,7 +36,7 @@ namespace fc {
 
       /* HERE BE DRAGONS
        *
-       * Tasks are handled by an fc::thread . To avoid concurrency issues, fc::thread keeps a reference to tha
+       * Tasks are handled by an fc::thread . To avoid concurrency issues, fc::thread keeps a reference to the
        * task in the form of a simple pointer.
        * At the same time, a task is also a promise that will be fulfilled with the task result, so typically the
        * creator of the task also keeps a reference to the task (but not necessarily always).
