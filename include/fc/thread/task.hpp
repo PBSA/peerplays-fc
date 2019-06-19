@@ -123,8 +123,6 @@ namespace fc {
          return ptr( new task<R,FunctorSize>( std::move(f), desc ) );
       }
       virtual void cancel(const char* reason FC_CANCELATION_REASON_DEFAULT_ARG) override { task_base::cancel(reason); }
-
-      alignas(double) char _functor[FunctorSize];      
     private:
       template<typename Functor>
       task( Functor&& f, const char* desc ):promise_base(desc), task_base(&_functor), promise<R>(desc) {
@@ -136,6 +134,8 @@ namespace fc {
         _promise_impl = static_cast<promise<R>*>(this);
         _run_functor  = &detail::functor_run<FunctorType>::run;
       }
+
+      alignas(double) char _functor[FunctorSize];
   };
 
   template<uint64_t FunctorSize>
@@ -151,8 +151,6 @@ namespace fc {
          return ptr( new task<void,FunctorSize>( std::move(f), desc ) );
       }
       virtual void cancel(const char* reason FC_CANCELATION_REASON_DEFAULT_ARG) override { task_base::cancel(reason); }
-
-      alignas(double) char _functor[FunctorSize];
     private:
       template<typename Functor>
       task( Functor&& f, const char* desc ):promise_base(desc), task_base(&_functor), promise<void>(desc) {
@@ -164,6 +162,8 @@ namespace fc {
         _promise_impl = static_cast<promise<void>*>(this);
         _run_functor  = &detail::void_functor_run<FunctorType>::run;
       }
+
+      alignas(double) char _functor[FunctorSize];
   };
 
 }
