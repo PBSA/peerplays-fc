@@ -23,7 +23,7 @@ static void interop_do(const char * const data, size_t len) {
 }
 
 static void interop_do(const fc::ecc::public_key_data &data) {
-    interop_do(data.begin(), data.size());
+    interop_do((char*) data.begin(), data.size());
 }
 
 static void interop_do(const fc::ecc::private_key_secret &data) {
@@ -31,7 +31,7 @@ static void interop_do(const fc::ecc::private_key_secret &data) {
 }
 
 static void interop_do(const fc::ecc::public_key_point_data &data) {
-    interop_do(data.begin(), data.size());
+    interop_do((char*) data.begin(), data.size());
 }
 
 static void interop_do(const std::string &data) {

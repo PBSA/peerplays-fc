@@ -1,5 +1,7 @@
 #pragma once 
 
+#include <array>
+#include <cstddef>
 #include <deque>
 #include <map>
 #include <memory>
@@ -11,7 +13,9 @@
 #include <string.h> // memset
 
 #include <fc/optional.hpp>
+#include <fc/uint128.hpp>
 #include <fc/container/flat_fwd.hpp>
+#include <fc/crypto/hex.hpp>
 #include <boost/endian/buffers.hpp>
 #include <boost/multi_index_container_fwd.hpp>
 
@@ -146,6 +150,9 @@ namespace fc
    void to_variant( const microseconds& input_microseconds,   variant& output_variant, uint32_t max_depth );
    void from_variant( const variant& input_variant, microseconds& output_microseconds, uint32_t max_depth );
 
+   void to_variant( const uint128_t& var, variant& vo, uint32_t max_depth = 1 );
+   void from_variant( const variant& var, uint128_t& vo, uint32_t max_depth = 1 );
+
    #ifdef __APPLE__
    void to_variant( size_t s, variant& v, uint32_t max_depth = 1 );
    #elif !defined(_MSC_VER)
@@ -207,7 +214,7 @@ namespace fc
         /// Constructs a null_type variant
         variant();
         /// Constructs a null_type variant
-        variant( nullptr_t, uint32_t max_depth = 1 );
+        variant( std::nullptr_t, uint32_t max_depth = 1 );
 
         /// @param str - UTF8 string
         variant( const char* str, uint32_t max_depth = 1 );
@@ -345,7 +352,7 @@ namespace fc
         template<typename T>
         variant& operator=( T&& v )
         {
-           return *this = variant( fc::forward<T>(v) );
+           return *this = variant( std::forward<T>(v) );
         }
 
         template<typename T>
@@ -652,6 +659,36 @@ namespace fc
       c.clear();
       for( const auto& item : vars )
          c.insert( item.as<T>( max_depth - 1 ) );
+   }
+
+   template<size_t N>
+   void to_variant( const std::array<char,N>& bi, variant& v, uint32_t max_depth = 1 )
+   {
+      v = variant( to_hex( bi.data(), N ) );
+   }
+   template<size_t N>
+   void from_variant( const variant& v, std::array<char,N>& bi, uint32_t max_depth = 1 )
+   {
+      std::string ve = v.as_string();
+      if( ve.size() )
+         from_hex( ve, bi.data(), std::min<size_t>( ve.size() / 2, bi.size() ) );
+      else
+         memset( bi.data(), 0, bi.size() );
+   }
+
+   template<size_t N>
+   void to_variant( const std::array<unsigned char,N>& bi, variant& v, uint32_t max_depth = 1 )
+   {
+      v = variant( to_hex( (char*) bi.data(), N ) );
+   }
+   template<size_t N>
+   void from_variant( const variant& v, std::array<unsigned char,N>& bi, uint32_t max_depth = 1 )
+   {
+      std::string ve = v.as_string();
+      if( ve.size() )
+         from_hex( ve, (char*)bi.data(), std::min<size_t>( ve.size() / 2, bi.size() ) );
+      else
+         memset( bi.data(), 0, bi.size() );
    }
 
    variant operator + ( const variant& a, const variant& b );

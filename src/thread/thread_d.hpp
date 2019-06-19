@@ -335,7 +335,7 @@ namespace fc {
                  if( (*task_itr)->canceled() )
                  {
                     (*task_itr)->run();
-                    (*task_itr)->release();
+                    (*task_itr)->release(); // HERE BE DRAGONS
                     task_itr = task_sch_queue.erase(task_itr);
                     canceled_task = true;
                     continue;
@@ -531,10 +531,10 @@ namespace fc {
 
               next->_set_active_context( current );
               current->cur_task = next;
-              fc::shared_ptr<task_base> next_ptr(next);
-              next_ptr->run();
-              current->cur_task = 0;
-              next_ptr->_set_active_context(0);
+              next->run();
+              current->cur_task = nullptr;
+              next->_set_active_context(nullptr);
+              next->release(); // HERE BE DRAGONS
               current->reinitialize();
            }
 

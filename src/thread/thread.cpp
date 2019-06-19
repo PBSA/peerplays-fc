@@ -72,7 +72,7 @@ namespace fc {
    }
 
    thread::thread( const std::string& name, thread_idle_notifier* notifier ) {
-      promise<void>::ptr p(new promise<void>("thread start"));
+      promise<void>::ptr p = promise<void>::create("thread start");
       boost::thread* t = new boost::thread( [this,p,name,notifier]() {
           try {
             set_thread_name(name.c_str()); // set thread's name for the debugger to display

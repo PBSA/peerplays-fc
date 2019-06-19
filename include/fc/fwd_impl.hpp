@@ -1,7 +1,7 @@
 #pragma once
 
-#include <fc/utility.hpp>
 #include <fc/fwd.hpp>
+#include <cstdint>
 #include <new>
 #include <type_traits>
 #include <utility>
@@ -41,10 +41,10 @@ namespace fc {
 
 
     template<typename T, unsigned int S, typename U, typename A>
-    auto operator + ( const fwd<T,S,A>& x, U&& u ) -> typename detail::add<T,U>::type { return *x+fc::forward<U>(u); }
+    auto operator + ( const fwd<T,S,A>& x, U&& u ) -> typename detail::add<T,U>::type { return *x+std::forward<U>(u); }
 
     template<typename T, unsigned int S, typename U, typename A>
-    auto operator - ( const fwd<T,S,A>& x, U&& u ) -> typename detail::sub<T,U>::type { return *x-fc::forward<U>(u); }
+    auto operator - ( const fwd<T,S,A>& x, U&& u ) -> typename detail::sub<T,U>::type { return *x-std::forward<U>(u); }
 
     template<typename T, unsigned int S, typename U, typename A>
     auto operator << ( U& u, const fwd<T,S,A>& f ) -> typename detail::insert_op<U,T>::type { return u << *f; }
@@ -63,20 +63,20 @@ namespace fc {
     template<typename U>
     fwd<T,S,A>::fwd( U&& u ) {
       check_size<sizeof(T),sizeof(_store)>();
-      new (this) T( fc::forward<U>(u) );
+      new (this) T( std::forward<U>(u) );
     }
 
     template<typename T,unsigned int S,typename A>
     template<typename U,typename V>
     fwd<T,S,A>::fwd( U&& u, V&& v ) {
       check_size<sizeof(T),sizeof(_store)>();
-      new (this) T( fc::forward<U>(u), fc::forward<V>(v) );
+      new (this) T( std::forward<U>(u), std::forward<V>(v) );
     }
     template<typename T,unsigned int S,typename A>
     template<typename U,typename V,typename X,typename Y>
     fwd<T,S,A>::fwd( U&& u, V&& v, X&& x, Y&&  y ) {
       check_size<sizeof(T),sizeof(_store)>();
-      new (this) T( fc::forward<U>(u), fc::forward<V>(v), fc::forward<X>(x), fc::forward<Y>(y) );
+      new (this) T( std::forward<U>(u), std::forward<V>(v), std::forward<X>(x), std::forward<Y>(y) );
     }
 
 
@@ -121,7 +121,7 @@ namespace fc {
     template<typename T,unsigned int S, typename A>
     template<typename U>
     T& fwd<T,S,A>::operator = ( U&& u ) {
-      return **this = fc::forward<U>(u);
+      return **this = std::forward<U>(u);
     }
 
     template<typename T,unsigned int S, typename A>
