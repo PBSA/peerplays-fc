@@ -532,8 +532,8 @@ namespace fc {
               next->_set_active_context( current );
               current->cur_task = next;
               next->run();
-              current->cur_task = 0;
-              next->_set_active_context(0);
+              current->cur_task = nullptr;
+              next->_set_active_context(nullptr);
               next->release(); // HERE BE DRAGONS
               current->reinitialize();
            }
