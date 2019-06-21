@@ -206,7 +206,7 @@ namespace fc { namespace http {
                _server.init_asio(&fc::asio::default_io_service());
                _server.set_reuse_addr(true);
                _server.set_open_handler( [&]( connection_hdl hdl ){
-                  _server_thread.async( [&](){
+                  _server_thread.async( [this, hdl](){
                         auto new_con = std::make_shared<websocket_connection_impl<
                               websocket_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
                         _on_connection( _connections[hdl] = new_con );
