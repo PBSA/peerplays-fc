@@ -11,7 +11,7 @@ int main(int argc, char** argv)
    try
    {
       // set up logging
-      fc::shared_ptr<fc::console_appender> ca(new fc::console_appender);
+      fc::appender::ptr ca(new fc::console_appender);
       fc::logger l = fc::logger::get("rpc");
       l.add_appender( ca );
       

@@ -11,7 +11,7 @@ BOOST_AUTO_TEST_SUITE(fc_network)
 BOOST_AUTO_TEST_CASE(websocket_test)
 { 
     // set up logging
-    fc::shared_ptr<fc::console_appender> ca(new fc::console_appender);
+    fc::appender::ptr ca(new fc::console_appender);
     fc::logger l = fc::logger::get("rpc");
     l.add_appender( ca );
     
@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(websocket_test)
 BOOST_AUTO_TEST_CASE(websocket_test_with_proxy_header)
 { 
     // set up logging
-    fc::shared_ptr<fc::console_appender> ca(new fc::console_appender);
+    fc::appender::ptr ca(new fc::console_appender);
     fc::logger l = fc::logger::get("rpc");
     l.add_appender( ca );
     
