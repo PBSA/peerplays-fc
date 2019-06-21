@@ -169,7 +169,7 @@ namespace fc { namespace http {
             }
 
             /****
-             * @brief retrieves the remote hostname
+             * @brief retrieves the remote IP address
              * 
              * @param forward_header_key the key to look at in the request header
              * @returns the value in the header, otherwise the remote endpoint
