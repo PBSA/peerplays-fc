@@ -1,5 +1,6 @@
-
+#include <fc/reflect/variant.hpp>
 #include <fc/rpc/websocket_api.hpp>
+#include <fc/io/json.hpp>
 
 namespace fc { namespace rpc {
 
@@ -49,8 +50,30 @@ websocket_api_connection::websocket_api_connection( const std::shared_ptr<fc::ht
       return this->receive_call( 0, method_name, args );
    } );
 
-   _connection->on_message_handler( [this]( const std::string& msg ){ on_message(msg,true); } );
-   _connection->on_http_handler( [this]( const std::string& msg ){ return on_message(msg,false); } );
+   _connection->on_message_handler( [this]( const std::string& msg ){
+       response reply = on_message(msg);
+       if( _connection && ( reply.id || reply.result || reply.error || reply.jsonrpc ) )
+          _connection->send_message( fc::json::to_string( reply, fc::json::stringify_large_ints_and_doubles,
+                                                          _max_conversion_depth ) );
+   } );
+   _connection->on_http_handler( [this]( const std::string& msg ){
+       response reply = on_message(msg);
+       fc::http::reply result;
+       if( reply.error )
+       {
+          if( reply.error->code == -32603 )
+             result.status = fc::http::reply::InternalServerError;
+          else if( reply.error->code <= -32600 )
+             result.status = fc::http::reply::BadRequest;
+       }
+       if( reply.id || reply.result || reply.error || reply.jsonrpc )
+          result.body_as_string = fc::json::to_string( reply, fc::json::stringify_large_ints_and_doubles,
+                                                       _max_conversion_depth );
+       else
+          result.status = fc::http::reply::NoContent;
+
+       return result;
+   } );
    _connection->closed.connect( [this](){ closed(); } );
 }
 
@@ -96,81 +119,120 @@ void websocket_api_connection::send_notice(
                                                    _max_conversion_depth ) );
 }
 
-std::string websocket_api_connection::on_message(
-   const std::string& message,
-   bool send_message /* = true */ )
+response websocket_api_connection::on_message( const std::string& message )
 {
+   variant var;
    try
    {
-      auto var = fc::json::from_string(message, fc::json::legacy_parser, _max_conversion_depth);
-      const auto& var_obj = var.get_object();
+      var = fc::json::from_string( message, fc::json::legacy_parser, _max_conversion_depth );
+   }
+   catch( const fc::exception& e )
+   {
+      return response( variant(), { -32700, "Invalid JSON message", variant( e, _max_conversion_depth ) }, "2.0" );
+   }
 
-      if( var_obj.contains( "method" ) )
-      {
-         auto call = var.as<fc::rpc::request>(_max_conversion_depth);
-         exception_ptr optexcept;
-         try
-         {
-            try
-            {
+   if( var.is_array() )
+      return response( variant(), { -32600, "Batch requests not supported" }, "2.0" );
+
+   if( !var.is_object() )
+      return response( variant(), { -32600, "Invalid JSON request" }, "2.0" );
+
+   variant_object var_obj = var.get_object();
+
+   if( var_obj.contains( "id" )
+       && !var_obj["id"].is_string() && !var_obj["id"].is_numeric() && !var_obj["id"].is_null() )
+      return response( variant(), { -32600, "Invalid id" }, "2.0" );
+
+   if( var_obj.contains( "method" ) && ( !var_obj["method"].is_string() || var_obj["method"].get_string() == "" ) )
+      return response( variant(), { -32600, "Missing or invalid method" }, "2.0" );
+
+   if( var_obj.contains( "jsonrpc" ) && ( !var_obj["jsonrpc"].is_string() || var_obj["jsonrpc"] != "2.0" ) )
+      return response( variant(), { -32600, "Unsupported JSON-RPC version" }, "2.0" );
+
+   if( var_obj.contains( "method" ) )
+   {
+      if( var_obj.contains( "params" ) && var_obj["params"].is_object() )
+         return response( variant(), { -32602, "Named parameters not supported" }, "2.0" );
+
+      if( var_obj.contains( "params" ) && !var_obj["params"].is_array() )
+         return response( variant(), { -32600, "Invalid parameters" }, "2.0" );
+
+      return on_request( std::move( var ) );
+   }
+
+   if( var_obj.contains( "result" ) || var_obj.contains("error") )
+   {
+      if( !var_obj.contains( "id" ) || ( var_obj["id"].is_null() && !var_obj.contains( "jsonrpc" ) ) )
+         return response( variant(), { -32600, "Missing or invalid id" }, "2.0" );
+
+      on_response( std::move( var ) );
+
+      return response();
+   }
+
+   return response( variant(), { -32600, "Missing method or result or error" }, "2.0" );
+}
+
+void websocket_api_connection::on_response( const variant& var )
+{
+   _rpc_state.handle_reply( var.as<fc::rpc::response>(_max_conversion_depth) );
+}
+
+response websocket_api_connection::on_request( const variant& var )
+{
+   request call = var.as<fc::rpc::request>( _max_conversion_depth );
+   if( var.get_object().contains( "id" ) )
+      call.id = var.get_object()["id"]; // special handling for null id
+
+   // null ID is valid in JSONRPC-2.0 but signals "no id" in JSONRPC-1.0
+   bool has_id = call.id.valid() && ( call.jsonrpc.valid() || !call.id->is_null() );
+
+   try
+   {
 #ifdef LOG_LONG_API
-               auto start = time_point::now();
+      auto start = time_point::now();
 #endif
 
-               auto result = _rpc_state.local_call( call.method, call.params );
+      auto result = _rpc_state.local_call( call.method, call.params );
 
 #ifdef LOG_LONG_API
-               auto end = time_point::now();
+      auto end = time_point::now();
 
-               if( end - start > fc::milliseconds( LOG_LONG_API_MAX_MS ) )
-                  elog( "API call execution time limit exceeded. method: ${m} params: ${p} time: ${t}",
-                        ("m",call.method)("p",call.params)("t", end - start) );
-               else if( end - start > fc::milliseconds( LOG_LONG_API_WARN_MS ) )
-                  wlog( "API call execution time nearing limit. method: ${m} params: ${p} time: ${t}",
-                        ("m",call.method)("p",call.params)("t", end - start) );
+      if( end - start > fc::milliseconds( LOG_LONG_API_MAX_MS ) )
+         elog( "API call execution time limit exceeded. method: ${m} params: ${p} time: ${t}",
+               ("m",call.method)("p",call.params)("t", end - start) );
+      else if( end - start > fc::milliseconds( LOG_LONG_API_WARN_MS ) )
+         wlog( "API call execution time nearing limit. method: ${m} params: ${p} time: ${t}",
+               ("m",call.method)("p",call.params)("t", end - start) );
 #endif
 
-               if( call.id )
-               {
-                  auto reply = fc::json::to_string( response( *call.id, result, "2.0" ),
-                                                    fc::json::stringify_large_ints_and_doubles,
-                                                    _max_conversion_depth );
-                  if( send_message && _connection )
-                     _connection->send_message( reply );
-                  return reply;
-               }
-            }
-            FC_CAPTURE_AND_RETHROW( (call.method)(call.params) )
-         }
-         catch ( const fc::exception& e )
-         {
-            if( call.id )
-            {
-               optexcept = e.dynamic_copy_exception();
-            }
-         }
-         if( optexcept ) {
-
-               auto reply = fc::json::to_string( variant(response( *call.id, error_object{ 1, optexcept->to_string(), fc::variant(*optexcept, _max_conversion_depth)}, "2.0" ), _max_conversion_depth ),
-                                                 fc::json::stringify_large_ints_and_doubles, _max_conversion_depth );
-               if( send_message && _connection )
-                  _connection->send_message( reply );
-
-               return reply;
-         }
-      }
-      else
-      {
-         auto reply = var.as<fc::rpc::response>(_max_conversion_depth);
-         _rpc_state.handle_reply( reply );
-      }
+      if( has_id )
+         return response( call.id, result, call.jsonrpc );
+   }
+   catch ( const fc::method_not_found_exception& e )
+   {
+      if( has_id )
+         return response( call.id, error_object{ -32601, "Method not found",
+                          variant( (fc::exception) e, _max_conversion_depth ) }, call.jsonrpc );
    }
    catch ( const fc::exception& e )
    {
-      wdump((e.to_detail_string()));
-      return e.to_detail_string();
+      if( has_id )
+         return response( call.id, error_object{ e.code(), "Execution error", variant( e, _max_conversion_depth ) },
+                          call.jsonrpc );
    }
-   return string();
+   catch ( const std::exception& e )
+   {
+      elog( "Internal error - ${e}", ("e",e.what()) );
+      return response( call.id, error_object{ -32603, "Internal error", variant( e.what(), _max_conversion_depth ) },
+                       call.jsonrpc );
+   }
+   catch ( ... )
+   {
+      elog( "Internal error while processing RPC request" );
+      throw;
+   }
+   return response();
 }
 
 } } // namespace fc::rpc

@@ -1,9 +1,7 @@
 #pragma once
+#include <fc/network/http/websocket.hpp>
 #include <fc/rpc/api_connection.hpp>
 #include <fc/rpc/state.hpp>
-#include <fc/network/http/websocket.hpp>
-#include <fc/io/json.hpp>
-#include <fc/reflect/variant.hpp>
 
 namespace fc { namespace rpc {
 
@@ -26,9 +24,9 @@ namespace fc { namespace rpc {
             variants args = variants() ) override;
 
       protected:
-         std::string on_message(
-            const std::string& message,
-            bool send_message = true );
+         response on_message( const std::string& message );
+         response on_request( const variant& message );
+         void     on_response( const variant& message );
 
          std::shared_ptr<fc::http::websocket_connection>  _connection;
          fc::rpc::state                                   _rpc_state;

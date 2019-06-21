@@ -22,50 +22,33 @@
  * THE SOFTWARE.
  */
 
-#pragma once
-
-#ifdef __SIZEOF_INT128__
-
-#include <stdint.h>
+#include <fc/popcount.hpp>
 
 namespace fc {
 
-using int128_t  = __int128_t;
-using uint128_t = __uint128_t;
+#if _MSC_VER || __GNUC__ || __clang__
+#else
+uint8_t popcount( uint64_t v )
+{
+   // Public Domain code taken from http://graphics.stanford.edu/~seander/bithacks.html
+   uint8_t c;
+   static const int S[] = {1, 2, 4, 8, 16, 32};
+   static const uint64_t B[] = {0x5555555555555555, 0x3333333333333333, 0x0F0F0F0F0F0F0F0F,
+                                0x00FF00FF00FF00FF, 0x0000FFFF0000FFFF, 0x00000000FFFFFFFF };
 
-inline uint64_t uint128_lo64(const uint128_t x) {
-  return static_cast<uint64_t>(x & 0xffffffffffffffffULL);
+   c = v - ((v >> 1) & B[0]);
+   c = ((c >> S[1]) & B[1]) + (c & B[1]);
+   c = ((c >> S[2]) + c) & B[2];
+   c = ((c >> S[3]) + c) & B[3];
+   c = ((c >> S[4]) + c) & B[4];
+   return ((c >> S[5]) + c) & B[5];
 }
-inline uint64_t uint128_hi64(const uint128_t x) {
-  return static_cast<uint64_t>( x >> 64 );
-}
+#endif
 
-} // namespace fc
-
-#else // __SIZEOF_INT128__
-
-#include <boost/multiprecision/integer.hpp>
-
-namespace fc {
-
-using boost::multiprecision::int128_t;
-using boost::multiprecision::uint128_t;
- 
-inline uint64_t uint128_lo64(const uint128_t& x) {
-  return static_cast<uint64_t>(x & 0xffffffffffffffffULL);
-}
-inline uint64_t uint128_hi64(const uint128_t& x) {
-  return static_cast<uint64_t>( x >> 64 );
-}
-
-} // namespace fc
-
-#endif // __SIZEOF_INT128__
-
-namespace fc {
-
-inline uint128_t uint128( const uint64_t hi, const uint64_t lo ) {
-   return ( uint128_t(hi) << 64 ) + lo;
+uint8_t popcount( const uint128_t& v )
+{
+    return popcount( static_cast<uint64_t>(v >> 64) )
+                     + popcount( static_cast<uint64_t>(v & 0xffffffffffffffffULL) );
 }
 
 } // namespace fc

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <deque>
 #include <map>
 #include <set>
@@ -7,7 +8,7 @@
 #include <vector>
 
 #include <fc/optional.hpp>
-
+#include <fc/string.hpp>
 #include <fc/container/flat_fwd.hpp>
 
 namespace fc {
@@ -91,6 +92,15 @@ namespace fc {
          static std::string n = std::string("std::pair<") + get_typename<A>::name() + "," + get_typename<B>::name() + ">";
          return n.c_str();
       }
+  }; 
+  template<typename T,size_t N> struct get_typename< std::array<T,N> >  
+  { 
+     static const char* name()  
+     { 
+        static std::string _name = std::string("std::array<") + std::string(fc::get_typename<T>::name())
+                                   + "," + fc::to_string(N) + ">";
+        return _name.c_str();
+     } 
   }; 
 
   struct unsigned_int;

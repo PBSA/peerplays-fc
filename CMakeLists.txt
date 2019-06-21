@@ -6,7 +6,12 @@ CMAKE_MINIMUM_REQUIRED( VERSION 3.1 )
 
 set( CMAKE_CXX_STANDARD 14 )
 SET( CMAKE_CXX_STANDARD_REQUIRED ON )
-set( CMAKE_CXX_EXTENSIONS OFF )
+
+if( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" )
+  set( CMAKE_CXX_EXTENSIONS ON ) # for __int128 support
+else( GNU )
+  set( CMAKE_CXX_EXTENSIONS OFF )
+endif( GNU )
 
 MESSAGE(STATUS "Configuring project fc located in: ${CMAKE_CURRENT_SOURCE_DIR}")
 SET( CMAKE_AUTOMOC OFF )
@@ -194,8 +199,7 @@ set( CMAKE_FIND_LIBRARY_SUFFIXES ${ORIGINAL_LIB_SUFFIXES} )
 option( UNITY_BUILD OFF )
 
 set( fc_sources
-     src/uint128.cpp
-     src/real128.cpp
+     src/popcount.cpp
      src/variant.cpp
      src/exception.cpp
      src/variant_object.cpp
@@ -211,7 +215,6 @@ set( fc_sources
      src/thread/non_preemptable_scope_check.cpp
      src/asio.cpp
      src/string.cpp
-     src/shared_ptr.cpp
      src/stacktrace.cpp
      src/time.cpp
      src/utf8.cpp
@@ -226,7 +229,6 @@ set( fc_sources
      src/interprocess/signals.cpp
      src/interprocess/file_mapping.cpp
      src/rpc/cli.cpp
-     src/rpc/http_api.cpp
      src/rpc/state.cpp
      src/rpc/websocket_api.cpp
      src/log/log_message.cpp
@@ -258,7 +260,6 @@ set( fc_sources
      src/network/tcp_socket.cpp
      src/network/udp_socket.cpp
      src/network/http/http_connection.cpp
-     src/network/http/http_server.cpp
      src/network/http/websocket.cpp
      src/network/ip.cpp
      src/network/rate_limiting.cpp
@@ -379,7 +380,7 @@ target_include_directories(fc
 IF(NOT WIN32)
   set(LINK_USR_LOCAL_LIB -L/usr/local/lib)
 ENDIF()
-target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES}
+target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB}  ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${Boost_LIBRARIES}
                                  ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library}
                                  ${editline_libraries} secp256k1 ${CMAKE_REQUIRED_LIBRARIES} )
 

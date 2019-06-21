@@ -11,7 +11,7 @@
 
 namespace fc {
 
-    class logger::impl : public fc::retainable {
+    class logger::impl {
       public:
          impl()
          :_parent(nullptr),_enabled(true),_additivity(false),_level(log_level::warn){}
@@ -28,7 +28,7 @@ namespace fc {
     logger::logger()
     :my( new impl() ){}
 
-    logger::logger(nullptr_t){}
+    logger::logger(std::nullptr_t){}
 
     logger::logger( const string& name, const logger& parent )
     :my( new impl() )
@@ -54,8 +54,8 @@ namespace fc {
        std::swap(my,l.my);
        return *this;
     }
-    bool operator==( const logger& l, std::nullptr_t ) { return !l.my; }
-    bool operator!=( const logger& l, std::nullptr_t ) { return l.my;  }
+    bool operator==( const logger& l, std::nullptr_t ) { return !(bool)l.my; }
+    bool operator!=( const logger& l, std::nullptr_t ) { return (bool)l.my;  }
 
     bool logger::is_enabled( log_level e )const {
        return e >= my->_level;
@@ -96,7 +96,7 @@ namespace fc {
     log_level logger::get_log_level()const { return my->_level; }
     logger& logger::set_log_level(log_level ll) { my->_level = ll; return *this; }
 
-    void logger::add_appender( const fc::shared_ptr<appender>& a )
+    void logger::add_appender( const appender::ptr& a )
     { my->_appenders.push_back(a); }
     
     void logger::remove_appender( const fc::shared_ptr<fc::appender>& a )
@@ -106,7 +106,7 @@ namespace fc {
          my->_appenders.erase(item); 
     }
 
-    std::vector<fc::shared_ptr<appender> > logger::get_appenders()const
+    std::vector<appender::ptr> logger::get_appenders()const
     {
         return my->_appenders;
     }
