@@ -99,7 +99,7 @@ namespace fc {
     void logger::add_appender( const appender::ptr& a )
     { my->_appenders.push_back(a); }
     
-    void logger::remove_appender( const fc::shared_ptr<fc::appender>& a )
+    void logger::remove_appender( const appender::ptr& a )
     { 
       auto item = std::find(my->_appenders.begin(), my->_appenders.end(), a);
       if (item != my->_appenders.end())
