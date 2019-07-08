@@ -20,7 +20,6 @@ INCLUDE( VersionMacros )
 INCLUDE( SetupTargetMacros )
 INCLUDE(GetGitRevisionDescription)
 INCLUDE(CheckLibraryExists)
-INCLUDE(CheckLibcxxAtomic)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/Legacy)
 
@@ -440,5 +439,7 @@ if(MSVC)
    set_property(TARGET fc PROPERTY SHARED_LIBRARIES_RELEASE ${SHARED_LIBRARIES_RELEASE})
 
 endif(MSVC)
+
+INCLUDE(CheckLibcxxAtomic)
 
 MESSAGE(STATUS "Finished fc module configuration...")
