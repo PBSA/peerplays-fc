@@ -1,0 +1,48 @@
+--- secp256k1.h	2018-12-19 19:16:54.613042000 +0300
++++ secp256k1.h	2018-12-19 18:53:50.867984000 +0300
+@@ -7,6 +7,45 @@
+ 
+ #include <stdint.h>
+ 
++#define secp256k1_context_create secp256k1_context_create_pp
++#define secp256k1_context_clone secp256k1_context_clone_pp
++#define secp256k1_context_destroy secp256k1_context_destroy_pp
++#define secp256k1_context_randomize secp256k1_context_randomize_pp
++
++#define secp256k1_ecdsa_verify secp256k1_ecdsa_verify_pp
++#define secp256k1_ecdsa_sign secp256k1_ecdsa_sign_pp
++#define secp256k1_ecdsa_sig_sign secp256k1_ecdsa_sig_sign_pp
++#define secp256k1_ecdsa_sign_compact secp256k1_ecdsa_sign_compact_pp
++#define secp256k1_ecdsa_recover_compact secp256k1_ecdsa_recover_compact_pp
++
++#define secp256k1_ec_seckey_verify secp256k1_ec_seckey_verify_pp
++#define secp256k1_ec_pubkey_create secp256k1_ec_pubkey_create_pp
++#define secp256k1_ec_privkey_tweak_add secp256k1_ec_privkey_tweak_add_pp
++#define secp256k1_ec_pubkey_tweak_add secp256k1_ec_pubkey_tweak_add_pp
++#define secp256k1_ec_privkey_tweak_mul secp256k1_ec_privkey_tweak_mul_pp
++#define secp256k1_ec_pubkey_tweak_mul secp256k1_ec_pubkey_tweak_mul_pp
++#define secp256k1_ec_pubkey_verify secp256k1_ec_pubkey_verify_pp
++#define secp256k1_ec_pubkey_decompress secp256k1_ec_pubkey_decompress_pp
++#define secp256k1_ec_privkey_export secp256k1_ec_privkey_export_pp
++#define secp256k1_ec_privkey_import secp256k1_ec_privkey_import_pp
++
++#define secp256k1_nonce_function_default secp256k1_nonce_function_default_pp
++#define secp256k1_nonce_function_rfc6979 secp256k1_nonce_function_rfc6979_pp
++
++#define secp256k1_borromean_verify secp256k1_borromean_verify_pp
++#define secp256k1_borromean_sign secp256k1_borromean_sign_pp
++
++#define secp256k1_point_multiply secp256k1_point_multiply_pp
++
++#define secp256k1_pedersen_commit secp256k1_pedersen_commit_pp
++#define secp256k1_pedersen_blind_sum secp256k1_pedersen_blind_sum_pp
++#define secp256k1_pedersen_verify_tally secp256k1_pedersen_verify_tally_pp
++
++#define secp256k1_rangeproof_info secp256k1_rangeproof_info_pp
++#define secp256k1_rangeproof_rewind secp256k1_rangeproof_rewind_pp
++#define secp256k1_rangeproof_verify secp256k1_rangeproof_verify_pp
++#define secp256k1_rangeproof_sign secp256k1_rangeproof_sign_pp
++
+ # if !defined(SECP256K1_GNUC_PREREQ)
+ #  if defined(__GNUC__)&&defined(__GNUC_MINOR__)
+ #   define SECP256K1_GNUC_PREREQ(_maj,_min) \

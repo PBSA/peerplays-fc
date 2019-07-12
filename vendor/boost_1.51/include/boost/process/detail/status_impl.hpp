@@ -116,7 +116,7 @@ public:
         if (p == -1)
         {
             ec = boost::system::error_code(errno,
-                    boost::system::get_system_category());
+                    boost::system::system_category());
             return -1;
         }
         return status;
@@ -126,7 +126,7 @@ public:
         if (h == NULL)
         {
             ec = boost::system::error_code(GetLastError(),
-                    boost::system::get_system_category());
+                    boost::system::system_category());
             return -1;
         }
 
@@ -134,7 +134,7 @@ public:
         {
             CloseHandle(h);
             ec = boost::system::error_code(GetLastError(),
-                    boost::system::get_system_category());
+                    boost::system::system_category());
             return -1;
         }
 
@@ -143,13 +143,13 @@ public:
         {
             CloseHandle(h);
             ec = boost::system::error_code(GetLastError(),
-                    boost::system::get_system_category());
+                    boost::system::system_category());
             return -1;
         }
         if (!CloseHandle(h))
         {
             ec = boost::system::error_code(GetLastError(),
-                    boost::system::get_system_category());
+                    boost::system::system_category());
             return -1;
         }
         return exit_code;
