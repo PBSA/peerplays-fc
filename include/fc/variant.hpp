@@ -17,6 +17,12 @@
 #include <fc/smart_ref_fwd.hpp>
 #include <boost/multi_index_container_fwd.hpp>
 
+////////////////////////////////////////////////////////////////////////////// // PeerPlays begin
+#include <boost/multiprecision/cpp_int.hpp>
+#include <boost/variant.hpp>
+using u256 = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<256, 256, boost::multiprecision::unsigned_magnitude, boost::multiprecision::unchecked, void>>;
+////////////////////////////////////////////////////////////////////////////// // PeerPlays end
+
 namespace fc
 {
    /**
@@ -360,6 +366,12 @@ namespace fc
    void from_variant( const variant& var,  int32_t& vo );
    /** @ingroup Serializable */
    void from_variant( const variant& var,  uint32_t& vo );
+////////////////////////////////////////////////////////////////////////////// // PeerPlays begin
+   /** @ingroup Serializable */
+   void from_variant( const variant& var, u256& v );
+   /** @ingroup Serializable */
+   void to_variant( const u256& var,  variant& vo );
+////////////////////////////////////////////////////////////////////////////// // PeerPlays end
    /** @ingroup Serializable */
    template<typename T>
    void from_variant( const variant& var,  optional<T>& vo )
@@ -507,6 +519,27 @@ namespace fc
        v = std::move(vars);
    }
 
+   /** @ingroup Serializable */
+   template<typename T, size_t N>
+   void from_variant( const variant& var, std::array<T,N>& tmp )
+   {
+      const variants& vars = var.get_array();
+      size_t count = 0;
+      for( auto itr = vars.begin(); itr != vars.end(); ++itr ) {
+         tmp[count++] = ( itr->as<T>() );
+      }
+   }
+
+   /** @ingroup Serializable */
+   template<typename T, size_t N>
+   void to_variant( const std::array<T,N>& t, variant& v )
+   {
+      std::vector<variant> vars(t.size());
+       for( size_t i = 0; i < t.size(); ++i )
+          vars[i] = variant(t[i]);
+       v = std::move(vars);
+   }
+
 
    /** @ingroup Serializable */
    template<typename A, typename B>
@@ -606,7 +639,50 @@ namespace fc
       for( const auto& item : vars )
          c.insert( item.as<T>() );
    }
+////////////////////////////////////////////////////////////////////////////// // PeerPlays begin
+   struct to_variant_boost_visitor: public boost::static_visitor<>
+   {
+      variant& va;
+      to_variant_boost_visitor( variant& _va ): va(_va){}
+      template<typename T>
+      void operator()(T& v) const{
+         to_variant( v, va );
+      }
+   };
 
+   template<typename... Args>
+   struct from_variant_boost_visitor
+   {
+      variant& var;
+      boost::variant<Args...>& bv;
+
+      from_variant_boost_visitor( variant& _var, boost::variant<Args...>& _bv ):var(_var),bv(_bv){}
+
+      typedef void result_type;
+      template<typename T> void operator()( T& v )const
+      {
+         from_variant( var, v );
+         bv = v;
+      }
+   };
+
+   template<typename... T>
+   void to_variant( const boost::variant<T...>& variant_boost, variant& v ) {
+      std::pair<uint64_t, variant> data;
+      data.first = static_cast<uint64_t>( variant_boost.which() );
+      boost::apply_visitor( to_variant_boost_visitor( data.second ), variant_boost );
+      v = variant( data );
+   }
+
+   template<typename... T>
+   void from_variant( const variant& v, boost::variant<T...>& variant_boost ) {
+      std::pair<uint64_t, variant> data;
+      from_variant( v, data );
+      static_variant<T...> sv;
+      sv.set_which( data.first );
+      sv.visit( from_variant_boost_visitor<T...>( data.second, variant_boost ) );
+   }
+////////////////////////////////////////////////////////////////////////////// // PeerPlays end
    variant operator + ( const variant& a, const variant& b );
    variant operator - ( const variant& a, const variant& b );
    variant operator * ( const variant& a, const variant& b );

@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <queue>
 #include <sstream>
+#include <iostream>
 
 namespace fc {
 

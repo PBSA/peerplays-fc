@@ -35,7 +35,11 @@ namespace fc
        aes_error_code                    = 18,
        overflow_code                     = 19,
        underflow_code                    = 20,
-       divide_by_zero_code               = 21
+       divide_by_zero_code               = 21,
+////////////////////////////////////////////////////////////////////////////// // PeerPlays begin
+       root_hashes_doesnt_match_code     = 22,
+       block_gas_limit_reached_code      = 23
+////////////////////////////////////////////////////////////////////////////// // PeerPlays end
    };
 
    /**
@@ -297,6 +301,11 @@ namespace fc
   FC_DECLARE_EXCEPTION( overflow_exception, overflow_code, "Integer Overflow" );
   FC_DECLARE_EXCEPTION( underflow_exception, underflow_code, "Integer Underflow" );
   FC_DECLARE_EXCEPTION( divide_by_zero_exception, divide_by_zero_code, "Integer Divide By Zero" );
+  
+////////////////////////////////////////////////////////////////////////////// // PeerPlays begin
+  FC_DECLARE_EXCEPTION( root_hashes_doesnt_match_exception, root_hashes_doesnt_match_code, "Root hashes doesn't match" );
+  FC_DECLARE_EXCEPTION( block_gas_limit_reached_exception, block_gas_limit_reached_code, "Gas limit has been reached");
+////////////////////////////////////////////////////////////////////////////// // PeerPlays end
 
   std::string except_str();
 

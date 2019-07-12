@@ -6,10 +6,16 @@
 #include <fc/safe.hpp>
 #include <deque>
 #include <vector>
+#include <array>
 #include <string>
 #include <unordered_set>
 #include <unordered_map>
 #include <set>
+
+////////////////////////////////////////////////////////////////////////////// // PeerPlays begin
+#include <boost/multiprecision/cpp_int.hpp>
+#include <boost/variant/variant.hpp>
+////////////////////////////////////////////////////////////////////////////// // PeerPlays end
 
 #define MAX_ARRAY_ALLOC_SIZE (1024*1024*10) 
 
@@ -28,6 +34,9 @@ namespace fc {
    template<typename Storage> class fixed_string;
 
    namespace raw {
+////////////////////////////////////////////////////////////////////////////// // PeerPlays begin
+    using u256 = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<256, 256, boost::multiprecision::unsigned_magnitude, boost::multiprecision::unchecked, void>>;
+////////////////////////////////////////////////////////////////////////////// // PeerPlays end
     template<typename T>
     inline size_t pack_size(  const T& v );
 
@@ -117,8 +126,23 @@ namespace fc {
     template<typename Stream> inline void pack( Stream& s, const bool& v );
     template<typename Stream> inline void unpack( Stream& s, bool& v );
 
+////////////////////////////////////////////////////////////////////////////// // PeerPlays begin
     template<typename T> inline std::vector<char> pack( const T& v );
     template<typename T> inline T unpack( const std::vector<char>& s );
     template<typename T> inline T unpack( const char* d, uint32_t s );
     template<typename T> inline void unpack( const char* d, uint32_t s, T& v );
+
+    template<typename Stream, typename T, size_t N> inline void pack( Stream& s, const std::array<T,N>& v);
+    template<typename Stream, typename T, size_t N> inline void unpack( Stream& s, std::array<T,N>& v);
+
+    template<typename T> inline std::vector<unsigned char> unsigned_pack( const T& v );
+    template<typename T> inline T unpack( const std::vector<unsigned char>& s );
+
+    template<typename Stream> void pack( Stream& s, const u256& v );
+    template<typename Stream> void unpack( Stream& s, u256& v );
+
+    template<typename Stream, typename... T> void pack( Stream& s, const boost::variant<T...>& sv );
+    template<typename Stream, typename... T> void unpack( Stream& s, boost::variant<T...>& sv );
+////////////////////////////////////////////////////////////////////////////// // PeerPlays end
+
 } }

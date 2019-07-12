@@ -121,6 +121,7 @@ namespace std
 
 namespace boost
 {
+    template<typename T> class hash;
     template<>
     struct hash<fc::sha256>
     {
