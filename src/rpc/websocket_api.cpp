@@ -74,7 +74,10 @@ websocket_api_connection::websocket_api_connection( const std::shared_ptr<fc::ht
 
        return result;
    } );
-   _connection->closed.connect( [this](){ closed(); } );
+   _connection->closed.connect( [this](){
+      closed();
+      _connection = nullptr;
+   } );
 }
 
 variant websocket_api_connection::send_call(
