@@ -28,9 +28,6 @@
 #include <openssl/ripemd.h>
 #include <string.h>
 #include <fc/crypto/hash160.hpp>
-#include <fc/crypto/ripemd160.hpp>
-#include <fc/crypto/sha512.hpp>
-#include <fc/crypto/sha256.hpp>
 #include <fc/variant.hpp>
 #include <vector>
 #include "_digest_common.hpp"

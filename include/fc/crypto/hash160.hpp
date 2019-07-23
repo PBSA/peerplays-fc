@@ -28,9 +28,6 @@
 #include <fc/reflect/typename.hpp>
 
 namespace fc{
-class sha512;
-class sha256;
-class ripemd160;
 
 class hash160
 {
@@ -112,12 +109,6 @@ namespace raw {
    void to_variant( const hash160& bi, variant& v, uint32_t max_depth );
    void from_variant( const variant& v, hash160& bi, uint32_t max_depth );
 
-   /*
-   typedef hash160 uint160_t;
-   typedef hash160 uint160;
-
-   template<> struct get_typename<uint160_t>    { static const char* name()  { return "uint160_t";  } };
-   */
   template<> struct get_typename<hash160>    { static const char* name()  { return "hash160";  } };
 } // namespace fc
 
