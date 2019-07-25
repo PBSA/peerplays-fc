@@ -684,7 +684,7 @@ void from_variant( const variant& var, uint128_t& vo, uint32_t max_depth )
 }
 
 #ifdef __APPLE__
-#elif !defined(_MSC_VER)
+#elif !defined(_WIN32)
    void to_variant( long long int s, variant& v, uint32_t max_depth ) { v = variant( int64_t(s) ); }
    void to_variant( unsigned long long int s, variant& v, uint32_t max_depth ) { v = variant( uint64_t(s)); }
 #endif
