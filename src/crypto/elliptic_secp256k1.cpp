@@ -105,7 +105,7 @@ namespace fc { namespace ecc {
     {
         FC_ASSERT( my->_key != empty_pub );
         public_key_data new_key;
-        memcpy( new_key.begin(), my->_key.data(), new_key.size() );
+        memcpy( new_key.data(), my->_key.data(), new_key.size() );
         FC_ASSERT( secp256k1_ec_pubkey_tweak_add( detail::_get_context(), new_key.data(), new_key.size(),
                                                   (unsigned char*) digest.data() ) );
         return public_key( new_key );
@@ -128,7 +128,7 @@ namespace fc { namespace ecc {
         FC_ASSERT( my->_key != empty_pub );
         public_key_point_data dat;
         unsigned int pk_len = my->_key.size();
-        memcpy( dat.begin(), my->_key.data(), pk_len );
+        memcpy( dat.data(), my->_key.data(), pk_len );
         FC_ASSERT( secp256k1_ec_pubkey_decompress( detail::_get_context(), dat.data(), (int*) &pk_len ) );
         FC_ASSERT( pk_len == dat.size() );
         return dat;
