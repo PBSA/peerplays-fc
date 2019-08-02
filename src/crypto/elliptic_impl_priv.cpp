@@ -98,7 +98,7 @@ namespace fc { namespace ecc {
                                                      result.data() + 1, (unsigned char*) my->_key.data(),
                                                      extended_nonce_function, &counter, &recid ));
         } while( require_canonical && !public_key::is_canonical( result ) );
-        result.begin()[0] = 27 + 4 + recid;
+        result.data()[0] = 27 + 4 + recid;
         return result;
     }
 
