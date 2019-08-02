@@ -175,7 +175,7 @@ template<> struct reflector<ENUM> { \
         { \
            i = boost::lexical_cast<int64_t>(s); \
         } \
-        catch( const boost::bad_lexical_cast& e ) \
+        catch( const boost::bad_lexical_cast& ) \
         { \
            fc::throw_bad_enum_cast( s, BOOST_PP_STRINGIZE(ENUM) ); \
         } \
