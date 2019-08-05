@@ -53,7 +53,7 @@ namespace fc { namespace ecc {
                 public_key_data _key;
         };
 
-        typedef std::array<char,37> chr37;
+        typedef std::array<unsigned char,37> chr37;
         chr37 _derive_message( const public_key_data& key, int i );
         fc::sha256 _left( const fc::sha512& v );
         fc::sha256 _right( const fc::sha512& v );
@@ -182,7 +182,7 @@ namespace fc { namespace ecc {
         hmac_sha512 mac;
         public_key_data key = serialize();
         const detail::chr37 data = detail::_derive_message( key, i );
-        fc::sha512 l = mac.digest( c.data(), c.data_size(), data.data(), data.size() );
+        fc::sha512 l = mac.digest( c.data(), c.data_size(), (const char*) data.data(), data.size() );
         fc::sha256 left = detail::_left(l);
         FC_ASSERT( left < detail::get_curve_order() );
         FC_ASSERT( secp256k1_ec_pubkey_tweak_add( detail::_get_context(), key.data(), key.size(),
