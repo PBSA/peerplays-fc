@@ -222,7 +222,7 @@ static const std::array<typename Visitor::result_type(*)(Visitor&,Data),L>
       init_wrappers( Visitor& v, Data d, typename Visitor::result_type(**funcs)(Visitor&,Data) = 0 )
 {
    std::array<typename Visitor::result_type(*)(Visitor&,Data),L> result{};
-   if( !funcs ) funcs = result.begin();
+   if( !funcs ) funcs = result.data();
    *funcs++ = [] ( Visitor& v, Data d ) { return v( *reinterpret_cast<T*>( d ) ); };
    init_wrappers<L,Visitor,Data,Types...>( v, d, funcs );
    return result;
@@ -240,7 +240,7 @@ static const std::array<typename Visitor::result_type(*)(Visitor&,Data),L>
       init_const_wrappers( Visitor& v, Data d, typename Visitor::result_type(**funcs)(Visitor&,Data) = 0 )
 {
    std::array<typename Visitor::result_type(*)(Visitor&,Data),L> result{};
-   if( !funcs ) funcs = result.begin();
+   if( !funcs ) funcs = result.data();
    *funcs++ = [] ( Visitor& v, Data d ) { return v( *reinterpret_cast<const T*>( d ) ); };
    init_const_wrappers<L,Visitor,Data,Types...>( v, d, funcs );
    return result;
