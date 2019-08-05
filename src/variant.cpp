@@ -11,6 +11,10 @@
 #include <fc/reflect/variant.hpp>
 #include <algorithm>
 
+#ifdef __APPLE__
+#include <boost/multiprecision/integer.hpp>
+#endif
+
 namespace fc
 {
 
@@ -675,12 +679,26 @@ void from_variant( const variant& var, std::vector<char>& vo, uint32_t max_depth
 
 void to_variant( const uint128_t& var, variant& vo, uint32_t max_depth )
 {
+#ifdef __APPLE__
+   boost::multiprecision::uint128_t helper = uint128_hi64( var );
+   helper <<= 64;
+   helper += uint128_lo64( var );
+   vo = boost::lexical_cast<std::string>( helper );
+#else
    vo = boost::lexical_cast<std::string>( var );
+#endif
 }
 
 void from_variant( const variant& var, uint128_t& vo, uint32_t max_depth )
 {
+#ifdef __APPLE__
+   boost::multiprecision::uint128_t helper = boost::lexical_cast<boost::multiprecision::uint128_t>( var.as_string() );
+   vo = static_cast<uint64_t>( helper >> 64 );
+   vo <<= 64;
+   vo += static_cast<uint64_t>( helper & 0xffffffffffffffffULL );
+#else
    vo = boost::lexical_cast<uint128_t>( var.as_string() );
+#endif
 }
 
 #ifdef __APPLE__
