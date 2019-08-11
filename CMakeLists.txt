@@ -9,9 +9,9 @@ SET( CMAKE_CXX_STANDARD_REQUIRED ON )
 
 if( "${CMAKE_CXX_COMPILER_ID}" MATCHES "^(Apple)?Clang|GNU$" )
   set( CMAKE_CXX_EXTENSIONS ON ) # for __int128 support
-else( GNU )
+else( "${CMAKE_CXX_COMPILER_ID}" MATCHES "^(Apple)?Clang|GNU$" )
   set( CMAKE_CXX_EXTENSIONS OFF )
-endif( GNU )
+endif( "${CMAKE_CXX_COMPILER_ID}" MATCHES "^(Apple)?Clang|GNU$" )
 
 MESSAGE(STATUS "Configuring project fc located in: ${CMAKE_CURRENT_SOURCE_DIR}")
 SET( CMAKE_AUTOMOC OFF )
