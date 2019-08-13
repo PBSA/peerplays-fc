@@ -39,8 +39,12 @@ public:
                      const fc::optional<std::string>& third ) {
         return fc::json::to_string(fc::variants{first, {second, 2}, {third, 2}});
     }
+    std::string bar( fc::optional<std::string> first, fc::optional<std::string> second,
+                     fc::optional<std::string> third ) {
+        return fc::json::to_string(fc::variants{{first,2}, {second, 2}, {third, 2}});
+    }
 };
-FC_API( optionals_api, (foo) );
+FC_API( optionals_api, (foo)(bar) );
 
 using namespace fc;
 
@@ -106,6 +110,12 @@ BOOST_AUTO_TEST_CASE(optionals_test) {
       BOOST_CHECK_EQUAL(oapi->foo("a", "b", "c"), "[\"a\",\"b\",\"c\"]");
       BOOST_CHECK_EQUAL(oapi->foo("a", {}, "c"), "[\"a\",null,\"c\"]");
 
+      BOOST_CHECK_EQUAL(oapi->bar(), "[null,null,null]");
+      BOOST_CHECK_EQUAL(oapi->bar("a"), "[\"a\",null,null]");
+      BOOST_CHECK_EQUAL(oapi->bar("a", "b"), "[\"a\",\"b\",null]");
+      BOOST_CHECK_EQUAL(oapi->bar("a", "b", "c"), "[\"a\",\"b\",\"c\"]");
+      BOOST_CHECK_EQUAL(oapi->bar("a", {}, "c"), "[\"a\",null,\"c\"]");
+
       auto server = std::make_shared<fc::http::websocket_server>();
       server->on_connection([&]( const websocket_connection_ptr& c ){
                auto wsc = std::make_shared<websocket_api_connection>(c, MAX_DEPTH);
@@ -119,7 +129,6 @@ BOOST_AUTO_TEST_CASE(optionals_test) {
 
       auto client = std::make_shared<fc::http::websocket_client>();
       auto con  = client->connect( "ws://localhost:" + std::to_string(listen_port) );
-      server->stop_listening();
       auto apic = std::make_shared<websocket_api_connection>(con, MAX_DEPTH);
       auto remote_optionals = apic->get_remote_api<optionals_api>();
 
@@ -127,6 +136,37 @@ BOOST_AUTO_TEST_CASE(optionals_test) {
       BOOST_CHECK_EQUAL(remote_optionals->foo("a", "b"), "[\"a\",\"b\",null]");
       BOOST_CHECK_EQUAL(remote_optionals->foo("a", "b", "c"), "[\"a\",\"b\",\"c\"]");
       BOOST_CHECK_EQUAL(remote_optionals->foo("a", {}, "c"), "[\"a\",null,\"c\"]");
+
+      BOOST_CHECK_EQUAL(remote_optionals->bar(), "[null,null,null]");
+      BOOST_CHECK_EQUAL(remote_optionals->bar("a"), "[\"a\",null,null]");
+      BOOST_CHECK_EQUAL(remote_optionals->bar("a", "b"), "[\"a\",\"b\",null]");
+      BOOST_CHECK_EQUAL(remote_optionals->bar("a", "b", "c"), "[\"a\",\"b\",\"c\"]");
+      BOOST_CHECK_EQUAL(remote_optionals->bar("a", {}, "c"), "[\"a\",null,\"c\"]");
+
+      auto client2 = std::make_shared<fc::http::websocket_client>();
+      auto con2  = client2->connect( "ws://localhost:" + std::to_string(listen_port) );
+      string response;
+      con2->on_message_handler([&](const std::string& s){
+                    response = s;
+                });
+
+      con2->send_message( "{\"id\":1,\"method\":\"call\",\"params\":[0,\"bar\",[\"a\",\"b\",\"c\"]]}" );
+      fc::usleep(fc::milliseconds(50));
+      BOOST_CHECK_EQUAL( response, "{\"id\":1,\"result\":\"[\\\"a\\\",\\\"b\\\",\\\"c\\\"]\"}" );
+
+      con2->send_message( "{\"id\":2,\"method\":\"call\",\"params\":[0,\"bar\",[\"a\",\"b\"]]}" );
+      fc::usleep(fc::milliseconds(50));
+      BOOST_CHECK_EQUAL( response, "{\"id\":2,\"result\":\"[\\\"a\\\",\\\"b\\\",null]\"}" );
+
+      con2->send_message( "{\"id\":3,\"method\":\"call\",\"params\":[0,\"bar\",[\"a\"]]}" );
+      fc::usleep(fc::milliseconds(50));
+      BOOST_CHECK_EQUAL( response, "{\"id\":3,\"result\":\"[\\\"a\\\",null,null]\"}" );
+
+      con2->send_message( "{\"id\":4,\"method\":\"call\",\"params\":[0,\"bar\",[]]}" );
+      fc::usleep(fc::milliseconds(50));
+      BOOST_CHECK_EQUAL( response, "{\"id\":4,\"result\":\"[null,null,null]\"}" );
+
+      server->stop_listening();
 
       client->synchronous_close();
       server->close();
