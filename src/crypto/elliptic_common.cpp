@@ -55,7 +55,7 @@ namespace fc { namespace ecc {
         static chr37 _derive_message( unsigned char first, const unsigned char* key32, int i )
         {
             chr37 result;
-            unsigned char* dest = result.begin();
+            unsigned char* dest = result.data();
             *dest++ = first;
             memcpy( dest, key32, 32 ); dest += 32;
             _put( &dest, i );
@@ -64,7 +64,7 @@ namespace fc { namespace ecc {
 
         chr37 _derive_message( const public_key_data& key, int i )
         {
-            return _derive_message( *key.begin(), key.begin() + 1, i );
+            return _derive_message( *key.data(), key.data() + 1, i );
         }
 
         static chr37 _derive_message( const private_key_secret& key, int i )
@@ -142,9 +142,9 @@ namespace fc { namespace ecc {
       sha256 check = sha256::hash((char*) key.data(), sizeof(key));
       static_assert(sizeof(key) + 4 == 37, "Elliptic public key size (or its hash) is incorrect");
       detail::chr37 data;
-      memcpy(data.data(), key.begin(), key.size());
-      memcpy(data.begin() + key.size(), (const char*)check._hash, 4);
-      return fc::to_base58((char*) data.begin(), data.size());
+      memcpy(data.data(), key.data(), key.size());
+      memcpy(data.data() + key.size(), (const char*)check._hash, 4);
+      return fc::to_base58((char*) data.data(), data.size());
     }
 
     public_key public_key::from_base58( const std::string& b58 )
@@ -163,7 +163,7 @@ namespace fc { namespace ecc {
     unsigned int public_key::fingerprint() const
     {
         public_key_data key = serialize();
-        ripemd160 hash = ripemd160::hash( sha256::hash( (char*) key.begin(), key.size() ) );
+        ripemd160 hash = ripemd160::hash( sha256::hash( (char*) key.data(), key.size() ) );
         unsigned char* fp = (unsigned char*) hash._hash;
         return (fp[0] << 24) | (fp[1] << 16) | (fp[2] << 8) | fp[3];
     }
@@ -233,8 +233,8 @@ namespace fc { namespace ecc {
     {
         size_t buf_len = key.size() + 4;
         char *buffer = (char*)alloca(buf_len);
-        memcpy( buffer, key.begin(), key.size() );
-        fc::sha256 double_hash = fc::sha256::hash( fc::sha256::hash( (char*) key.begin(), key.size() ));
+        memcpy( buffer, key.data(), key.size() );
+        fc::sha256 double_hash = fc::sha256::hash( fc::sha256::hash( (char*) key.data(), key.size() ));
         memcpy( buffer + key.size(), double_hash.data(), 4 );
         return fc::to_base58( buffer, buf_len );
     }
@@ -260,14 +260,14 @@ namespace fc { namespace ecc {
     extended_key_data extended_public_key::serialize_extended() const
     {
         extended_key_data result;
-        unsigned char* dest = (unsigned char*) result.begin();
+        unsigned char* dest = (unsigned char*) result.data();
         detail::_put( &dest, BTC_EXT_PUB_MAGIC );
         *dest++ = depth;
         detail::_put( &dest, parent_fp );
         detail::_put( &dest, child_num );
         memcpy( dest, c.data(), c.data_size() ); dest += 32;
         public_key_data key = serialize();
-        memcpy( dest, key.begin(), key.size() );
+        memcpy( dest, key.data(), key.size() );
         return result;
     }
     
@@ -293,7 +293,7 @@ namespace fc { namespace ecc {
         fc::sha256 chain;
         memcpy( chain.data(), ptr, chain.data_size() ); ptr += chain.data_size();
         public_key_data key;
-        memcpy( key.begin(), ptr, key.size() );
+        memcpy( key.data(), ptr, key.size() );
         return extended_public_key( key, chain, cn, fp, d );
     }
 
@@ -311,7 +311,7 @@ namespace fc { namespace ecc {
     {
         const detail::chr37 data = detail::_derive_message( get_public_key().serialize(), i );
         hmac_sha512 mac;
-        fc::sha512 l = mac.digest( c.data(), c.data_size(), (char*) data.begin(), data.size() );
+        fc::sha512 l = mac.digest( c.data(), c.data_size(), (char*) data.data(), data.size() );
         return private_derive_rest( l, i );
     }
 
@@ -320,14 +320,14 @@ namespace fc { namespace ecc {
         hmac_sha512 mac;
         private_key_secret key = get_secret();
         const detail::chr37 data = detail::_derive_message( key, i );
-        fc::sha512 l = mac.digest( c.data(), c.data_size(), (char*) data.begin(), data.size() );
+        fc::sha512 l = mac.digest( c.data(), c.data_size(), (char*) data.data(), data.size() );
         return private_derive_rest( l, i );
     }
 
     extended_key_data extended_private_key::serialize_extended() const
     {
         extended_key_data result;
-        unsigned char* dest = (unsigned char*) result.begin();
+        unsigned char* dest = (unsigned char*) result.data();
         detail::_put( &dest, BTC_EXT_PRIV_MAGIC );
         *dest++ = depth;
         detail::_put( &dest, parent_fp );
