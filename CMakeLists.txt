@@ -26,8 +26,6 @@ INCLUDE( SetupTargetMacros )
 INCLUDE(GetGitRevisionDescription)
 INCLUDE(CheckLibraryExists)
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/Legacy)
-
 get_git_head_revision(GIT_REFSPEC FC_GIT_REVISION_SHA)
 get_git_unix_timestamp(FC_GIT_REVISION_UNIX_TIMESTAMP)
 
@@ -138,7 +136,7 @@ IF( WIN32 )
   # iphlpapi.lib
 ENDIF(WIN32)
 
-FIND_PACKAGE(Boost CONFIG COMPONENTS ${BOOST_COMPONENTS})
+FIND_PACKAGE(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED)
 
 IF(NOT WIN32)
     MESSAGE(STATUS "Configuring fc to build on Unix/Apple")
