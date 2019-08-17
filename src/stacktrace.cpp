@@ -8,6 +8,9 @@
 #if BOOST_VERSION / 100 >= 1065 && !defined(__APPLE__)
 #include <signal.h>
 #include <fc/log/logger.hpp>
+#if defined(__OpenBSD__)
+    #define BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED
+#endif
 #include <boost/stacktrace.hpp>
 
 namespace fc

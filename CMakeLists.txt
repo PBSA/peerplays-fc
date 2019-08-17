@@ -141,11 +141,11 @@ ENDIF(WIN32)
 FIND_PACKAGE(Boost CONFIG COMPONENTS ${BOOST_COMPONENTS})
 
 IF(NOT WIN32)
-    MESSAGE(STATUS "Configuring fc to build on Unix/Apple")
+  MESSAGE(STATUS "Configuring fc to build on Unix/Apple")
 
-    if(NOT APPLE)
-        SET(rt_library rt)
-    endif(NOT APPLE)
+  IF(NOT APPLE AND NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "OpenBSD")
+    SET(rt_library rt )
+  ENDIF(NOT APPLE AND NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "OpenBSD")
 ENDIF(NOT WIN32)
 
 IF($ENV{OPENSSL_ROOT_DIR})
