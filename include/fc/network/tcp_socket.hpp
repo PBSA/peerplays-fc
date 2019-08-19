@@ -53,7 +53,7 @@ namespace fc {
       #ifdef _WIN64
       fc::fwd<impl,0xa8> my;
       #else
-      fc::fwd<impl,0x54> my;
+      fc::fwd<impl,0x60> my;
       #endif
   };
   typedef std::shared_ptr<tcp_socket> tcp_socket_ptr;
