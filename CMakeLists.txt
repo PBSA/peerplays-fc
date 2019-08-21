@@ -251,8 +251,8 @@ install( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" DESTINATION include )
 if(WIN32)
   target_compile_definitions( fc PRIVATE _CRT_NONSTDC_NO_DEPRECATE )
 else(WIN32)
-  target_compile_definitions (fc PRIVATE HAVE_EDITLINE)
-  set(editline_libraries editline)
+  target_compile_definitions( fc PRIVATE HAVE_EDITLINE )
+  set( editline_libraries editline )
 endif(WIN32)
 # end editline stuff
 
