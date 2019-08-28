@@ -182,7 +182,7 @@ BOOST_AUTO_TEST_CASE( nested_objects_test )
 
       from_variant( v, sv1, nested_levels + 2 );
 
-      BOOST_CHECK( sv == sv1 );
+      BOOST_CHECK( decltype(sv)::type_eq()(sv, sv1) );
 
       // both log and dump should never throw
       BOOST_TEST_MESSAGE( "========== About to log static_variant. ==========" );
@@ -215,7 +215,7 @@ BOOST_AUTO_TEST_CASE( nested_objects_test )
 
       from_variant( v, vec1, nested_levels + 3 );
 
-      BOOST_CHECK( vec == vec1 );
+      BOOST_CHECK( std::equal(vec.begin(), vec.end(), vec1.begin(), decltype(vec)::value_type::type_eq()) );
 
       // both log and dump should never throw
       BOOST_TEST_MESSAGE( "========== About to log vector. ==========" );

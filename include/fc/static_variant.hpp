@@ -302,6 +302,14 @@ public:
        static constexpr int value = impl::position<X, Types...>::pos;
     };
 
+    struct type_lt {
+       bool operator()(const static_variant& a, const static_variant& b) const { return a.which() < b.which(); }
+    };
+    struct type_eq {
+       bool operator()(const static_variant& a, const static_variant& b) const { return a.which() == b.which(); }
+    };
+    using flat_set_type = flat_set<static_variant, type_lt>;
+
     static_variant()
     {
         init_from_tag(0);
@@ -351,14 +359,6 @@ public:
        clean();
        v.visit( impl::move_construct<static_variant>(*this) );
        return *this;
-    }
-    friend bool operator == ( const static_variant& a, const static_variant& b )
-    {
-       return a.which() == b.which();
-    }
-    friend bool operator < ( const static_variant& a, const static_variant& b )
-    {
-       return a.which() < b.which();
     }
 
     template<typename X, typename = type_in_typelist<X>>

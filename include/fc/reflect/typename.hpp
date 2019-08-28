@@ -41,7 +41,7 @@ namespace fc {
          return n.c_str();  
      } 
   };
-  template<typename T> struct get_typename<flat_set<T>>   
+  template<typename T, typename... A> struct get_typename<flat_set<T, A...>>
   { 
      static const char* name()  { 
          static std::string n = std::string("flat_set<") + get_typename<T>::name() + ">"; 
