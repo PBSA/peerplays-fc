@@ -300,10 +300,6 @@ namespace fc { namespace http {
                   _server.close( item.first, 0, "server exit" );
 
                if( _closed ) _closed->wait();
-#ifdef TRAVIS_BUILD
-#warning Adding 100ms sleep to ~websocket_server_impl() to stabilize Travis tests
-               fc::usleep(fc::milliseconds(100));
-#endif
             }
 
             typedef std::map<connection_hdl, websocket_connection_ptr,std::owner_less<connection_hdl> > con_map;

@@ -375,11 +375,3 @@ namespace fc { \
   template<> struct get_typename<TYPE>  { static const char* name()  { return BOOST_PP_STRINGIZE(TYPE);  } }; \
 }
 
-// vvv These are preserved to merge more smoothly vvv
-#define FC_REFLECT_BASE_MEMBER_COUNT( r, OP, elem ) \
-  OP fc::reflector<elem>::total_member_count
-
-#define FC_REFLECT_MEMBER_COUNT( r, OP, elem ) \
-  OP 1
-// ^^^ These can be removed after updating graphene/protocol/types.hpp ^^^
-

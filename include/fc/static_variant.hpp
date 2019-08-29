@@ -118,7 +118,7 @@ public:
     template<typename X, typename = type_in_typelist<X>>
     struct tag
     {
-       static const int value = typelist::index_of<list, X>();
+       static constexpr int value = typelist::index_of<list, X>();
     };
 
     struct type_lt {
@@ -293,7 +293,7 @@ public:
         });
     }
 
-    static int count() { return typelist::length<list>(); }
+    static constexpr int count() { return typelist::length<list>(); }
     void set_which( tag_type w ) {
       FC_ASSERT( w >= 0 );
       FC_ASSERT( w < count() );
