@@ -221,6 +221,14 @@ public:
        return *this;
     }
 
+    friend bool operator==( const static_variant& a, const static_variant& b ) {
+       if (a.which() != b.which())
+          return false;
+       return typelist::runtime::dispatch(list(), a.which(), [&a, &b](auto t) {
+          return a.get<typename decltype(t)::type>() == b.get<typename decltype(t)::type>();
+       });
+    }
+
     template<typename X, typename = type_in_typelist<X>>
     X& get() {
         if(_tag == typelist::index_of<list, X>()) {
