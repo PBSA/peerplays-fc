@@ -229,7 +229,7 @@ namespace fc { namespace ecc {
 
     static std::string _to_base58( const extended_key_data& key )
     {
-        char buffer[key.size() + 4]; // it's a small static array => allocate on stack
+        char buffer[std::tuple_size<extended_key_data>::value + 4]; // it's a small static array => allocate on stack
         memcpy( buffer, key.data(), key.size() );
         fc::sha256 double_hash = fc::sha256::hash( fc::sha256::hash( (char*)key.data(), key.size() ));
         memcpy( buffer + key.size(), double_hash.data(), 4 );
