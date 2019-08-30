@@ -27,7 +27,7 @@ namespace fc
 {
 void throw_assertion_failure( const std::string& message );
 }
-#define _FC_ASSERT( cond, msg ) { if( !(cond) ) { fc::throw_assertion_failure( #cond ": " msg ); } }
+#define _FC_ASSERT( cond, msg ) { if( !(cond) ) { char t[] = #cond ": " msg; fc::throw_assertion_failure( t ); } }
 #endif
 
 namespace fc
