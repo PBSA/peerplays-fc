@@ -12,6 +12,7 @@
 #include <fc/container/flat_fwd.hpp>
 
 namespace fc {
+  template<typename...> class static_variant;
   class value;
   class exception;
   namespace ip { class address; }
@@ -41,10 +42,19 @@ namespace fc {
          return n.c_str();  
      } 
   };
-  template<typename T> struct get_typename<flat_set<T>>   
+  template<typename T> struct get_typename<flat_set<T>>
+  {
+     static const char* name()  {
+         static std::string n = std::string("flat_set<") + get_typename<T>::name() + ">";
+         return n.c_str();
+     }
+  };
+  template<typename... Ts>
+  struct get_typename<flat_set<static_variant<Ts...>, typename static_variant<Ts...>::type_lt>>
   { 
      static const char* name()  { 
-         static std::string n = std::string("flat_set<") + get_typename<T>::name() + ">"; 
+         using TN = get_typename<static_variant<Ts...>>;
+         static std::string n = std::string("flat_set<") + TN::name() + ", " + TN::name() + "::type_lt>";
          return n.c_str();  
      } 
   };
