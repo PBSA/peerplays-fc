@@ -112,6 +112,22 @@ namespace fc {
         return _name.c_str();
      } 
   }; 
+  template<typename T> struct get_typename< const T* >
+  {
+      static const char* name()
+      {
+         static std::string n = std::string("const ") + get_typename<T>::name() + "*";
+         return n.c_str();
+      }
+  };
+  template<typename T> struct get_typename< T* >
+  {
+      static const char* name()
+      {
+         static std::string n = std::string(get_typename<T>::name()) + "*";
+         return n.c_str();
+      }
+  };
 
   struct unsigned_int;
   class variant_object;
