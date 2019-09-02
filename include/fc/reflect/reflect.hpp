@@ -325,6 +325,7 @@ template<> struct reflector<TYPE> {\
 namespace member_names { \
 BOOST_PP_SEQ_FOR_EACH_I( FC_REFLECT_MEMBER_NAME, TYPE, MEMBERS ) \
 } }
+
 #define FC_REFLECT_DERIVED_TEMPLATE( TEMPLATE_ARGS, TYPE, INHERITS, MEMBERS ) \
 namespace fc {  \
   template<BOOST_PP_SEQ_ENUM(TEMPLATE_ARGS)> struct get_typename<TYPE> { \
@@ -351,6 +352,28 @@ template<BOOST_PP_SEQ_ENUM(TEMPLATE_ARGS)> struct reflector<TYPE> {\
 namespace member_names { \
 BOOST_PP_SEQ_FOR_EACH_I( FC_REFLECT_TEMPLATE_MEMBER_NAME, (TEMPLATE_ARGS)(TYPE), MEMBERS ) \
 } }
+
+#define FC_REFLECT_DERIVED_NO_TYPENAME( TYPE, INHERITS, MEMBERS ) \
+namespace fc { \
+template<> struct reflector<TYPE> {\
+    typedef TYPE type; \
+    typedef std::true_type is_defined; \
+    using native_members = \
+       typename typelist::builder<>::type \
+          BOOST_PP_SEQ_FOR_EACH_I( FC_CONCAT_MEMBER_REFLECTION, TYPE, MEMBERS ) ::finalize; \
+    using inherited_members = \
+       typename typelist::builder<>::type \
+          BOOST_PP_SEQ_FOR_EACH( FC_CONCAT_BASE_MEMBER_REFLECTIONS, TYPE, INHERITS ) ::finalize; \
+    using members = typename typelist::concat<inherited_members, native_members>::type; \
+    using base_classes = typename typelist::builder<>::type \
+          BOOST_PP_SEQ_FOR_EACH( FC_CONCAT_TYPE, x, INHERITS ) ::finalize; \
+    enum  member_count_enum {  \
+      local_member_count = typelist::length<native_members>(), \
+      total_member_count = typelist::length<members>() \
+    }; \
+    FC_REFLECT_DERIVED_IMPL_INLINE( TYPE, INHERITS, MEMBERS ) \
+}; \
+} // fc
 
 /**
  *  @def FC_REFLECT(TYPE,MEMBERS)
