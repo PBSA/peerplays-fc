@@ -225,7 +225,8 @@ public:
        if (a.which() != b.which())
           return false;
        return typelist::runtime::dispatch(list(), a.which(), [&a, &b](auto t) {
-          return a.get<typename decltype(t)::type>() == b.get<typename decltype(t)::type>();
+          using Value = typename decltype(t)::type;
+          return a.template get<Value>() == b.template get<Value>();
        });
     }
 
