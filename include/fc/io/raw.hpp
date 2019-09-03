@@ -17,6 +17,13 @@
 
 namespace fc {
     namespace raw {
+
+    template<typename Stream, typename Arg0, typename... Args>
+    inline void pack( Stream& s, const Arg0& a0, Args... args ) {
+       pack( s, a0 );
+       pack( s, args... );
+    }
+
     template<typename Stream>
     inline void pack( Stream& s, const fc::exception& e )
     {
@@ -324,13 +331,13 @@ namespace fc {
       struct if_enum<fc::true_type> {
         template<typename Stream, typename T>
         static inline void pack( Stream& s, const T& v ) {
-          fc::raw::pack(s, (int64_t)v);
+          fc::raw::pack(s, signed_int((int32_t)v));
         }
         template<typename Stream, typename T>
         static inline void unpack( Stream& s, T& v ) {
-          int64_t temp;
+          signed_int temp;
           fc::raw::unpack(s, temp);
-          v = (T)temp;
+          v = (T)temp.value;
         }
       };
 
@@ -546,6 +553,20 @@ namespace fc {
       }
       return vec;
     }
+
+    template<typename T, typename... Next>
+    inline std::vector<char> pack(  const T& v, Next... next ) {
+      datastream<size_t> ps;
+      fc::raw::pack(ps,v,next...);
+      std::vector<char> vec(ps.tellp());
+
+      if( vec.size() ) {
+        datastream<char*>  ds( vec.data(), size_t(vec.size()) );
+        fc::raw::pack(ds,v,next...);
+      }
+      return vec;
+    }
+
 
     template<typename T>
     inline T unpack( const std::vector<char>& s )

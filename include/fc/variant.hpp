@@ -88,10 +88,10 @@ namespace fc
    template<typename K, typename T>
    void from_variant( const variant& var,  std::unordered_map<K,T>& vo );
 
-   template<typename K, typename T>
-   void to_variant( const fc::flat_map<K,T>& var,  variant& vo );
-   template<typename K, typename T>
-   void from_variant( const variant& var, fc::flat_map<K,T>& vo );
+   template<typename K, typename... T>
+   void to_variant( const fc::flat_map<K,T...>& var,  variant& vo );
+   template<typename K, typename T, typename... A>
+   void from_variant(const variant& var, flat_map<K, T, A...>& vo);
 
    template<typename K, typename T, typename C>
    void to_variant( const std::map<K,T, C>& var,  variant& vo );
@@ -305,6 +305,12 @@ namespace fc
            T tmp;
            from_variant( *this, tmp );
            return tmp;
+        }
+
+        template<typename T>
+        void as( T& v )const
+        {
+           from_variant( *this, v );
         }
 
         variant& operator=( variant&& v );
