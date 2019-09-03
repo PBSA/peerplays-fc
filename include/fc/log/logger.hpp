@@ -155,6 +155,15 @@ namespace fc
 #define FC_FORMAT_ARG_PARAMS( ... )\
     BOOST_PP_SEQ_FOR_EACH( FC_FORMAT_ARGS, v, __VA_ARGS__ ) 
 
+#define fc_ddump( LOGGER, SEQ ) \
+    fc_dlog( LOGGER, FC_FORMAT(SEQ), FC_FORMAT_ARG_PARAMS(SEQ) )  
+#define fc_idump( LOGGER, SEQ ) \
+    fc_ilog( LOGGER, FC_FORMAT(SEQ), FC_FORMAT_ARG_PARAMS(SEQ) )  
+#define fc_wdump( LOGGER, SEQ ) \
+    fc_wlog( LOGGER, FC_FORMAT(SEQ), FC_FORMAT_ARG_PARAMS(SEQ) )  
+#define fc_edump( LOGGER, SEQ ) \
+    fc_elog( LOGGER, FC_FORMAT(SEQ), FC_FORMAT_ARG_PARAMS(SEQ) )  
+
 #define ddump( SEQ ) \
     dlog( FC_FORMAT(SEQ), FC_FORMAT_ARG_PARAMS(SEQ) )  
 #define idump( SEQ ) \

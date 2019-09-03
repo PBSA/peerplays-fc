@@ -30,8 +30,8 @@ namespace fc {
              value.insert( std::move(tmp) );
          }
        }
-       template<typename Stream, typename K, typename V>
-       inline void pack( Stream& s, const flat_map<K,V>& value ) {
+       template<typename Stream, typename K, typename... V>
+       inline void pack( Stream& s, const flat_map<K,V...>& value ) {
          pack( s, unsigned_int((uint32_t)value.size()) );
          auto itr = value.begin();
          auto end = value.end();
@@ -40,8 +40,8 @@ namespace fc {
            ++itr;
          }
        }
-       template<typename Stream, typename K, typename V>
-       inline void unpack( Stream& s, flat_map<K,V>& value ) 
+       template<typename Stream, typename K, typename V, typename... A>
+       inline void unpack( Stream& s, flat_map<K,V,A...>& value ) 
        {
          unsigned_int size; unpack( s, size );
          value.clear();
@@ -54,6 +54,35 @@ namespace fc {
              value.insert( std::move(tmp) );
          }
        }
+
+       template<typename Stream, typename T, typename A>
+       void pack( Stream& s, const bip::vector<T,A>& value ) {
+         pack( s, unsigned_int((uint32_t)value.size()) );
+         if( !std::is_fundamental<T>::value ) {
+            auto itr = value.begin();
+            auto end = value.end();
+            while( itr != end ) {
+              fc::raw::pack( s, *itr );
+              ++itr;
+            }
+         } else {
+             s.write( (const char*)value.data(), value.size() );
+         }
+       }
+
+       template<typename Stream, typename T, typename A>
+       void unpack( Stream& s, bip::vector<T,A>& value ) {
+          unsigned_int size;
+          unpack( s, size );
+          value.resize( size );
+          if( !std::is_fundamental<T>::value ) {
+             for( auto& item : value )
+                unpack( s, item );
+          } else {
+             s.read( (char*)value.data(), value.size() );
+          }
+       }
+
    } // namespace raw
 
 
@@ -76,8 +105,8 @@ namespace fc {
          vo.insert( itr->as<T>() );
    }
 
-   template<typename K, typename T>
-   void to_variant( const flat_map<K, T>& var,  variant& vo )
+   template<typename K, typename... T>
+   void to_variant( const flat_map<K, T...>& var,  variant& vo )
    {
        std::vector< variant > vars(var.size());
        size_t i = 0;
@@ -85,8 +114,8 @@ namespace fc {
           vars[i] = fc::variant(*itr);
        vo = vars;
    }
-   template<typename K, typename T>
-   void from_variant( const variant& var,  flat_map<K, T>& vo )
+   template<typename K, typename T, typename... A>
+   void from_variant( const variant& var,  flat_map<K, T, A...>& vo )
    {
       const variants& vars = var.get_array();
       vo.clear();
