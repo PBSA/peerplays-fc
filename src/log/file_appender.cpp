@@ -21,15 +21,7 @@ namespace fc {
          boost::mutex               slock;
 
       private:
-         future<void>               _rotation_task;
-         time_point_sec             _current_file_start_time;
-
-         time_point_sec get_file_start_time( const time_point_sec& timestamp, const microseconds& interval )
-         {
-             int64_t interval_seconds = interval.to_seconds();
-             int64_t file_number = timestamp.sec_since_epoch() / interval_seconds;
-             return time_point_sec( (uint32_t)(file_number * interval_seconds) );
-         }
+         boost::atomic<int64_t>     _current_file_number;
 
       public:
          impl( const config& c) : cfg( c )
@@ -54,22 +46,22 @@ namespace fc {
             }
          }
 
-         ~impl()
-         {
-            try
-            {
-              _rotation_task.cancel_and_wait("file_appender is destructing");
-            }
-            catch( ... )
-            {
-            }
-         }
-
          void rotate_files( bool initializing = false )
          {
-             FC_ASSERT( cfg.rotate );
+             if( !cfg.rotate ) return;
+
+             int64_t interval_seconds = cfg.rotation_interval.to_seconds();
              fc::time_point now = time_point::now();
-             fc::time_point_sec start_time = get_file_start_time( now, cfg.rotation_interval );
+             int64_t new_file_number = now.sec_since_epoch() / interval_seconds;
+             if( initializing )
+                _current_file_number.store( new_file_number );
+             else
+             {
+                int64_t prev_file_number = _current_file_number.load();
+                if( prev_file_number >= new_file_number ) return;
+                if( !_current_file_number.compare_exchange_weak( prev_file_number, new_file_number ) ) return;
+             }
+             fc::time_point_sec start_time = time_point_sec( (uint32_t)(new_file_number * interval_seconds) );
              string timestamp_string = start_time.to_non_delimited_iso_string();
              fc::path link_filename = cfg.filename;
              fc::path log_filename = link_filename.parent_path() / (link_filename.filename().string() + "." + timestamp_string);
@@ -79,14 +71,6 @@ namespace fc {
 
                if( !initializing )
                {
-                   if( start_time <= _current_file_start_time )
-                   {
-                       _rotation_task = schedule( [this]() { rotate_files(); },
-                                                  _current_file_start_time + cfg.rotation_interval.to_seconds(),
-                                                  "rotate_files(2)" );
-                       return;
-                   }
-
                    out.flush();
                    out.close();
                }
@@ -127,11 +111,6 @@ namespace fc {
                  {
                  }
              }
-
-             _current_file_start_time = start_time;
-             _rotation_task = schedule( [this]() { rotate_files(); },
-                                        _current_file_start_time + cfg.rotation_interval.to_seconds(),
-                                        "rotate_files(3)" );
          }
    };
 
@@ -151,8 +130,9 @@ namespace fc {
    // MS THREAD METHOD  MESSAGE \t\t\t File:Line
    void file_appender::log( const log_message& m )
    {
+      my->rotate_files();
+
       std::stringstream line;
-      //line << (m.get_context().get_timestamp().time_since_epoch().count() % (1000ll*1000ll*60ll*60))/1000 <<"ms ";
       line << string(m.get_context().get_timestamp()) << " ";
       line << std::setw( 21 ) << (m.get_context().get_thread_name().substr(0,9) + string(":") + m.get_context().get_task_name()).c_str() << " ";
 
