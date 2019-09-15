@@ -23,9 +23,10 @@ namespace fc {
       private:
          future<void>               _deletion_task;
          boost::atomic<int64_t>     _current_file_number;
+         const int64_t              _interval_seconds;
 
       public:
-         impl( const config& c) : cfg( c )
+         impl( const config& c) : cfg( c ), _interval_seconds( cfg.rotation_interval.to_seconds() )
          {
             try
             {
@@ -63,9 +64,8 @@ namespace fc {
          {
              if( !cfg.rotate ) return;
 
-             int64_t interval_seconds = cfg.rotation_interval.to_seconds();
              fc::time_point now = time_point::now();
-             int64_t new_file_number = now.sec_since_epoch() / interval_seconds;
+             int64_t new_file_number = now.sec_since_epoch() / _interval_seconds;
              if( initializing )
                 _current_file_number.store( new_file_number );
              else
@@ -74,7 +74,7 @@ namespace fc {
                 if( prev_file_number >= new_file_number ) return;
                 if( !_current_file_number.compare_exchange_weak( prev_file_number, new_file_number ) ) return;
              }
-             fc::time_point_sec start_time = time_point_sec( (uint32_t)(new_file_number * interval_seconds) );
+             fc::time_point_sec start_time = time_point_sec( (uint32_t)(new_file_number * _interval_seconds) );
              string timestamp_string = start_time.to_non_delimited_iso_string();
              fc::path link_filename = cfg.filename;
              fc::path log_filename = link_filename.parent_path() / (link_filename.filename().string() + "." + timestamp_string);
@@ -97,8 +97,7 @@ namespace fc {
          {
              /* Delete old log files */
              auto current_file = _current_file_number.load();
-             int64_t interval_seconds = cfg.rotation_interval.to_seconds();
-             fc::time_point_sec start_time = time_point_sec( (uint32_t)(current_file * interval_seconds) );
+             fc::time_point_sec start_time = time_point_sec( (uint32_t)(current_file * _interval_seconds) );
              fc::time_point limit_time = time_point::now() - cfg.rotation_limit;
              fc::path link_filename = cfg.filename;
              string link_filename_string = link_filename.filename().string();
@@ -130,8 +129,7 @@ namespace fc {
                  {
                  }
              }
-             _deletion_task = schedule( [this]() { delete_files(); },
-                                        start_time + cfg.rotation_interval.to_seconds(),
+             _deletion_task = schedule( [this]() { delete_files(); }, start_time + _interval_seconds,
                                         "delete_files(3)" );
          }
    };
