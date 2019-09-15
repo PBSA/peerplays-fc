@@ -21,6 +21,7 @@ namespace fc {
          boost::mutex               slock;
 
       private:
+         future<void>               _deletion_task;
          boost::atomic<int64_t>     _current_file_number;
 
       public:
@@ -36,6 +37,7 @@ namespace fc {
                   FC_ASSERT( cfg.rotation_limit >= cfg.rotation_interval );
 
                   rotate_files( true );
+                  delete_files();
                } else {
                   out.open( cfg.filename, std::ios_base::out | std::ios_base::app);
                }
@@ -43,6 +45,17 @@ namespace fc {
             catch( ... )
             {
                std::cerr << "error opening log file: " << cfg.filename.preferred_string() << "\n";
+            }
+         }
+
+         ~impl()
+         {
+            try
+            {
+              _deletion_task.cancel_and_wait("file_appender is destructing");
+            }
+            catch( ... )
+            {
             }
          }
 
@@ -78,29 +91,35 @@ namespace fc {
                out.open( log_filename, std::ios_base::out | std::ios_base::app );
                create_hard_link(log_filename, link_filename);
              }
+         }
 
+         void delete_files()
+         {
              /* Delete old log files */
-             fc::time_point limit_time = now - cfg.rotation_limit;
+             auto current_file = _current_file_number.load();
+             int64_t interval_seconds = cfg.rotation_interval.to_seconds();
+             fc::time_point_sec start_time = time_point_sec( (uint32_t)(current_file * interval_seconds) );
+             fc::time_point limit_time = time_point::now() - cfg.rotation_limit;
+             fc::path link_filename = cfg.filename;
              string link_filename_string = link_filename.filename().string();
              directory_iterator itr(link_filename.parent_path());
+             string timestamp_string = start_time.to_non_delimited_iso_string();
              for( ; itr != directory_iterator(); itr++ )
              {
                  try
                  {
                      string current_filename = itr->filename().string();
-                     if (current_filename.compare(0, link_filename_string.size(), link_filename_string) != 0 ||
-                         current_filename.size() <= link_filename_string.size() + 1)
-                       continue;
+                     if( current_filename.compare(0, link_filename_string.size(), link_filename_string) != 0
+                            || current_filename.size() <= link_filename_string.size() + 1 )
+                        continue;
                      string current_timestamp_str = current_filename.substr(link_filename_string.size() + 1,
                                                                             timestamp_string.size());
                      fc::time_point_sec current_timestamp = fc::time_point_sec::from_iso_string( current_timestamp_str );
-                     if( current_timestamp < start_time )
+                     if( current_timestamp < start_time
+                            && ( current_timestamp < limit_time || file_size( current_filename ) <= 0 ) )
                      {
-                         if( current_timestamp < limit_time || file_size( current_filename ) <= 0 )
-                         {
-                             remove_all( *itr );
-                             continue;
-                         }
+                        remove_all( *itr );
+                        continue;
                      }
                  }
                  catch (const fc::canceled_exception&)
@@ -111,6 +130,9 @@ namespace fc {
                  {
                  }
              }
+             _deletion_task = schedule( [this]() { delete_files(); },
+                                        start_time + cfg.rotation_interval.to_seconds(),
+                                        "delete_files(3)" );
          }
    };
 
