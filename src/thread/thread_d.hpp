@@ -1,12 +1,14 @@
 #include <fc/thread/thread.hpp>
+#include <fc/stacktrace.hpp>
 #include <fc/time.hpp>
 #include <boost/thread.hpp>
 #include "context.hpp"
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread.hpp>
 #include <boost/atomic.hpp>
+
+#include <iostream>
 #include <vector>
-//#include <fc/logger.hpp>
 
 namespace fc {
     struct sleep_priority_less {
@@ -390,7 +392,8 @@ namespace fc {
               /* NB: At least on Win64, this only catches a yield while in the body of 
                * a catch block; it fails to catch a yield while unwinding the stack, which 
                * is probably just as likely to cause crashes */
-              assert(std::current_exception() == std::exception_ptr());
+              if( std::current_exception() != std::exception_ptr() )
+                 print_stacktrace( std::cerr );
 
               check_for_timeouts();
               if( !current ) 
