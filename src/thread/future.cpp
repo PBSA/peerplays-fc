@@ -61,7 +61,11 @@ namespace fc {
     }
     _enqueue_thread();
     // Need to check _ready again to avoid a race condition.
-    if( _ready.load() ) return _wait_until( timeout_us ); // this will simply return or throw _exceptp
+    if( _ready.load() )
+    {
+       _dequeue_thread();
+       return _wait_until( timeout_us ); // this will simply return or throw _exceptp
+    }
 
     std::exception_ptr e;
     //
