@@ -24,6 +24,7 @@ namespace fc {
          future<void>               _deletion_task;
          boost::atomic<int64_t>     _current_file_number;
          const int64_t              _interval_seconds;
+         time_point                 _next_file_time;
 
       public:
          impl( const config& c) : cfg( c ), _interval_seconds( cfg.rotation_interval.to_seconds() )
@@ -65,6 +66,8 @@ namespace fc {
              if( !cfg.rotate ) return;
 
              fc::time_point now = time_point::now();
+             if( now < _next_file_time ) return;
+
              int64_t new_file_number = now.sec_since_epoch() / _interval_seconds;
              if( initializing )
                 _current_file_number.store( new_file_number );
@@ -75,6 +78,7 @@ namespace fc {
                 if( !_current_file_number.compare_exchange_weak( prev_file_number, new_file_number ) ) return;
              }
              fc::time_point_sec start_time = time_point_sec( (uint32_t)(new_file_number * _interval_seconds) );
+             _next_file_time = start_time + _interval_seconds;
              string timestamp_string = start_time.to_non_delimited_iso_string();
              fc::path link_filename = cfg.filename;
              fc::path log_filename = link_filename.parent_path() / (link_filename.filename().string() + "." + timestamp_string);
