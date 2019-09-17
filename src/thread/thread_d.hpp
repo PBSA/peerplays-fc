@@ -398,7 +398,7 @@ namespace fc {
                  print_stacktrace( stacktrace );
                  elog( "Thread ${name} yielded in exception handler!\n${trace}",
                        ("name",thread::current().name())("trace",stacktrace.str()) );
-                 assert( std::current_exception() != std::exception_ptr() );
+                 assert( std::current_exception() == std::exception_ptr() );
               }
 
               check_for_timeouts();
