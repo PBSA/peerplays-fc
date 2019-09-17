@@ -394,6 +394,7 @@ namespace fc {
                * is probably just as likely to cause crashes */
               if( std::current_exception() != std::exception_ptr() )
               {
+                 elog( "Thread ${name} yielded in exception handler!", ("name",thread::current().name()) );
                  print_stacktrace( std::cerr );
                  assert( std::current_exception() != std::exception_ptr() );
               }
