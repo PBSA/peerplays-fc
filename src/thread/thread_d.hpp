@@ -7,7 +7,7 @@
 #include <boost/thread.hpp>
 #include <boost/atomic.hpp>
 
-#include <iostream>
+#include <sstream>
 #include <vector>
 
 namespace fc {
@@ -394,8 +394,10 @@ namespace fc {
                * is probably just as likely to cause crashes */
               if( std::current_exception() != std::exception_ptr() )
               {
-                 elog( "Thread ${name} yielded in exception handler!", ("name",thread::current().name()) );
-                 print_stacktrace( std::cerr );
+                 std::stringstream stacktrace;
+                 print_stacktrace( stacktrace );
+                 elog( "Thread ${name} yielded in exception handler!\n${trace}",
+                       ("name",thread::current().name())("trace",stacktrace.str()) );
                  assert( std::current_exception() != std::exception_ptr() );
               }
 
