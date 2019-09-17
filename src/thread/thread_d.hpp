@@ -393,7 +393,10 @@ namespace fc {
                * a catch block; it fails to catch a yield while unwinding the stack, which 
                * is probably just as likely to cause crashes */
               if( std::current_exception() != std::exception_ptr() )
+              {
                  print_stacktrace( std::cerr );
+                 assert( std::current_exception() != std::exception_ptr() );
+              }
 
               check_for_timeouts();
               if( !current ) 
