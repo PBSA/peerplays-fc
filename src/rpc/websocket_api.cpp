@@ -89,7 +89,7 @@ void websocket_api_connection::send_notice(
    if( _connection )
    {
       fc::rpc::request req{ optional<uint64_t>(), "notice", {callback_id, std::move(args)}};
-      _connection.send_message( fc::json::to_string(fc::variant(req, _max_conversion_depth),
+      _connection->send_message( fc::json::to_string(fc::variant(req, _max_conversion_depth),
                                                  fc::json::stringify_large_ints_and_doubles, _max_conversion_depth ) );
    }
 }
