@@ -182,11 +182,11 @@ namespace fc
     */
    string exception::to_detail_string( log_level ll )const
    {
-      fc::stringstream ss;
+      std::stringstream ss;
       ss << variant(my->_code).as_string() <<" " << my->_name << ": " <<my->_what<<"\n";
       for( auto itr = my->_elog.begin(); itr != my->_elog.end();  )
       {
-         ss << itr->get_message() <<"\n";
+         ss << itr->get_message() <<"\n"; //fc::format_string( itr->get_format(), itr->get_data() ) <<"\n";
          try
          {
             ss << "    " << json::to_string( itr->get_data() )<<"\n";
@@ -207,12 +207,12 @@ namespace fc
     */
    string exception::to_string( log_level ll )const
    {
-      fc::stringstream ss;
-      ss << what() << ":";
+      std::stringstream ss;
+      ss << what() << " (" << variant(my->_code).as_string() <<")\n";
       for( auto itr = my->_elog.begin(); itr != my->_elog.end(); ++itr )
       {
-         if( itr->get_format().size() )
-            ss << " " << fc::format_string( itr->get_format(), itr->get_data() );
+            ss << fc::format_string( itr->get_format(), itr->get_data() ) << "\n";
+   //      ss << "    " << itr->get_context().to_string() <<"\n";
       }
       return ss.str();
    }
