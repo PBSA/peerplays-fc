@@ -194,7 +194,7 @@ namespace fc
          ss << " " << my->_name << ": " << my->_what << "\n";
          for( auto itr = my->_elog.begin(); itr != my->_elog.end(); ) {
             try {
-         ss << itr->get_message() <<"\n"; //fc::format_string( itr->get_format(), itr->get_data() ) <<"\n";
+         ss << itr->get_message() <<"\n";
          try
          {
             ss << "    " << json::to_string( itr->get_data() )<<"\n";
@@ -227,18 +227,11 @@ namespace fc
    {
       std::stringstream ss;
       try {
-         ss << my->_what;
-         try {
-            ss << " (" << variant( my->_code ).as_string() << ")\n";
-         } catch( std::bad_alloc& ) {
-            throw;
-         } catch( ... ) {
-            ss << "<- exception in to_string.\n";
-         }
+         ss << what() << ":";
          for( auto itr = my->_elog.begin(); itr != my->_elog.end(); ++itr ) {
+            if( itr->get_format().size() )
             try {
-            ss << fc::format_string( itr->get_format(), itr->get_data() ) << "\n";
-   //      ss << "    " << itr->get_context().to_string() <<"\n";
+            ss << " " << fc::format_string( itr->get_format(), itr->get_data() );
             } catch( std::bad_alloc& ) {
                throw;
             } catch( ... ) {
