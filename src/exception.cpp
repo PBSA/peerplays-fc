@@ -192,26 +192,27 @@ namespace fc
             ss << "<- exception in to_detail_string.";
          }
          ss << " " << my->_name << ": " << my->_what << "\n";
-         for( auto itr = my->_elog.begin(); itr != my->_elog.end(); ) {
+         for( auto itr = my->_elog.begin(); itr != my->_elog.end(); )
+         {
             try {
-         ss << itr->get_message() <<"\n";
-         try
-         {
-            ss << "    " << json::to_string( itr->get_data() )<<"\n";
-         }
-         catch( const fc::assert_exception& e )
-         {
-            ss << "ERROR: Failed to convert log data to string!\n";
-         }
-         ss << "    " << itr->get_context().to_string();
-         ++itr;
+               ss << itr->get_message() <<"\n";
+               try
+               {
+                  ss << "    " << json::to_string( itr->get_data() )<<"\n";
+               }
+               catch( const fc::assert_exception& e )
+               {
+                  ss << "ERROR: Failed to convert log data to string!\n";
+               }
+               ss << "    " << itr->get_context().to_string();
+               ++itr;
             } catch( std::bad_alloc& ) {
                throw;
             } catch( ... ) {
                ss << "<- exception in to_detail_string.";
             }
-         if( itr != my->_elog.end() ) ss<<"\n";
-      }
+            if( itr != my->_elog.end() ) ss<<"\n";
+         }
       } catch( std::bad_alloc& ) {
          throw;
       } catch( ... ) {
@@ -230,14 +231,14 @@ namespace fc
          ss << what() << ":";
          for( auto itr = my->_elog.begin(); itr != my->_elog.end(); ++itr ) {
             if( itr->get_format().size() )
-            try {
-            ss << " " << fc::format_string( itr->get_format(), itr->get_data() );
-            } catch( std::bad_alloc& ) {
-               throw;
-            } catch( ... ) {
-               ss << "<- exception in to_string.\n";
-            }
-      }
+               try {
+                  ss << " " << fc::format_string( itr->get_format(), itr->get_data() );
+               } catch( std::bad_alloc& ) {
+                  throw;
+               } catch( ... ) {
+                  ss << "<- exception in to_string.\n";
+               }
+         }
       return ss.str();
       } catch( std::bad_alloc& ) {
          throw;
