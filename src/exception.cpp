@@ -239,7 +239,6 @@ namespace fc
                   ss << "<- exception in to_string.\n";
                }
          }
-      return ss.str();
       } catch( std::bad_alloc& ) {
          throw;
       } catch( ... ) {
