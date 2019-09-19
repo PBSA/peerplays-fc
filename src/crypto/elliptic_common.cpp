@@ -19,7 +19,7 @@
 namespace fc { namespace ecc {
 
     namespace detail {
-        typedef std::array<unsigned char,37> chr37;
+        typedef zero_initialized_array<unsigned char,37> chr37;
 
         fc::sha256 _left( const fc::sha512& v )
         {
