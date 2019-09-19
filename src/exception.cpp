@@ -15,7 +15,6 @@ namespace fc
    FC_IMPLEMENT_EXCEPTION( key_not_found_exception, key_not_found_exception_code, "Key Not Found" )
    FC_IMPLEMENT_EXCEPTION( bad_cast_exception, bad_cast_exception_code, "Bad Cast" )
    FC_IMPLEMENT_EXCEPTION( out_of_range_exception, out_of_range_exception_code, "Out of Range" )
-   FC_IMPLEMENT_EXCEPTION( method_not_found_exception, method_not_found_exception_code, "Method Not Found" );
    FC_IMPLEMENT_EXCEPTION( invalid_operation_exception, invalid_operation_exception_code, "Invalid Operation" )
    FC_IMPLEMENT_EXCEPTION( unknown_host_exception, unknown_host_exception_code, "Unknown Host" )
    FC_IMPLEMENT_EXCEPTION( canceled_exception, canceled_exception_code, "Canceled" )

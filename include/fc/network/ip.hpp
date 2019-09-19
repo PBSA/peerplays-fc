@@ -113,7 +113,7 @@ namespace fc {
 
   }
 } // namespace fc
-FC_REFLECT_TYPENAME( fc::ip::address ) 
+FC_REFLECT_EMPTY( fc::ip::address )
 FC_REFLECT_TYPENAME( fc::ip::endpoint ) 
 namespace std
 {
