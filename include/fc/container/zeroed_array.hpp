@@ -1,4 +1,3 @@
-#pragma once
 /*
  * Copyright (c) 2019 BitShares Blockchain Foundation, and contributors
  *
@@ -22,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#pragma once
 #include <fc/io/raw_fwd.hpp>
 
 namespace fc {
@@ -65,8 +65,10 @@ namespace fc {
          pack( s, static_cast<const std::array<unsigned char,N>&>( v ), _max_depth );
       }
       template<typename Stream, size_t N>
-      inline void unpack( Stream& s, zero_initialized_array<unsigned char,N>& v, uint32_t _max_depth ) { try {
-         unpack( s, static_cast<std::array<unsigned char,N>&>( v ), _max_depth );
-      } FC_RETHROW_EXCEPTIONS( warn, "zero_initialized_array<unsigned char,${length}>", ("length",N) ) }
+      inline void unpack( Stream& s, zero_initialized_array<unsigned char,N>& v, uint32_t _max_depth ) {
+         try {
+            unpack( s, static_cast<std::array<unsigned char,N>&>( v ), _max_depth );
+         } FC_RETHROW_EXCEPTIONS( warn, "zero_initialized_array<unsigned char,${length}>", ("length",N) )
+      }
    }
 }
