@@ -1,4 +1,5 @@
 #pragma once
+#include <fc/container/zeroed_array.hpp>
 #include <fc/crypto/bigint.hpp>
 #include <fc/crypto/openssl.hpp>
 #include <fc/crypto/sha256.hpp>
@@ -17,15 +18,15 @@ namespace fc {
       class private_key_impl;
     }
 
-    typedef fc::sha256                   blind_factor_type;
-    typedef std::array<unsigned char,33> commitment_type;
-    typedef std::array<unsigned char,33> public_key_data;
-    typedef fc::sha256                   private_key_secret;
-    typedef std::array<unsigned char,65> public_key_point_data; ///< the full non-compressed version of the ECC point
-    typedef std::array<unsigned char,72> signature;
-    typedef std::array<unsigned char,65> compact_signature;
-    typedef std::vector<char>            range_proof_type;
-    typedef std::array<unsigned char,78> extended_key_data;
+    typedef fc::sha256                               blind_factor_type;
+    typedef zero_initialized_array<unsigned char,33> commitment_type;
+    typedef zero_initialized_array<unsigned char,33> public_key_data;
+    typedef fc::sha256                               private_key_secret;
+    typedef zero_initialized_array<unsigned char,65> public_key_point_data; ///< the full non-compressed version of the ECC point
+    typedef zero_initialized_array<unsigned char,72> signature;
+    typedef zero_initialized_array<unsigned char,65> compact_signature;
+    typedef std::vector<char>                        range_proof_type;
+    typedef zero_initialized_array<unsigned char,78> extended_key_data;
 
     /**
      *  @class public_key
