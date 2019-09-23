@@ -72,3 +72,9 @@ namespace fc {
       }
    }
 }
+
+namespace std {
+   template<>
+   template< typename T, size_t N >
+   class tuple_size< fc::zero_initialized_array< T, N > > : public tuple_size< array< T, N > > {};
+}
