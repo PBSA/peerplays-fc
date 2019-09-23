@@ -51,7 +51,7 @@ namespace fc { namespace ecc {
                 public_key_data _key;
         };
 
-        typedef std::array<unsigned char,37> chr37;
+        typedef zero_initialized_array<unsigned char,37> chr37;
         chr37 _derive_message( const public_key_data& key, int i );
         fc::sha256 _left( const fc::sha512& v );
         fc::sha256 _right( const fc::sha512& v );
