@@ -67,8 +67,8 @@ class md5
 };
 
   class variant;
-  void to_variant( const md5& bi, variant& v );
-  void from_variant( const variant& v, md5& bi );
+  void to_variant( const md5& bi, variant& v, uint32_t max_depth = 1 );
+  void from_variant( const variant& v, md5& bi, uint32_t max_depth = 1 );
 
 } // fc
 
