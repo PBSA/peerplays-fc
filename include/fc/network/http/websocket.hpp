@@ -50,6 +50,7 @@ namespace fc { namespace http {
          void on_connection( const on_connection_handler& handler);
          void listen( uint16_t port );
          void listen( const fc::ip::endpoint& ep );
+         uint16_t get_listening_port();
          void start_accept();
 
       private:
