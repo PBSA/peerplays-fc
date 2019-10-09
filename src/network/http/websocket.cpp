@@ -612,6 +612,12 @@ namespace fc { namespace http {
       my->_server.listen( boost::asio::ip::tcp::endpoint( boost::asio::ip::address_v4(uint32_t(ep.get_address())),ep.port()) );
    }
 
+   uint16_t websocket_server::get_listening_port()
+   {
+      websocketpp::lib::asio::error_code ec;
+      return my->_server.get_local_endpoint(ec).port();
+   }
+
    void websocket_server::start_accept() {
       my->_server.start_accept();
    }
