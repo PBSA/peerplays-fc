@@ -1,4 +1,4 @@
-The following license only applies to code that was contributed to this repository under the regime of BitShares worker proposals and/or BitShares delegate workers. Other code may be licensed indirectly by our "sister" repositories https://github.com/EOSIO/fc and https://github.com/bytemaster/fc/tree/phoenix .
+The following license only applies to code that was contributed to this repository in the context of BitShares worker proposals and/or BitShares-1 delegate workers. Other code may be licensed indirectly by our "sister" repositories https://github.com/EOSIO/fc and https://github.com/bytemaster/fc/tree/phoenix .
 
 All subsequent contributions to this repository are licensed by their respective authors under this same license as well, unless explicitly stated otherwise.
 
