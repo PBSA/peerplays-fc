@@ -1,0 +1,60 @@
+on: [ push, pull_request ]
+jobs:
+  test-release:
+    name: Build and run tests in Release mode
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: recursive
+    - name: Configure
+      run: |
+        mkdir -p _build
+        pushd _build
+        cmake -D CMAKE_BUILD_TYPE=Release \
+              -D CMAKE_CXX_OUTPUT_EXTENSION_REPLACE=ON \
+              -D CMAKE_C_COMPILER=gcc \
+              -D CMAKE_CXX_COMPILER=g++ \
+              ..
+        popd
+    - name: Build
+      run: |
+        make -C _build
+    - name: Test
+      run: |
+        pushd _build
+        tests/all_tests
+        tests/bloom_test ../README.md
+        tests/ecc_test ../README.md
+        tests/hmac_test
+        tests/task_cancel_test
+        popd
+  test-debug:
+    name: Build and run tests in Debug mode
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: recursive
+    - name: Configure
+      run: |
+        mkdir -p _build
+        pushd _build
+        cmake -D CMAKE_BUILD_TYPE=Debug \
+              -D CMAKE_CXX_OUTPUT_EXTENSION_REPLACE=ON \
+              -D CMAKE_C_COMPILER=gcc \
+              -D CMAKE_CXX_COMPILER=g++ \
+              ..
+        popd
+    - name: Build
+      run: |
+        make -C _build
+    - name: Test
+      run: |
+        pushd _build
+        tests/all_tests
+        tests/bloom_test ../README.md
+        tests/ecc_test ../README.md
+        tests/hmac_test
+        tests/task_cancel_test
+        popd
