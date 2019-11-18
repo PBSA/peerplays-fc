@@ -56,7 +56,7 @@ jobs:
       run: |
         parallel echo Running {}\; sh -c "_build/tests/{}" <<_EOT_
         all_tests
-        bloom_test README.md
+        bloom_test -- README.md
         ecc_test README.md
         hmac_test
         task_cancel_test
@@ -114,7 +114,7 @@ jobs:
       run: |
         parallel echo Running {}\; sh -c "_build/tests/{}" <<_EOT_
         all_tests
-        bloom_test README.md
+        bloom_test -- README.md
         ecc_test README.md
         hmac_test
         task_cancel_test
