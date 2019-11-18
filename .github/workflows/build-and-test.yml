@@ -7,6 +7,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get install -y \
+                     parallel \
                      libboost-thread-dev \
                      libboost-iostreams-dev \
                      libboost-date-time-dev \
@@ -33,16 +34,16 @@ jobs:
         popd
     - name: Build
       run: |
-        make -C _build
+        make -j 2 -C _build
     - name: Test
       run: |
-        pushd _build
-        tests/all_tests
-        tests/bloom_test ../README.md
-        tests/ecc_test ../README.md
-        tests/hmac_test
-        tests/task_cancel_test
-        popd
+        parallel echo Running {}\; sh -c "_build/tests/{}" <<_EOT_
+        all_tests
+        bloom_test README.md
+        ecc_test README.md
+        hmac_test
+        task_cancel_test
+        _EOT_
   test-debug:
     name: Build and run tests in Debug mode
     runs-on: ubuntu-latest
@@ -50,6 +51,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get install -y \
+                     parallel \
                      libboost-thread-dev \
                      libboost-iostreams-dev \
                      libboost-date-time-dev \
@@ -76,13 +78,13 @@ jobs:
         popd
     - name: Build
       run: |
-        make -C _build
+        make -j 2 -C _build
     - name: Test
       run: |
-        pushd _build
-        tests/all_tests
-        tests/bloom_test ../README.md
-        tests/ecc_test ../README.md
-        tests/hmac_test
-        tests/task_cancel_test
-        popd
+        parallel echo Running {}\; sh -c "_build/tests/{}" <<_EOT_
+        all_tests
+        bloom_test README.md
+        ecc_test README.md
+        hmac_test
+        task_cancel_test
+        _EOT_
