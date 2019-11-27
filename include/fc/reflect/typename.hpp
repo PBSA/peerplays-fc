@@ -18,6 +18,9 @@ namespace fc {
   namespace ip { class address; }
 
   template<typename... T> struct get_typename;
+#if defined(__APPLE__) or defined(__OpenBSD__)
+  template<> struct get_typename<size_t>   { static const char* name()  { return "size_t";   } };
+#endif
   template<> struct get_typename<int32_t>  { static const char* name()  { return "int32_t";  } };
   template<> struct get_typename<int64_t>  { static const char* name()  { return "int64_t";  } };
   template<> struct get_typename<int16_t>  { static const char* name()  { return "int16_t";  } };
