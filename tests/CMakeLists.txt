@@ -46,11 +46,14 @@ add_executable( all_tests all_tests.cpp
                           crypto/dh_test.cpp
                           crypto/rand_test.cpp
                           crypto/sha_tests.cpp
+                          io/json_tests.cpp
+                          io/stream_tests.cpp
                           network/http/websocket_test.cpp
                           thread/task_cancel.cpp
                           thread/thread_tests.cpp
                           bloom_test.cpp
                           real128_test.cpp
+                          serialization_test.cpp
                           utf8_test.cpp
                           )
 target_link_libraries( all_tests fc )

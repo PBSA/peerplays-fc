@@ -89,11 +89,11 @@ namespace fc
     };
   }
 
-  void to_variant( const url& u, fc::variant& v )
+  void to_variant( const url& u, fc::variant& v, uint32_t max_depth )
   {
     v = fc::string(u);
   }
-  void from_variant( const fc::variant& v, url& u )
+  void from_variant( const fc::variant& v, url& u, uint32_t max_depth )
   {
     u  = url( v.as_string() ); 
   }
