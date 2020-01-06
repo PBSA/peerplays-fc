@@ -616,12 +616,14 @@ namespace fc {
     }
 
 
+
     template<typename Stream, typename T>
-    void pack( Stream& s, const T& v ) {
-      fc::raw::detail::if_reflected< typename fc::reflector<T>::is_defined >::pack(s,v);
+    inline void pack( Stream& s, const T& v, uint32_t _max_depth ) {
+       FC_ASSERT( _max_depth > 0 );
+       fc::raw::detail::if_reflected< typename fc::reflector<T>::is_defined >::pack( s, v, _max_depth - 1 );
     }
     template<typename Stream, typename T>
-    void unpack( Stream& s, T& v )
+    inline void unpack( Stream& s, T& v, uint32_t _max_depth )
     { try {
        FC_ASSERT( _max_depth > 0 );
        fc::raw::detail::if_reflected< typename fc::reflector<T>::is_defined >::unpack( s, v, _max_depth - 1 );

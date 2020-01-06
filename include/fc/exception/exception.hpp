@@ -5,7 +5,6 @@
  */
 #include <fc/log/logger.hpp>
 #include <fc/optional.hpp>
-#include <fc/utility.hpp>
 #include <exception>
 #include <functional>
 #include <unordered_map>
@@ -223,97 +222,81 @@ namespace fc
    }();  \
 
 
-#define FC_DECLARE_DERIVED_EXCEPTION( TYPE, BASE, CODE ) \
+#define FC_DECLARE_DERIVED_EXCEPTION( TYPE, BASE, CODE, WHAT ) \
    class TYPE : public BASE  \
    { \
       public: \
        enum code_enum { \
           code_value = CODE, \
        }; \
-       explicit TYPE( int64_t code, const std::string& name_value, const std::string& what_value ); \
-       explicit TYPE( fc::log_message&& m, int64_t code, const std::string& name_value, const std::string& what_value ); \
-       explicit TYPE( fc::log_messages&& m, int64_t code, const std::string& name_value, const std::string& what_value );\
-       explicit TYPE( const fc::log_messages& m, int64_t code, const std::string& name_value, const std::string& what_value );\
-       explicit TYPE( const std::string& what_value, const fc::log_messages& m ); \
-       explicit TYPE( fc::log_message&& m ); \
-       explicit TYPE( fc::log_messages msgs ); \
-       TYPE( TYPE&& c ) = default; \
-       TYPE( const TYPE& c ); \
-       TYPE( const BASE& c ); \
-       explicit TYPE();\
+       explicit TYPE( int64_t code, const std::string& name_value, const std::string& what_value ) \
+       :BASE( code, name_value, what_value ){} \
+       explicit TYPE( fc::log_message&& m, int64_t code, const std::string& name_value, const std::string& what_value ) \
+       :BASE( std::move(m), code, name_value, what_value ){} \
+       explicit TYPE( fc::log_messages&& m, int64_t code, const std::string& name_value, const std::string& what_value )\
+       :BASE( std::move(m), code, name_value, what_value ){}\
+       explicit TYPE( const fc::log_messages& m, int64_t code, const std::string& name_value, const std::string& what_value )\
+       :BASE( m, code, name_value, what_value ){}\
+       TYPE( const std::string& what_value, const fc::log_messages& m ) \
+       :BASE( m, CODE, BOOST_PP_STRINGIZE(TYPE), what_value ){} \
+       TYPE( fc::log_message&& m ) \
+       :BASE( fc::move(m), CODE, BOOST_PP_STRINGIZE(TYPE), WHAT ){}\
+       TYPE( fc::log_messages msgs ) \
+       :BASE( fc::move( msgs ), CODE, BOOST_PP_STRINGIZE(TYPE), WHAT ) {} \
+       TYPE( const TYPE& c ) \
+       :BASE(c){} \
+       TYPE( const BASE& c ) \
+       :BASE(c){} \
+       TYPE():BASE(CODE, BOOST_PP_STRINGIZE(TYPE), WHAT){}\
        \
-       virtual std::shared_ptr<fc::exception> dynamic_copy_exception()const;\
-       virtual NO_RETURN void dynamic_rethrow_exception()const; \
+       virtual std::shared_ptr<fc::exception> dynamic_copy_exception()const\
+       { return std::make_shared<TYPE>( *this ); } \
+       virtual NO_RETURN void     dynamic_rethrow_exception()const \
+       { if( code() == CODE ) throw *this;\
+         else fc::exception::dynamic_rethrow_exception(); \
+       } \
    };
 
-#define FC_IMPLEMENT_DERIVED_EXCEPTION( TYPE, BASE, CODE, WHAT ) \
-   TYPE::TYPE( int64_t code, const std::string& name_value, const std::string& what_value ) \
-      : BASE( code, name_value, what_value ) {} \
-   TYPE::TYPE( fc::log_message&& m, int64_t code, const std::string& name_value, const std::string& what_value ) \
-      : BASE( std::move(m), code, name_value, what_value ) {} \
-   TYPE::TYPE( fc::log_messages&& m, int64_t code, const std::string& name_value, const std::string& what_value ) \
-      : BASE( std::move(m), code, name_value, what_value ) {} \
-   TYPE::TYPE( const fc::log_messages& m, int64_t code, const std::string& name_value, const std::string& what_value ) \
-      : BASE( m, code, name_value, what_value ) {} \
-   TYPE::TYPE( const std::string& what_value, const fc::log_messages& m ) \
-      : BASE( m, CODE, BOOST_PP_STRINGIZE(TYPE), what_value ) {} \
-   TYPE::TYPE( fc::log_message&& m ) \
-      : BASE( std::move(m), CODE, BOOST_PP_STRINGIZE(TYPE), WHAT ) {} \
-   TYPE::TYPE( fc::log_messages msgs ) \
-      : BASE( std::move( msgs ), CODE, BOOST_PP_STRINGIZE(TYPE), WHAT ) {} \
-   TYPE::TYPE( const TYPE& c ) : BASE(c) {} \
-   TYPE::TYPE( const BASE& c ) : BASE(c) {} \
-   TYPE::TYPE() : BASE(CODE, BOOST_PP_STRINGIZE(TYPE), WHAT) {} \
-   \
-   std::shared_ptr<fc::exception> TYPE::dynamic_copy_exception()const \
-   { \
-      return std::make_shared<TYPE>( *this ); \
-   } \
-   NO_RETURN void TYPE::dynamic_rethrow_exception()const \
-   { \
-      if( code() == CODE ) throw *this;\
-      else fc::exception::dynamic_rethrow_exception(); \
-   }
+  #define FC_DECLARE_EXCEPTION( TYPE, CODE, WHAT ) \
+      FC_DECLARE_DERIVED_EXCEPTION( TYPE, fc::exception, CODE, WHAT )
 
-#define FC_DECLARE_EXCEPTION( TYPE, CODE ) \
-      FC_DECLARE_DERIVED_EXCEPTION( TYPE, fc::exception, CODE )
-
-#define FC_IMPLEMENT_EXCEPTION( TYPE, CODE, WHAT ) \
-   FC_IMPLEMENT_DERIVED_EXCEPTION( TYPE, fc::exception, CODE, WHAT )
-
-  FC_DECLARE_EXCEPTION( timeout_exception, timeout_exception_code );
-  FC_DECLARE_EXCEPTION( file_not_found_exception, file_not_found_exception_code );
+  FC_DECLARE_EXCEPTION( timeout_exception, timeout_exception_code, "Timeout" );
+  FC_DECLARE_EXCEPTION( file_not_found_exception, file_not_found_exception_code, "File Not Found" );
   /**
-   * @brief reports parse errors
+   * @brief report's parse errors
    */
-  FC_DECLARE_EXCEPTION( parse_error_exception, parse_error_exception_code );
-  FC_DECLARE_EXCEPTION( invalid_arg_exception, invalid_arg_exception_code );
+  FC_DECLARE_EXCEPTION( parse_error_exception, parse_error_exception_code, "Parse Error" );
+  FC_DECLARE_EXCEPTION( invalid_arg_exception, invalid_arg_exception_code, "Invalid Argument" );
   /**
    * @brief reports when a key, guid, or other item is not found.
    */
-  FC_DECLARE_EXCEPTION( key_not_found_exception, key_not_found_exception_code );
-  FC_DECLARE_EXCEPTION( bad_cast_exception, bad_cast_exception_code );
-  FC_DECLARE_EXCEPTION( out_of_range_exception, out_of_range_exception_code );
+  FC_DECLARE_EXCEPTION( key_not_found_exception, key_not_found_exception_code, "Key Not Found" );
+  FC_DECLARE_EXCEPTION( bad_cast_exception, bad_cast_exception_code, "Bad Cast" );
+  FC_DECLARE_EXCEPTION( out_of_range_exception, out_of_range_exception_code, "Out of Range" );
 
   /** @brief if an operation is unsupported or not valid this may be thrown */
-  FC_DECLARE_EXCEPTION( invalid_operation_exception, invalid_operation_exception_code );
+  FC_DECLARE_EXCEPTION( invalid_operation_exception,
+                        invalid_operation_exception_code,
+                        "Invalid Operation" );
   /** @brief if an host name can not be resolved this may be thrown */
-  FC_DECLARE_EXCEPTION( unknown_host_exception, unknown_host_exception_code );
+  FC_DECLARE_EXCEPTION( unknown_host_exception,
+                         unknown_host_exception_code,
+                         "Unknown Host" );
 
   /**
    *  @brief used to report a canceled Operation
    */
-  FC_DECLARE_EXCEPTION( canceled_exception, canceled_exception_code );
+  FC_DECLARE_EXCEPTION( canceled_exception, canceled_exception_code, "Canceled" );
   /**
    *  @brief used inplace of assert() to report violations of pre conditions.
    */
-  FC_DECLARE_EXCEPTION( assert_exception, assert_exception_code );
-  FC_DECLARE_EXCEPTION( eof_exception, eof_exception_code );
-  FC_DECLARE_EXCEPTION( null_optional, null_optional_code );
-  FC_DECLARE_EXCEPTION( aes_exception, aes_error_code );
-  FC_DECLARE_EXCEPTION( overflow_exception, overflow_code );
-  FC_DECLARE_EXCEPTION( underflow_exception, underflow_code );
-  FC_DECLARE_EXCEPTION( divide_by_zero_exception, divide_by_zero_code );
+  FC_DECLARE_EXCEPTION( assert_exception, assert_exception_code, "Assert Exception" );
+  FC_DECLARE_EXCEPTION( eof_exception, eof_exception_code, "End Of File" );
+  FC_DECLARE_EXCEPTION( null_optional, null_optional_code, "null optional" );
+  FC_DECLARE_EXCEPTION( aes_exception, aes_error_code, "AES error" );
+  FC_DECLARE_EXCEPTION( overflow_exception, overflow_code, "Integer Overflow" );
+  FC_DECLARE_EXCEPTION( underflow_exception, underflow_code, "Integer Underflow" );
+  FC_DECLARE_EXCEPTION( divide_by_zero_exception, divide_by_zero_code, "Integer Divide By Zero" );
 
   std::string except_str();
 
