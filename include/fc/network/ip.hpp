@@ -83,13 +83,13 @@ namespace fc {
   namespace raw
   {
     template<typename Stream>
-    inline void pack( Stream& s, const ip::address& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH )
+    void pack( Stream& s, const ip::address& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH )
     {
        FC_ASSERT( _max_depth > 0 );
        fc::raw::pack( s, uint32_t(v), _max_depth - 1 );
     }
     template<typename Stream>
-    inline void unpack( Stream& s, ip::address& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH )
+    void unpack( Stream& s, ip::address& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH )
     {
        FC_ASSERT( _max_depth > 0 );
        uint32_t _ip;
@@ -119,7 +119,7 @@ namespace fc {
 
   }
 } // namespace fc
-FC_REFLECT_TYPENAME( fc::ip::address )
+FC_REFLECT_EMPTY( fc::ip::address )
 FC_REFLECT_TYPENAME( fc::ip::endpoint )
 namespace std
 {
