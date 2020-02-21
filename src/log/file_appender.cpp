@@ -133,7 +133,9 @@ namespace fc {
                  {
                  }
              }
-             _deletion_task = schedule( [this]() { delete_files(); }, start_time + _interval_seconds,
+             uint64_t next_file = time_point::now().sec_since_epoch() / _interval_seconds + 1;
+             _deletion_task = schedule( [this]() { delete_files(); },
+                                        fc::time_point_sec( next_file * _interval_seconds),
                                         "delete_files(3)" );
          }
    };
