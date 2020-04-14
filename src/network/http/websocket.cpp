@@ -20,6 +20,10 @@
 #include <fc/thread/thread.hpp>
 #include <fc/asio.hpp>
 
+#if WIN32
+#include <wincrypt.h>
+#endif
+
 #ifdef DEFAULT_LOGGER
 # undef DEFAULT_LOGGER
 #endif
@@ -28,7 +32,33 @@
 namespace fc { namespace http {
 
    namespace detail {
+#if WIN32
+      // taken from https://stackoverflow.com/questions/39772878/reliable-way-to-get-root-ca-certificates-on-windows/40710806
+      static void add_windows_root_certs(boost::asio::ssl::context &ctx)
+      {
+         HCERTSTORE hStore = CertOpenSystemStore( 0, "ROOT" );
+         if( hStore == NULL )
+            return;
 
+         X509_STORE *store = X509_STORE_new();
+         PCCERT_CONTEXT pContext = NULL;
+         while( (pContext = CertEnumCertificatesInStore( hStore, pContext )) != NULL )
+         {
+            X509 *x509 = d2i_X509( NULL, (const unsigned char **)&pContext->pbCertEncoded,
+                                   pContext->cbCertEncoded);
+            if( x509 != NULL )
+            {
+               X509_STORE_add_cert( store, x509 );
+               X509_free( x509 );
+            }
+         }
+
+         CertFreeCertificateContext( pContext );
+         CertCloseStore( hStore, 0 );
+
+         SSL_CTX_set_cert_store( ctx.native_handle(), store );
+      }
+#endif
       struct asio_with_stub_log : public websocketpp::config::asio {
 
           typedef asio_with_stub_log type;
@@ -292,8 +322,8 @@ namespace fc { namespace http {
                if( _server.is_listening() )
                   _server.stop_listening();
 
-               if ( _connections.size() )
-                  _closed = new fc::promise<void>();
+               if( _connections.size() )
+                  _closed = promise<void>::create();
 
                auto cpy_con = _connections;
                for( auto item : cpy_con )
@@ -550,7 +580,13 @@ namespace fc { namespace http {
                   return;
                ctx->set_verify_mode( boost::asio::ssl::verify_peer );
                if( ca_filename == "_default" )
+               {
+#if WIN32
+                  add_windows_root_certs( *ctx );
+#else
                   ctx->set_default_verify_paths();
+#endif
+               }
                else
                   ctx->load_verify_file( ca_filename );
                ctx->set_verify_depth(10);
@@ -642,13 +678,13 @@ namespace fc { namespace http {
        websocketpp::lib::error_code ec;
 
        my->_uri = uri;
-       my->_connected = fc::promise<void>::ptr( new fc::promise<void>("websocket::connect") );
+       my->_connected = promise<void>::create("websocket::connect");
 
        my->_client.set_open_handler( [=]( websocketpp::connection_hdl hdl ){
           my->_hdl = hdl;
           auto con =  my->_client.get_con_from_hdl(hdl);
           my->_connection = std::make_shared<detail::websocket_connection_impl<detail::websocket_client_connection_type>>( con );
-          my->_closed = fc::promise<void>::ptr( new fc::promise<void>("websocket::closed") );
+          my->_closed = promise<void>::create("websocket::closed");
           my->_connected->set_value();
        });
 
@@ -670,12 +706,12 @@ namespace fc { namespace http {
        websocketpp::lib::error_code ec;
 
        smy->_uri = uri;
-       smy->_connected = fc::promise<void>::ptr( new fc::promise<void>("websocket::connect") );
+       smy->_connected = promise<void>::create("websocket::connect");
 
        smy->_client.set_open_handler( [=]( websocketpp::connection_hdl hdl ){
           auto con =  smy->_client.get_con_from_hdl(hdl);
           smy->_connection = std::make_shared<detail::websocket_connection_impl<detail::websocket_tls_client_connection_type>>( con );
-          smy->_closed = fc::promise<void>::ptr( new fc::promise<void>("websocket::closed") );
+          smy->_closed = promise<void>::create("websocket::closed");
           smy->_connected->set_value();
        });
 
@@ -705,12 +741,12 @@ namespace fc { namespace http {
        // wlog( "connecting to ${uri}", ("uri",uri));
        websocketpp::lib::error_code ec;
 
-       my->_connected = fc::promise<void>::ptr( new fc::promise<void>("websocket::connect") );
+       my->_connected = promise<void>::create("websocket::connect");
 
        my->_client.set_open_handler( [=]( websocketpp::connection_hdl hdl ){
           auto con =  my->_client.get_con_from_hdl(hdl);
           my->_connection = std::make_shared<detail::websocket_connection_impl<detail::websocket_tls_client_connection_type>>( con );
-          my->_closed = fc::promise<void>::ptr( new fc::promise<void>("websocket::closed") );
+          my->_closed = promise<void>::create("websocket::closed");
           my->_connected->set_value();
        });
 

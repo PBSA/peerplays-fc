@@ -10,9 +10,6 @@ target_link_libraries( task_cancel_test fc )
 add_executable( bloom_test all_tests.cpp bloom_test.cpp )
 target_link_libraries( bloom_test fc )
 
-add_executable( real128_test all_tests.cpp real128_test.cpp )
-target_link_libraries( real128_test fc )
-
 add_executable( hmac_test hmac_test.cpp )
 target_link_libraries( hmac_test fc )
 
@@ -29,6 +26,7 @@ target_link_libraries( ecc_test fc )
 add_executable( all_tests all_tests.cpp
                           compress/compress.cpp
                           crypto/aes_test.cpp
+                          crypto/array_initialization_test.cpp
                           crypto/base_n_tests.cpp
                           crypto/bigint_test.cpp
                           crypto/blind.cpp
@@ -44,7 +42,7 @@ add_executable( all_tests all_tests.cpp
                           thread/thread_tests.cpp
                           thread/parallel_tests.cpp
                           bloom_test.cpp
-                          real128_test.cpp
+                          reflection_tests.cpp
                           serialization_test.cpp
                           stacktrace_test.cpp
                           time_test.cpp

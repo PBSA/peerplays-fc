@@ -1,11 +1,12 @@
 #define BOOST_TEST_MODULE HmacTest
 #include <boost/test/unit_test.hpp>
-#include <fc/array.hpp>
 #include <fc/crypto/hex.hpp>
 #include <fc/crypto/hmac.hpp>
 #include <fc/crypto/sha224.hpp>
 #include <fc/crypto/sha256.hpp>
 #include <fc/crypto/sha512.hpp>
+
+#include <array>
 
 // See http://tools.ietf.org/html/rfc4231
 
@@ -77,14 +78,14 @@ static void run_test( const std::string& key, const std::string& data, const std
                       const std::string& expect_256, const std::string& expect_512 )
 {
 
-    fc::array<char,N> key_arr;
-    BOOST_CHECK_EQUAL( fc::from_hex( key, key_arr.begin(), key_arr.size() ), N );
-    fc::array<char,M> data_arr;
-    BOOST_CHECK_EQUAL( fc::from_hex( data, data_arr.begin(), data_arr.size() ), M );
+    std::array<char,N> key_arr;
+    BOOST_CHECK_EQUAL( fc::from_hex( key, key_arr.data(), key_arr.size() ), N );
+    std::array<char,M> data_arr;
+    BOOST_CHECK_EQUAL( fc::from_hex( data, data_arr.data(), data_arr.size() ), M );
 
-    BOOST_CHECK_EQUAL( mac_224.digest( key_arr.begin(), N, data_arr.begin(), M ).str(), expect_224 );
-    BOOST_CHECK_EQUAL( mac_256.digest( key_arr.begin(), N, data_arr.begin(), M ).str(), expect_256 );
-    BOOST_CHECK_EQUAL( mac_512.digest( key_arr.begin(), N, data_arr.begin(), M ).str(), expect_512 );
+    BOOST_CHECK_EQUAL( mac_224.digest( key_arr.data(), N, data_arr.data(), M ).str(), expect_224 );
+    BOOST_CHECK_EQUAL( mac_256.digest( key_arr.data(), N, data_arr.data(), M ).str(), expect_256 );
+    BOOST_CHECK_EQUAL( mac_512.digest( key_arr.data(), N, data_arr.data(), M ).str(), expect_512 );
 }
 
 BOOST_AUTO_TEST_CASE(hmac_test_1)

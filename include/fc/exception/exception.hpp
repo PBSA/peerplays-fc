@@ -5,7 +5,6 @@
  */
 #include <fc/log/logger.hpp>
 #include <fc/optional.hpp>
-#include <fc/utility.hpp>
 #include <exception>
 #include <functional>
 #include <unordered_map>
@@ -107,7 +106,7 @@ namespace fc
           *
           *  @note does not return.
           */
-         virtual NO_RETURN void     dynamic_rethrow_exception()const;
+         [[noreturn]] virtual void dynamic_rethrow_exception()const;
 
          /**
           *  This is equivalent to:
@@ -156,7 +155,7 @@ namespace fc
 
        std::exception_ptr get_inner_exception()const;
 
-       virtual NO_RETURN void               dynamic_rethrow_exception()const;
+       [[noreturn]] virtual void            dynamic_rethrow_exception()const;
        virtual std::shared_ptr<exception>   dynamic_copy_exception()const;
       private:
        std::exception_ptr _inner;
@@ -167,10 +166,10 @@ namespace fc
    {
 #if defined(_MSC_VER) && (_MSC_VER < 1700)
      return std::make_shared<unhandled_exception>( log_message(),
-                                                   std::copy_exception(fc::forward<T>(e)) );
+                                                   std::copy_exception(std::forward<T>(e)) );
 #else
      return std::make_shared<unhandled_exception>( log_message(),
-                                                   std::make_exception_ptr(fc::forward<T>(e)) );
+                                                   std::make_exception_ptr(std::forward<T>(e)) );
 #endif
    }
 
@@ -180,13 +179,13 @@ namespace fc
       public:
         struct base_exception_builder
         {
-           virtual NO_RETURN void rethrow( const exception& e )const = 0;
+           [[noreturn]] virtual void rethrow( const exception& e )const = 0;
         };
 
         template<typename T>
         struct exception_builder : public base_exception_builder
         {
-           virtual NO_RETURN void rethrow( const exception& e )const override
+           [[noreturn]] virtual void rethrow( const exception& e )const override
            {
               throw T( e );
            }
@@ -202,7 +201,7 @@ namespace fc
            _registered_exceptions[T::code_value] = &builder;
         }
 
-        void NO_RETURN rethrow( const exception& e )const;
+        [[noreturn]] void rethrow( const exception& e )const;
 
         static exception_factory& instance()
         {
@@ -244,7 +243,7 @@ namespace fc
        explicit TYPE();\
        \
        virtual std::shared_ptr<fc::exception> dynamic_copy_exception()const;\
-       virtual NO_RETURN void dynamic_rethrow_exception()const; \
+       [[noreturn]] virtual void dynamic_rethrow_exception()const; \
    };
 
 #define FC_IMPLEMENT_DERIVED_EXCEPTION( TYPE, BASE, CODE, WHAT ) \
@@ -270,7 +269,7 @@ namespace fc
    { \
       return std::make_shared<TYPE>( *this ); \
    } \
-   NO_RETURN void TYPE::dynamic_rethrow_exception()const \
+   [[noreturn]] void TYPE::dynamic_rethrow_exception()const \
    { \
       if( code() == CODE ) throw *this;\
       else fc::exception::dynamic_rethrow_exception(); \

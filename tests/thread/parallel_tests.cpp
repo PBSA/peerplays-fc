@@ -35,6 +35,8 @@
 
 #include <iostream>
 
+namespace fc { namespace test {
+
 struct thread_config {
   thread_config() {
      for( int i = 0; i < boost::unit_test::framework::master_test_suite().argc - 1; ++i )
@@ -42,13 +44,51 @@ struct thread_config {
         {
            uint16_t threads = atoi(boost::unit_test::framework::master_test_suite().argv[++i]);
            std::cout << "Using " << threads << " pool threads\n";
-           fc::asio::default_io_service_scope::set_num_threads(threads);
+           asio::default_io_service_scope::set_num_threads(threads);
         }
   }
 };
 
-BOOST_GLOBAL_FIXTURE( thread_config );
+const std::string TEXT = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"$%&/()=?,.-#+´{[]}`*'_:;<>|";
 
+template<typename Hash>
+class hash_test {
+   public:
+      std::string _hashname = get_typename<Hash>::name();
+
+      void run_single_threaded() {
+         const std::string first = Hash::hash(TEXT).str();
+         time_point start = time_point::now();
+         for( int i = 0; i < 1000; i++ )
+            BOOST_CHECK_EQUAL( first, Hash::hash(TEXT).str() );
+         time_point end = time_point::now();
+         ilog( "${c} single-threaded ${h}'s in ${t}µs", ("c",1000)("h",_hashname)("t",end-start) );
+      }
+
+      void run_multi_threaded() {
+         const std::string first = Hash::hash(TEXT).str();
+         std::vector<future<std::string>> results;
+         results.reserve( 10000 );
+         time_point start = time_point::now();
+         for( int i = 0; i < 10000; i++ )
+            results.push_back( do_parallel( [] () { return Hash::hash(TEXT).str(); } ) );
+         for( auto& result: results )
+            BOOST_CHECK_EQUAL( first, result.wait() );
+         time_point end = time_point::now();
+         ilog( "${c} multi-threaded ${h}'s in ${t}µs", ("c",10000)("h",_hashname)("t",end-start) );
+      }
+
+      void run() {
+         run_single_threaded();
+         run_multi_threaded();
+      }
+};
+
+}} // fc::test
+
+using namespace fc::test;
+
+BOOST_GLOBAL_FIXTURE( thread_config );
 
 BOOST_AUTO_TEST_SUITE(parallel_tests)
 
@@ -95,41 +135,6 @@ BOOST_AUTO_TEST_CASE( do_something_parallel )
          BOOST_CHECK_EQUAL( (int64_t)i, pair.second[i] );
    }
 }
-
-const std::string TEXT = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"$%&/()=?,.-#+´{[]}`*'_:;<>|";
-
-template<typename Hash>
-class hash_test {
-   public:
-      std::string _hashname = fc::get_typename<Hash>::name();
-
-      void run_single_threaded() {
-         const std::string first = Hash::hash(TEXT).str();
-         fc::time_point start = fc::time_point::now();
-         for( int i = 0; i < 1000; i++ )
-            BOOST_CHECK_EQUAL( first, Hash::hash(TEXT).str() );
-         fc::time_point end = fc::time_point::now();
-         ilog( "${c} single-threaded ${h}'s in ${t}µs", ("c",1000)("h",_hashname)("t",end-start) );
-      }
-
-      void run_multi_threaded() {
-         const std::string first = Hash::hash(TEXT).str();
-         std::vector<fc::future<std::string>> results;
-         results.reserve( 10000 );
-         fc::time_point start = fc::time_point::now();
-         for( int i = 0; i < 10000; i++ )
-            results.push_back( fc::do_parallel( [] () { return Hash::hash(TEXT).str(); } ) );
-         for( auto& result: results )
-            BOOST_CHECK_EQUAL( first, result.wait() );
-         fc::time_point end = fc::time_point::now();
-         ilog( "${c} multi-threaded ${h}'s in ${t}µs", ("c",10000)("h",_hashname)("t",end-start) );
-      }
-
-      void run() {
-         run_single_threaded();
-         run_multi_threaded();
-      }
-};
 
 BOOST_AUTO_TEST_CASE( hash_parallel )
 {
@@ -200,25 +205,25 @@ BOOST_AUTO_TEST_CASE( serial_valve )
    fc::serial_valve valve;
 
    { // Simple test, f2 finishes before f1
-      fc::promise<void>* syncer = new fc::promise<void>();
-      fc::promise<void>* waiter = new fc::promise<void>();
+      fc::promise<void>::ptr syncer = fc::promise<void>::create();
+      fc::promise<void>::ptr waiter = fc::promise<void>::create();
       auto p1 = fc::async([&counter,&valve,syncer,waiter] () {
          valve.do_serial( [syncer,waiter](){ syncer->set_value();
-                                             fc::future<void>( fc::shared_ptr<fc::promise<void>>( waiter, true ) ).wait(); },
+                                             fc::future<void>( waiter ).wait(); },
                           [&counter](){ BOOST_CHECK_EQUAL( 0u, counter.load() );
                                         counter.fetch_add(1); } );
       });
-      fc::future<void>( fc::shared_ptr<fc::promise<void>>( syncer, true ) ).wait();
+      fc::future<void>( syncer ).wait();
 
       // at this point, p1.f1 has started executing and is waiting on waiter
 
-      syncer = new fc::promise<void>();
+      syncer = fc::promise<void>::create();
       auto p2 = fc::async([&counter,&valve,syncer] () {
          valve.do_serial( [syncer](){ syncer->set_value(); },
                           [&counter](){ BOOST_CHECK_EQUAL( 1u, counter.load() );
                                         counter.fetch_add(1); } );
       });
-      fc::future<void>( fc::shared_ptr<fc::promise<void>>( syncer, true ) ).wait();
+      fc::future<void>( syncer ).wait();
 
       fc::usleep( fc::milliseconds(10) );
 
@@ -237,37 +242,37 @@ BOOST_AUTO_TEST_CASE( serial_valve )
    }
 
    { // Triple test, f3 finishes first, then f1, finally f2
-      fc::promise<void>* syncer = new fc::promise<void>();
-      fc::promise<void>* waiter = new fc::promise<void>();
+      fc::promise<void>::ptr syncer = fc::promise<void>::create();
+      fc::promise<void>::ptr waiter = fc::promise<void>::create();
       counter.store(0);
       auto p1 = fc::async([&counter,&valve,syncer,waiter] () {
          valve.do_serial( [&syncer,waiter](){ syncer->set_value();
-                                              fc::future<void>( fc::shared_ptr<fc::promise<void>>( waiter, true ) ).wait(); },
+                                              fc::future<void>( waiter ).wait(); },
                           [&counter](){ BOOST_CHECK_EQUAL( 0u, counter.load() );
                                         counter.fetch_add(1); } );
       });
-      fc::future<void>( fc::shared_ptr<fc::promise<void>>( syncer, true ) ).wait();
+      fc::future<void>( syncer ).wait();
 
       // at this point, p1.f1 has started executing and is waiting on waiter
 
-      syncer = new fc::promise<void>();
+      syncer = fc::promise<void>::create();
       auto p2 = fc::async([&counter,&valve,syncer] () {
          valve.do_serial( [&syncer](){ syncer->set_value();
                                        fc::usleep( fc::milliseconds(100) ); },
                           [&counter](){ BOOST_CHECK_EQUAL( 1u, counter.load() );
                                         counter.fetch_add(1); } );
       });
-      fc::future<void>( fc::shared_ptr<fc::promise<void>>( syncer, true ) ).wait();
+      fc::future<void>( syncer ).wait();
 
       // at this point, p2.f1 has started executing and is sleeping
 
-      syncer = new fc::promise<void>();
+      syncer = fc::promise<void>::create();
       auto p3 = fc::async([&counter,&valve,syncer] () {
          valve.do_serial( [syncer](){ syncer->set_value(); },
                           [&counter](){ BOOST_CHECK_EQUAL( 2u, counter.load() );
                                         counter.fetch_add(1); } );
       });
-      fc::future<void>( fc::shared_ptr<fc::promise<void>>( syncer, true ) ).wait();
+      fc::future<void>( syncer ).wait();
 
       fc::usleep( fc::milliseconds(10) );
 
@@ -288,37 +293,37 @@ BOOST_AUTO_TEST_CASE( serial_valve )
    }
 
    { // Triple test again but with invocations from different threads
-      fc::promise<void>* syncer = new fc::promise<void>();
-      fc::promise<void>* waiter = new fc::promise<void>();
+      fc::promise<void>::ptr syncer = fc::promise<void>::create();
+      fc::promise<void>::ptr waiter = fc::promise<void>::create();
       counter.store(0);
       auto p1 = fc::do_parallel([&counter,&valve,syncer,waiter] () {
          valve.do_serial( [&syncer,waiter](){ syncer->set_value();
-                                              fc::future<void>( fc::shared_ptr<fc::promise<void>>( waiter, true ) ).wait(); },
+                                              fc::future<void>( waiter ).wait(); },
                           [&counter](){ BOOST_CHECK_EQUAL( 0u, counter.load() );
                                         counter.fetch_add(1); } );
       });
-      fc::future<void>( fc::shared_ptr<fc::promise<void>>( syncer, true ) ).wait();
+      fc::future<void>( syncer ).wait();
 
       // at this point, p1.f1 has started executing and is waiting on waiter
 
-      syncer = new fc::promise<void>();
+      syncer = fc::promise<void>::create();
       auto p2 = fc::do_parallel([&counter,&valve,syncer] () {
          valve.do_serial( [&syncer](){ syncer->set_value();
                                        fc::usleep( fc::milliseconds(100) ); },
                           [&counter](){ BOOST_CHECK_EQUAL( 1u, counter.load() );
                                         counter.fetch_add(1); } );
       });
-      fc::future<void>( fc::shared_ptr<fc::promise<void>>( syncer, true ) ).wait();
+      fc::future<void>( syncer ).wait();
 
       // at this point, p2.f1 has started executing and is sleeping
 
-      syncer = new fc::promise<void>();
+      syncer = fc::promise<void>::create();
       auto p3 = fc::do_parallel([&counter,&valve,syncer] () {
          valve.do_serial( [syncer](){ syncer->set_value(); },
                           [&counter](){ BOOST_CHECK_EQUAL( 2u, counter.load() );
                                         counter.fetch_add(1); } );
       });
-      fc::future<void>( fc::shared_ptr<fc::promise<void>>( syncer, true ) ).wait();
+      fc::future<void>( syncer ).wait();
 
       fc::usleep( fc::milliseconds(10) );
 
