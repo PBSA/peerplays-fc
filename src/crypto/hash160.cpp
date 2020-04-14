@@ -24,7 +24,6 @@
 
 #include <fc/crypto/hex.hpp>
 #include <fc/fwd_impl.hpp>
-#include <openssl/sha.h>
 #include <openssl/ripemd.h>
 #include <string.h>
 #include <fc/crypto/hash160.hpp>
@@ -55,7 +54,7 @@ class hash160::encoder::impl {
 };
 
 hash160::encoder::~encoder() {}
-hash160::encoder::encoder() {}
+hash160::encoder::encoder() { SHA256_Init(&sha_ctx); }
 
 hash160 hash160::hash( const char* d, uint32_t dlen ) {
    encoder e;
@@ -69,15 +68,11 @@ hash160 hash160::hash( const string& s ) {
 
 void hash160::encoder::write( const char* d, uint32_t dlen )
 {
-   for(uint32_t i = 0; i < dlen; ++i)
-      bytes.push_back(d[i]); 
+   SHA256_Update( &sha_ctx, d, dlen); 
 }
 
 hash160 hash160::encoder::result() {
-   // perform the first hashing function
-   SHA256_CTX sha_ctx;
-   SHA256_Init(&sha_ctx);
-   SHA256_Update( &sha_ctx, bytes.data(), bytes.size());
+   // finalize the first hash
    unsigned char sha_hash[SHA256_DIGEST_LENGTH];
    SHA256_Final( sha_hash, &sha_ctx );
    // perform the second hashing function

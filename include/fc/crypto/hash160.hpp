@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  */
 #pragma once
+#include <openssl/sha.h>
 #include <boost/endian/buffers.hpp>
 #include <fc/fwd.hpp>
 #include <fc/io/raw_fwd.hpp>
@@ -39,7 +40,7 @@ class hash160
    explicit operator string()const;
 
    char* data() const;
-   size_t data_size() const { return 160/8; }
+   static constexpr size_t data_size() { return 160/8; }
 
    static hash160 hash( const char* d, uint32_t dlen );
    static hash160 hash( const string& );
@@ -66,7 +67,7 @@ class hash160
       private:
       class impl;
       fc::fwd<impl,96> my;
-      std::vector<uint8_t> bytes;
+      SHA256_CTX sha_ctx;;
    };
 
    template<typename T>
