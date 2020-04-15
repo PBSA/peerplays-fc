@@ -84,6 +84,11 @@ hash160 hash160::encoder::result() {
    return h;
 }
 
+void hash160::encoder::reset() 
+{
+   SHA256_Init(&sha_ctx);
+}
+
 hash160 operator << ( const hash160& h1, uint32_t i ) {
    hash160 result;
    fc::detail::shift_l( h1.data(), result.data(), result.data_size(), i );
