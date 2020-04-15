@@ -23,12 +23,15 @@
  */
 
 #include <fc/crypto/hex.hpp>
+#include <fc/crypto/hmac.hpp>
 #include <fc/fwd_impl.hpp>
+#include <openssl/sha.h>
 #include <openssl/ripemd.h>
 #include <string.h>
+#include <cmath>
 #include <fc/crypto/hash160.hpp>
 #include <fc/variant.hpp>
-#include <vector>
+#include <fc/exception/exception.hpp>
 #include "_digest_common.hpp"
 
 namespace fc 
@@ -48,13 +51,12 @@ hash160::operator string()const { return  str(); }
 
 char* hash160::data()const { return (char*)&_hash[0]; }
 
-class hash160::encoder::impl {
-   public:
-   impl() { }
+struct hash160::encoder::impl {
+   SHA256_CTX ctx;
 };
 
 hash160::encoder::~encoder() {}
-hash160::encoder::encoder() { SHA256_Init(&sha_ctx); }
+hash160::encoder::encoder() { SHA256_Init(&my->ctx); }
 
 hash160 hash160::hash( const char* d, uint32_t dlen ) {
    encoder e;
@@ -68,13 +70,13 @@ hash160 hash160::hash( const string& s ) {
 
 void hash160::encoder::write( const char* d, uint32_t dlen )
 {
-   SHA256_Update( &sha_ctx, d, dlen); 
+   SHA256_Update( &my->ctx, d, dlen); 
 }
 
 hash160 hash160::encoder::result() {
    // finalize the first hash
    unsigned char sha_hash[SHA256_DIGEST_LENGTH];
-   SHA256_Final( sha_hash, &sha_ctx );
+   SHA256_Final( sha_hash, &my->ctx );
    // perform the second hashing function
    RIPEMD160_CTX ripe_ctx;
    RIPEMD160_Init(&ripe_ctx);
@@ -86,7 +88,7 @@ hash160 hash160::encoder::result() {
 
 void hash160::encoder::reset() 
 {
-   SHA256_Init(&sha_ctx);
+   SHA256_Init(&my->ctx);
 }
 
 hash160 operator << ( const hash160& h1, uint32_t i ) {

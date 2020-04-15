@@ -22,11 +22,10 @@
  * THE SOFTWARE.
  */
 #pragma once
-#include <openssl/sha.h>
 #include <boost/endian/buffers.hpp>
 #include <fc/fwd.hpp>
+#include <fc/string.hpp>
 #include <fc/io/raw_fwd.hpp>
-#include <fc/reflect/typename.hpp>
 
 namespace fc{
 
@@ -66,8 +65,7 @@ class hash160
 
       private:
       class impl;
-      fc::fwd<impl,96> my;
-      SHA256_CTX sha_ctx;;
+      fc::fwd<impl,117> my;
    };
 
    template<typename T>
