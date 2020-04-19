@@ -21,8 +21,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/GitVersionGen")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 
 INCLUDE(GetPrerequisites)
-INCLUDE( VersionMacros )
-INCLUDE( SetupTargetMacros )
 INCLUDE(GetGitRevisionDescription)
 INCLUDE(CheckLibraryExists)
 
@@ -159,8 +157,6 @@ ENDIF( LIBCXX_HAVE_CXX_ATOMICS_WITH_LIB )
 
 find_package(OpenSSL REQUIRED)
 
-option( UNITY_BUILD OFF )
-
 set( fc_sources
      src/popcount.cpp
      src/variant.cpp
@@ -244,7 +240,7 @@ list(APPEND sources ${fc_headers})
 
 add_subdirectory( vendor/websocketpp EXCLUDE_FROM_ALL )
 
-setup_library( fc SOURCES ${sources} LIBRARY_TYPE STATIC )
+add_library( fc ${sources} )
 install( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" DESTINATION include )
 
 # begin editline stuff
@@ -355,7 +351,7 @@ elseif(WIN32 AND MINGW)
 endif()
 
 
-IF(NOT Boost_UNIT_TEST_FRAMEWORK_LIBRARY MATCHES "\\.(a|lib)$")
+IF(Boost_UNIT_TEST_FRAMEWORK_LIBRARY MATCHES "\\.(so|dll)$")
 IF(MSVC)
 add_definitions(/DBOOST_TEST_DYN_LINK)
 ELSE(MSVC)
