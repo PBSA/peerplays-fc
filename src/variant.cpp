@@ -701,9 +701,8 @@ void from_variant( const variant& var, uint128_t& vo, uint32_t max_depth )
 #endif
 }
 
-#if defined(__APPLE__)
-#elif defined(__OpenBSD__)
-   void to_variant( size_t s, variant& v, uint32_t max_depth ) { v = variant( int64_t(s) ); }
+#if defined(__APPLE__) or defined(__OpenBSD__)
+   void to_variant( size_t s, variant& v, uint32_t max_depth ) { v = variant( uint64_t(s) ); }
 #elif !defined(_WIN32)
    void to_variant( long long int s, variant& v, uint32_t max_depth ) { v = variant( int64_t(s) ); }
    void to_variant( unsigned long long int s, variant& v, uint32_t max_depth ) { v = variant( uint64_t(s)); }

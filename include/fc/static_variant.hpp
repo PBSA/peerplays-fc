@@ -75,7 +75,7 @@ protected:
     void init_from_tag(tag_type tag)
     {
         FC_ASSERT( tag >= 0 );
-        FC_ASSERT( tag < count() );
+        FC_ASSERT( static_cast<size_t>(tag) < count() );
         _tag = tag;
         typelist::runtime::dispatch(list(), tag, [this](auto t) {
             using T = typename decltype(t)::type;
@@ -118,7 +118,7 @@ public:
     template<typename X, typename = type_in_typelist<X>>
     struct tag
     {
-       static constexpr int value = typelist::index_of<list, X>();
+       static constexpr tag_type value = typelist::index_of<list, X>();
     };
 
     struct type_lt {
@@ -269,7 +269,7 @@ public:
     template<typename visitor>
     static typename visitor::result_type visit( tag_type tag, visitor& v, void* data )
     {
-        FC_ASSERT( tag >= 0 && tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
+        FC_ASSERT( tag >= 0 && static_cast<size_t>(tag) < count(), "Unsupported type ${tag}!", ("tag",tag) );
         return typelist::runtime::dispatch(list(), tag, [&v, data](auto t) {
             return v(*reinterpret_cast<typename decltype(t)::type*>(data));
         });
@@ -278,7 +278,7 @@ public:
     template<typename visitor>
     static typename visitor::result_type visit( tag_type tag, const visitor& v, void* data )
     {
-        FC_ASSERT( tag >= 0 && tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
+        FC_ASSERT( tag >= 0 && static_cast<size_t>(tag) < count(), "Unsupported type ${tag}!", ("tag",tag) );
         return typelist::runtime::dispatch(list(), tag, [&v, data](auto t) {
             return v(*reinterpret_cast<typename decltype(t)::type*>(data));
         });
@@ -287,7 +287,7 @@ public:
     template<typename visitor>
     static typename visitor::result_type visit( tag_type tag, visitor& v, const void* data )
     {
-        FC_ASSERT( tag >= 0 && tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
+        FC_ASSERT( tag >= 0 && static_cast<size_t>(tag) < count(), "Unsupported type ${tag}!", ("tag",tag) );
         return typelist::runtime::dispatch(list(), tag, [&v, data](auto t) {
             return v(*reinterpret_cast<const typename decltype(t)::type*>(data));
         });
@@ -296,18 +296,18 @@ public:
     template<typename visitor>
     static typename visitor::result_type visit( tag_type tag, const visitor& v, const void* data )
     {
-        FC_ASSERT( tag >= 0 && tag < count(), "Unsupported type ${tag}!", ("tag",tag) );
+        FC_ASSERT( tag >= 0 && static_cast<size_t>(tag) < count(), "Unsupported type ${tag}!", ("tag",tag) );
         return typelist::runtime::dispatch(list(), tag, [&v, data](auto t) {
             return v(*reinterpret_cast<const typename decltype(t)::type*>(data));
         });
     }
 
-    static constexpr int count() { return typelist::length<list>(); }
-    void set_which( tag_type w ) {
-      FC_ASSERT( w >= 0 );
-      FC_ASSERT( w < count() );
+    static constexpr size_t count() { return typelist::length<list>(); }
+    void set_which( tag_type tag ) {
+      FC_ASSERT( tag >= 0 );
+      FC_ASSERT( static_cast<size_t>(tag) < count() );
       clean();
-      init_from_tag(w);
+      init_from_tag(tag);
     }
 
     tag_type which() const {return _tag;}

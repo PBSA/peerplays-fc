@@ -205,12 +205,12 @@ namespace fc
                   ss << "ERROR: Failed to convert log data to string!\n";
                }
                ss << "    " << itr->get_context().to_string();
-               ++itr;
             } catch( std::bad_alloc& ) {
                throw;
             } catch( ... ) {
                ss << "<- exception in to_detail_string.";
             }
+            ++itr;
             if( itr != my->_elog.end() ) ss<<"\n";
          }
       } catch( std::bad_alloc& ) {

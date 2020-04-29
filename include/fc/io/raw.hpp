@@ -307,7 +307,7 @@ namespace fc {
     template<typename Stream> inline void pack( Stream& s, const bool& v, uint32_t _max_depth )
     {
        FC_ASSERT( _max_depth > 0 );
-       fc::raw::pack( s, uint8_t(v), _max_depth - 1 );
+       fc::raw::pack( s, v ? uint8_t(1) : uint8_t(0), _max_depth - 1 );
     }
     template<typename Stream> inline void unpack( Stream& s, bool& v, uint32_t _max_depth )
     {
