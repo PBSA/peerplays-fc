@@ -176,14 +176,9 @@ namespace fc { namespace http {
       class websocket_connection_impl : public websocket_connection
       {
          public:
-            websocket_connection_impl( T con, const std::string& forward_header_key ) : _ws_connection(con)
+            websocket_connection_impl( T con ) : _ws_connection(con)
             {
-               // Firstly, try to extract remote address from a XFF-like header
-               if( !forward_header_key.empty() )
-                  _remote_endpoint = get_request_header( forward_header_key );
-               // If the last step failed, retrieve the remote address from the connection
-               if( _remote_endpoint.empty() )
-                  _remote_endpoint = con->get_remote_endpoint();
+               _remote_endpoint = con->get_remote_endpoint();
             }
 
             virtual ~websocket_connection_impl()
@@ -210,6 +205,28 @@ namespace fc { namespace http {
             T _ws_connection;
       };
 
+      template<typename T>
+      class possibly_proxied_websocket_connection : public websocket_connection_impl<T>
+      {
+         public:
+            possibly_proxied_websocket_connection( T con, const std::string& forward_header_key )
+               : websocket_connection_impl<T>(con)
+            {
+               // By calling the parent's constructor, _remote_endpoint has been initialized.
+               // Now try to extract remote address from the header, if found, overwrite it
+               if( !forward_header_key.empty() )
+               {
+                  const std::string value = this->get_request_header( forward_header_key );
+                  if( !value.empty() )
+                     this->_remote_endpoint = value;
+               }
+            }
+
+            virtual ~possibly_proxied_websocket_connection()
+            {
+            }
+      };
+
       typedef websocketpp::lib::shared_ptr<boost::asio::ssl::context> context_ptr;
 
       class websocket_server_impl
@@ -223,7 +240,7 @@ namespace fc { namespace http {
                _server.set_reuse_addr(true);
                _server.set_open_handler( [&]( connection_hdl hdl ){
                   _server_thread.async( [this, hdl](){
-                        auto new_con = std::make_shared<websocket_connection_impl<
+                        auto new_con = std::make_shared<possibly_proxied_websocket_connection<
                               websocket_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl),
                                                                        _forward_header_key );
                         _on_connection( _connections[hdl] = new_con );
@@ -256,7 +273,7 @@ namespace fc { namespace http {
                _server.set_http_handler( [&]( connection_hdl hdl ){
                     _server_thread.async( [&](){
                        auto con = _server.get_con_from_hdl(hdl);
-                       auto current_con = std::make_shared<websocket_connection_impl<
+                       auto current_con = std::make_shared<possibly_proxied_websocket_connection<
                              websocket_server_type::connection_ptr>>( con, _forward_header_key );
                        _on_connection( current_con );
 
@@ -369,7 +386,7 @@ namespace fc { namespace http {
                _server.set_reuse_addr(true);
                _server.set_open_handler( [&]( connection_hdl hdl ){
                     _server_thread.async( [&](){
-                       auto new_con = std::make_shared<websocket_connection_impl<
+                       auto new_con = std::make_shared<possibly_proxied_websocket_connection<
                              websocket_tls_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl),
                                                                           _forward_header_key );
                        _on_connection( _connections[hdl] = new_con );
@@ -391,7 +408,7 @@ namespace fc { namespace http {
                     _server_thread.async( [&](){
 
                        auto con = _server.get_con_from_hdl(hdl);
-                       auto current_con = std::make_shared<websocket_connection_impl<
+                       auto current_con = std::make_shared<possibly_proxied_websocket_connection<
                              websocket_tls_server_type::connection_ptr>>( con, _forward_header_key );
                        try{
                           _on_connection( current_con );
@@ -685,7 +702,7 @@ namespace fc { namespace http {
           my->_hdl = hdl;
           auto con =  my->_client.get_con_from_hdl(hdl);
           my->_connection = std::make_shared<detail::websocket_connection_impl<
-                               detail::websocket_client_connection_type>>( con, "" );
+                               detail::websocket_client_connection_type>>( con );
           my->_closed = promise<void>::create("websocket::closed");
           my->_connected->set_value();
        });
@@ -715,7 +732,7 @@ namespace fc { namespace http {
        smy->_client.set_open_handler( [=]( websocketpp::connection_hdl hdl ){
           auto con =  smy->_client.get_con_from_hdl(hdl);
           smy->_connection = std::make_shared<detail::websocket_connection_impl<
-                                detail::websocket_tls_client_connection_type>>( con, "" );
+                                detail::websocket_tls_client_connection_type>>( con );
           smy->_closed = promise<void>::create("websocket::closed");
           smy->_connected->set_value();
        });
@@ -755,7 +772,7 @@ namespace fc { namespace http {
        my->_client.set_open_handler( [=]( websocketpp::connection_hdl hdl ){
           auto con =  my->_client.get_con_from_hdl(hdl);
           my->_connection = std::make_shared<detail::websocket_connection_impl<
-                               detail::websocket_tls_client_connection_type>>( con, "" );
+                               detail::websocket_tls_client_connection_type>>( con );
           my->_closed = promise<void>::create("websocket::closed");
           my->_connected->set_value();
        });
