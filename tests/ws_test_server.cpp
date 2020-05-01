@@ -13,8 +13,7 @@ int main(int argc, char** argv)
    fc::logger l = fc::logger::get("rpc");
    l.add_appender( ca );
    
-   fc::http::websocket_server server;
-   server.set_forward_header_key("MyForwardHeaderKey");
+   fc::http::websocket_server server("MyForwardHeaderKey");
 
    server.on_connection([&]( const fc::http::websocket_connection_ptr& c ){
        c->on_message_handler([&](const std::string& s){

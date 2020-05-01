@@ -19,10 +19,9 @@ BOOST_AUTO_TEST_CASE(websocket_test)
     fc::http::websocket_connection_ptr s_conn, c_conn;
     int port;
     {
-        fc::http::websocket_server server;
-        // even with this set, if the remote does not provide it, it will revert to
+        // even with this key set, if the remote does not provide it, it will revert to
         // the remote endpoint
-        server.set_forward_header_key("MyProxyHeaderKey");
+        fc::http::websocket_server server("MyProxyHeaderKey");
         server.on_connection([&]( const fc::http::websocket_connection_ptr& c ){
                 s_conn = c;
                 c->on_message_handler([&](const std::string& s){
@@ -80,8 +79,7 @@ BOOST_AUTO_TEST_CASE(websocket_test_with_proxy_header)
     int port;
     {
         // the server will be on the lookout for the key in the header
-        fc::http::websocket_server server;
-        server.set_forward_header_key("MyProxyHeaderKey");
+        fc::http::websocket_server server("MyProxyHeaderKey");
         server.on_connection([&]( const fc::http::websocket_connection_ptr& c ){
                 s_conn = c;
                 c->on_message_handler([&](const std::string& s){
