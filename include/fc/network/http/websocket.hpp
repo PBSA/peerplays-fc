@@ -31,9 +31,12 @@ namespace fc { namespace http {
          boost::any& get_session_data() { return _session_data; }
 
          virtual std::string get_request_header(const std::string& key) = 0;
-         virtual std::string get_remote_ip(const std::string& forward_header_key) = 0;
+
+         const std::string& get_remote_endpoint()const { return _remote_endpoint; }
 
          fc::signal<void()> closed;
+      protected:
+         std::string                               _remote_endpoint; // for logging
       private:
          boost::any                                _session_data;
          std::function<void(const std::string&)>   _on_message;
@@ -46,7 +49,7 @@ namespace fc { namespace http {
    class websocket_server
    {
       public:
-         websocket_server();
+         websocket_server(const std::string& forward_header_key);
          ~websocket_server();
 
          void on_connection( const on_connection_handler& handler);
@@ -54,7 +57,6 @@ namespace fc { namespace http {
          void listen( const fc::ip::endpoint& ep );
          uint16_t get_listening_port();
          void start_accept();
-         void set_forward_header_key(const std::string& key);
 
          void stop_listening();
          void close();
@@ -68,15 +70,15 @@ namespace fc { namespace http {
    class websocket_tls_server
    {
       public:
-         websocket_tls_server( const std::string& server_pem = std::string(),
-                           const std::string& ssl_password = std::string());
+         websocket_tls_server( const std::string& server_pem,
+                               const std::string& ssl_password,
+                               const std::string& forward_header_key );
          ~websocket_tls_server();
 
          void on_connection( const on_connection_handler& handler);
          void listen( uint16_t port );
          void listen( const fc::ip::endpoint& ep );
          void start_accept();
-         void set_forward_header_key(const std::string& key);
       private:
          friend class detail::websocket_tls_server_impl;
          std::unique_ptr<detail::websocket_tls_server_impl> my;
