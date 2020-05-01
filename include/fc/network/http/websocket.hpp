@@ -15,6 +15,8 @@ namespace fc { namespace http {
       class websocket_tls_client_impl;
    } // namespace detail
 
+   // TODO refactor code, move stuff used by server or client only to derived class(es),
+   //      E.G. it seems get_request_header and on_http* are for server only.
    class websocket_connection
    {
       public:
