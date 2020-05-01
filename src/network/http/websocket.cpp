@@ -370,7 +370,7 @@ namespace fc { namespace http {
                           std::string request_body = con->get_request_body();
                           wlog( "[IN] ${remote_endpoint} ${msg}",
                                 ("remote_endpoint",remote_endpoint) ("msg",request_body) );
-                          auto response = current_con->on_http( con->get_request_body() );
+                          auto response = current_con->on_http( request_body );
                           ilog( "[OUT] ${remote_endpoint} ${msg}",
                                 ("remote_endpoint",remote_endpoint) ("msg",response) );
                           con->set_body( std::move( response.body_as_string ) );
@@ -707,7 +707,7 @@ namespace fc { namespace http {
 
    void websocket_client::append_header(const std::string& key, const std::string& value)
    {
-      headers.push_back( std::pair<std::string,std::string>(key, value));
+      headers.push_back( std::make_pair(key, value) );
    }
 
    websocket_connection_ptr websocket_tls_client::connect( const std::string& uri )
