@@ -22,6 +22,10 @@
 
 #include <boost/algorithm/string.hpp>
 
+#if WIN32
+#include <wincrypt.h>
+#endif
+
 #ifdef DEFAULT_LOGGER
 # undef DEFAULT_LOGGER
 #endif
@@ -30,7 +34,33 @@
 namespace fc { namespace http {
 
    namespace detail {
+#if WIN32
+      // taken from https://stackoverflow.com/questions/39772878/reliable-way-to-get-root-ca-certificates-on-windows/40710806
+      static void add_windows_root_certs(boost::asio::ssl::context &ctx)
+      {
+         HCERTSTORE hStore = CertOpenSystemStore( 0, "ROOT" );
+         if( hStore == NULL )
+            return;
 
+         X509_STORE *store = X509_STORE_new();
+         PCCERT_CONTEXT pContext = NULL;
+         while( (pContext = CertEnumCertificatesInStore( hStore, pContext )) != NULL )
+         {
+            X509 *x509 = d2i_X509( NULL, (const unsigned char **)&pContext->pbCertEncoded,
+                                   pContext->cbCertEncoded);
+            if( x509 != NULL )
+            {
+               X509_STORE_add_cert( store, x509 );
+               X509_free( x509 );
+            }
+         }
+
+         CertFreeCertificateContext( pContext );
+         CertCloseStore( hStore, 0 );
+
+         SSL_CTX_set_cert_store( ctx.native_handle(), store );
+      }
+#endif
       struct asio_with_stub_log : public websocketpp::config::asio {
 
           typedef asio_with_stub_log type;
@@ -545,7 +575,13 @@ namespace fc { namespace http {
                   return;
                ctx->set_verify_mode( boost::asio::ssl::verify_peer );
                if( ca_filename == "_default" )
+               {
+#if WIN32
+                  add_windows_root_certs( *ctx );
+#else
                   ctx->set_default_verify_paths();
+#endif
+               }
                else
                   ctx->load_verify_file( ca_filename );
                ctx->set_verify_depth(10);

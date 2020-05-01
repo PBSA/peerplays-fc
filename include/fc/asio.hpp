@@ -102,7 +102,7 @@ namespace asio {
      */
     template<typename AsyncReadStream, typename MutableBufferSequence>
     size_t read( AsyncReadStream& s, const MutableBufferSequence& buf ) {
-        promise<size_t>::ptr p(new promise<size_t>("fc::asio::read"));
+        promise<size_t>::ptr p = promise<size_t>::create("fc::asio::read");
         boost::asio::async_read( s, buf, detail::read_write_handler(p) );
         return p->wait();
     }
@@ -249,7 +249,6 @@ namespace asio {
           */
         template<typename SocketType, typename AcceptorType>
         void accept( AcceptorType& acc, SocketType& sock ) {
-            //promise<boost::system::error_code>::ptr p( new promise<boost::system::error_code>("fc::asio::tcp::accept") );
             promise<void>::ptr p = promise<void>::create("fc::asio::tcp::accept");
             acc.async_accept( sock, boost::bind( fc::asio::detail::error_handler, p, _1 ) );
             p->wait();

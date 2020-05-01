@@ -1,12 +1,14 @@
 #include <fc/thread/thread.hpp>
+#include <fc/stacktrace.hpp>
 #include <fc/time.hpp>
 #include <boost/thread.hpp>
 #include "context.hpp"
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread.hpp>
 #include <boost/atomic.hpp>
+
+#include <sstream>
 #include <vector>
-//#include <fc/logger.hpp>
 
 namespace fc {
     struct sleep_priority_less {
@@ -390,7 +392,14 @@ namespace fc {
               /* NB: At least on Win64, this only catches a yield while in the body of 
                * a catch block; it fails to catch a yield while unwinding the stack, which 
                * is probably just as likely to cause crashes */
-              assert(std::current_exception() == std::exception_ptr());
+              if( std::current_exception() != std::exception_ptr() )
+              {
+                 std::stringstream stacktrace;
+                 print_stacktrace( stacktrace );
+                 elog( "Thread ${name} yielded in exception handler!\n${trace}",
+                       ("name",thread::current().name())("trace",stacktrace.str()) );
+                 assert( std::current_exception() == std::exception_ptr() );
+              }
 
               check_for_timeouts();
               if( !current ) 
@@ -424,12 +433,8 @@ namespace fc {
                 auto p = context_pair{nullptr, prev};
                 auto t = bc::jump_fcontext( next->my_context, &p );
                 static_cast<context_pair*>(t.data)->second->my_context = t.fctx;
-#elif BOOST_VERSION >= 105600
-                bc::jump_fcontext( &prev->my_context, next->my_context, 0 );
-#elif BOOST_VERSION >= 105300
-                bc::jump_fcontext( prev->my_context, next->my_context, 0 );
 #else
-                bc::jump_fcontext( &prev->my_context, &next->my_context, 0 );
+                bc::jump_fcontext( &prev->my_context, next->my_context, 0 );
 #endif
                 BOOST_ASSERT( current );
                 BOOST_ASSERT( current == prev );
@@ -470,12 +475,8 @@ namespace fc {
                 auto p = context_pair{this, prev};
                 auto t = bc::jump_fcontext( next->my_context, &p );
                 static_cast<context_pair*>(t.data)->second->my_context = t.fctx;
-#elif BOOST_VERSION >= 105600
-                bc::jump_fcontext( &prev->my_context, next->my_context, (intptr_t)this );
-#elif BOOST_VERSION >= 105300
-                bc::jump_fcontext( prev->my_context, next->my_context, (intptr_t)this );
 #else
-                bc::jump_fcontext( &prev->my_context, &next->my_context, (intptr_t)this );
+                bc::jump_fcontext( &prev->my_context, next->my_context, (intptr_t)this );
 #endif
                 BOOST_ASSERT( current );
                 BOOST_ASSERT( current == prev );

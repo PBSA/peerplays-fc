@@ -18,11 +18,15 @@ function(check_cxx_atomics varname)
   if (CMAKE_C_FLAGS MATCHES -fsanitize-coverage OR CMAKE_CXX_FLAGS MATCHES -fsanitize-coverage)
     set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -fno-sanitize-coverage=edge,trace-cmp,indirect-calls,8bit-counters")
   endif()
+
+  set(OLD_CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES})
+  set(CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIRS})
+
   check_cxx_source_compiles("
 #include <cstdint>
 #include <boost/lockfree/queue.hpp>
 
-boost::lockfree::queue<uint32_t*> q;
+boost::lockfree::queue<uint32_t*,boost::lockfree::capacity<5>> q;
 int main(int, char**) {
   uint32_t* a;
   uint32_t* b;
@@ -31,6 +35,7 @@ int main(int, char**) {
 }
 " ${varname})
   set(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
+  set(CMAKE_REQUIRED_INCLUDES ${OLD_CMAKE_REQUIRED_INCLUDES})
 endfunction(check_cxx_atomics)
 
 # Perform the check for 64bit atomics without libatomic.

@@ -79,13 +79,13 @@ static void run_test( const std::string& key, const std::string& data, const std
 {
 
     std::array<char,N> key_arr;
-    BOOST_CHECK_EQUAL( fc::from_hex( key, key_arr.begin(), key_arr.size() ), N );
+    BOOST_CHECK_EQUAL( fc::from_hex( key, key_arr.data(), key_arr.size() ), N );
     std::array<char,M> data_arr;
-    BOOST_CHECK_EQUAL( fc::from_hex( data, data_arr.begin(), data_arr.size() ), M );
+    BOOST_CHECK_EQUAL( fc::from_hex( data, data_arr.data(), data_arr.size() ), M );
 
-    BOOST_CHECK_EQUAL( mac_224.digest( key_arr.begin(), N, data_arr.begin(), M ).str(), expect_224 );
-    BOOST_CHECK_EQUAL( mac_256.digest( key_arr.begin(), N, data_arr.begin(), M ).str(), expect_256 );
-    BOOST_CHECK_EQUAL( mac_512.digest( key_arr.begin(), N, data_arr.begin(), M ).str(), expect_512 );
+    BOOST_CHECK_EQUAL( mac_224.digest( key_arr.data(), N, data_arr.data(), M ).str(), expect_224 );
+    BOOST_CHECK_EQUAL( mac_256.digest( key_arr.data(), N, data_arr.data(), M ).str(), expect_256 );
+    BOOST_CHECK_EQUAL( mac_512.digest( key_arr.data(), N, data_arr.data(), M ).str(), expect_512 );
 }
 
 BOOST_AUTO_TEST_CASE(hmac_test_1)

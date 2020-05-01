@@ -44,13 +44,18 @@ namespace fc {
       }
 
       template<typename R, typename Arg0, typename ... Args>
-      R call_generic( const std::function<R(Arg0,Args...)>& f, variants::const_iterator a0, variants::const_iterator e, uint32_t max_depth )
+      R call_generic( const std::function<R(Arg0,Args...)>& f, variants::const_iterator a0,
+                      variants::const_iterator e, uint32_t max_depth )
       {
          bool optional_args = all_optionals<std::decay_t<Arg0>, std::decay_t<Args>...>::value;
          FC_ASSERT( a0 != e || optional_args );
          FC_ASSERT( max_depth > 0, "Recursion depth exceeded!" );
-         auto arg = (a0 == e)? std::decay_t<Arg0>() : a0->as<std::decay_t<Arg0>>(max_depth - 1);
-         return call_generic<R,Args...>( bind_first_arg<R,Arg0,Args...>( f, arg ), a0+1, e, max_depth - 1 );
+         if (a0==e)
+            return call_generic<R,Args...>( bind_first_arg<R,Arg0,Args...>( f, std::decay_t<Arg0>() ), a0,
+                                            e, max_depth - 1 );
+         auto arg = a0->as<std::decay_t<Arg0>>(max_depth - 1);
+         return call_generic<R,Args...>( bind_first_arg<R,Arg0,Args...>( f, std::move(arg) ), a0+1, e,
+                                         max_depth - 1 );
       }
 
       template<typename R, typename ... Args>
@@ -180,13 +185,18 @@ namespace fc {
          }
 
          template<typename R, typename Arg0, typename ... Args>
-         R call_generic( const std::function<R(Arg0,Args...)>& f, variants::const_iterator a0, variants::const_iterator e, uint32_t max_depth )
+         R call_generic( const std::function<R(Arg0,Args...)>& f, variants::const_iterator a0,
+                         variants::const_iterator e, uint32_t max_depth )
          {
             bool optional_args = detail::all_optionals<std::decay_t<Arg0>, std::decay_t<Args>...>::value;
             FC_ASSERT( a0 != e || optional_args, "too few arguments passed to method" );
             FC_ASSERT( max_depth > 0, "Recursion depth exceeded!" );
-            auto arg = (a0 == e)? std::decay_t<Arg0>() : a0->as<std::decay_t<Arg0>>(max_depth - 1);
-            return  call_generic<R,Args...>( this->bind_first_arg<R,Arg0,Args...>( f, arg ), a0+1, e, max_depth - 1 );
+            if (a0==e)
+               return call_generic<R,Args...>( this->bind_first_arg<R,Arg0,Args...>( f, std::decay_t<Arg0>() ), a0,
+                                               e, max_depth - 1 );
+            auto arg = a0->as<std::decay_t<Arg0>>(max_depth - 1);
+            return call_generic<R,Args...>( this->bind_first_arg<R,Arg0,Args...>( f, std::move(arg) ), a0+1, e,
+                                            max_depth - 1 );
          }
 
          struct api_visitor

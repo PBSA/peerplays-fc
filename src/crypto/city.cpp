@@ -37,9 +37,10 @@
 #include <boost/endian/buffers.hpp>
 
 #if defined(__SSE4_2__) && defined(__x86_64__)
-#include <nmmintrin.h>
+  #include <nmmintrin.h>
+  #define _mm_crc32_u64_impl _mm_crc32_u64
 #else
-uint64_t _mm_crc32_u64(uint64_t a, uint64_t b );
+  uint64_t _mm_crc32_u64_impl(uint64_t a, uint64_t b );
 #endif
 
 namespace fc {
@@ -556,9 +557,9 @@ static void CityHashCrc256Long(const char *s, size_t len,
     g += e;                                     \
     e += z;                                     \
     g += x;                                     \
-    z = _mm_crc32_u64(z, b + g);                \
-    y = _mm_crc32_u64(y, e + h);                \
-    x = _mm_crc32_u64(x, f + a);                \
+    z = _mm_crc32_u64_impl(z, b + g);                \
+    y = _mm_crc32_u64_impl(y, e + h);                \
+    x = _mm_crc32_u64_impl(x, f + a);                \
     e = Rotate(e, r);                           \
     c += e;                                     \
     s += 40

@@ -32,6 +32,7 @@ target_link_libraries( ws_test_client fc )
 add_executable( all_tests all_tests.cpp
                           compress/compress.cpp
                           crypto/aes_test.cpp
+                          crypto/array_initialization_test.cpp
                           crypto/base_n_tests.cpp
                           crypto/bigint_test.cpp
                           crypto/blind.cpp
@@ -47,6 +48,7 @@ add_executable( all_tests all_tests.cpp
                           thread/thread_tests.cpp
                           thread/parallel_tests.cpp
                           bloom_test.cpp
+                          reflection_tests.cpp
                           serialization_test.cpp
                           stacktrace_test.cpp
                           time_test.cpp

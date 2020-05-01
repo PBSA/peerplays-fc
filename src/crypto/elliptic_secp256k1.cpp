@@ -14,8 +14,6 @@
 
 #if _WIN32
 # include <malloc.h>
-#else
-# include <alloca.h>
 #endif
 
 #include "_elliptic_impl_priv.hpp"
@@ -53,7 +51,7 @@ namespace fc { namespace ecc {
                 public_key_data _key;
         };
 
-        typedef std::array<char,37> chr37;
+        typedef zero_initialized_array<unsigned char,37> chr37;
         chr37 _derive_message( const public_key_data& key, int i );
         fc::sha256 _left( const fc::sha512& v );
         fc::sha256 _right( const fc::sha512& v );
@@ -70,8 +68,9 @@ namespace fc { namespace ecc {
       FC_ASSERT( my->_key != empty_priv );
       FC_ASSERT( other.my->_key != empty_pub );
       public_key_data pub(other.my->_key);
-      FC_ASSERT( secp256k1_ec_pubkey_tweak_mul( detail::_get_context(), pub.begin(), pub.size(), (unsigned char*) my->_key.data() ) );
-      return fc::sha512::hash( (char*) pub.begin() + 1, pub.size() - 1 );
+      FC_ASSERT( secp256k1_ec_pubkey_tweak_mul( detail::_get_context(), pub.data(), pub.size(),
+                                                (unsigned char*) my->_key.data() ) );
+      return fc::sha512::hash( (char*) pub.data() + 1, pub.size() - 1 );
     }
 
 
@@ -104,8 +103,9 @@ namespace fc { namespace ecc {
     {
         FC_ASSERT( my->_key != empty_pub );
         public_key_data new_key;
-        memcpy( new_key.begin(), my->_key.begin(), new_key.size() );
-        FC_ASSERT( secp256k1_ec_pubkey_tweak_add( detail::_get_context(), new_key.begin(), new_key.size(), (unsigned char*) digest.data() ) );
+        memcpy( new_key.data(), my->_key.data(), new_key.size() );
+        FC_ASSERT( secp256k1_ec_pubkey_tweak_add( detail::_get_context(), new_key.data(), new_key.size(),
+                                                  (unsigned char*) digest.data() ) );
         return public_key( new_key );
     }
 
@@ -126,8 +126,8 @@ namespace fc { namespace ecc {
         FC_ASSERT( my->_key != empty_pub );
         public_key_point_data dat;
         unsigned int pk_len = my->_key.size();
-        memcpy( dat.begin(), my->_key.begin(), pk_len );
-        FC_ASSERT( secp256k1_ec_pubkey_decompress( detail::_get_context(), dat.begin(), (int*) &pk_len ) );
+        memcpy( dat.data(), my->_key.data(), pk_len );
+        FC_ASSERT( secp256k1_ec_pubkey_decompress( detail::_get_context(), dat.data(), (int*) &pk_len ) );
         FC_ASSERT( pk_len == dat.size() );
         return dat;
     }
@@ -142,7 +142,7 @@ namespace fc { namespace ecc {
             key = o2i_ECPublicKey( &key, &front, sizeof(dat) );
             FC_ASSERT( key );
             EC_KEY_set_conv_form( key, POINT_CONVERSION_COMPRESSED );
-            unsigned char* buffer = my->_key.begin();
+            unsigned char* buffer = my->_key.data();
             i2o_ECPublicKey( key, &buffer ); // FIXME: questionable memory handling
             EC_KEY_free( key );
         }
@@ -165,7 +165,9 @@ namespace fc { namespace ecc {
         }
 
         unsigned int pk_len;
-        FC_ASSERT( secp256k1_ecdsa_recover_compact( detail::_get_context(), (unsigned char*) digest.data(), c.begin() + 1, my->_key.begin(), (int*) &pk_len, 1, (*c.begin() - 27) & 3 ) );
+        FC_ASSERT( secp256k1_ecdsa_recover_compact( detail::_get_context(), (unsigned char*) digest.data(),
+                                                    c.data() + 1, my->_key.data(), (int*) &pk_len, 1,
+                                                    (*c.data() - 27) & 3 ) );
         FC_ASSERT( pk_len == my->_key.size() );
     }
 
@@ -178,10 +180,11 @@ namespace fc { namespace ecc {
         hmac_sha512 mac;
         public_key_data key = serialize();
         const detail::chr37 data = detail::_derive_message( key, i );
-        fc::sha512 l = mac.digest( c.data(), c.data_size(), data.begin(), data.size() );
+        fc::sha512 l = mac.digest( c.data(), c.data_size(), (const char*) data.data(), data.size() );
         fc::sha256 left = detail::_left(l);
         FC_ASSERT( left < detail::get_curve_order() );
-        FC_ASSERT( secp256k1_ec_pubkey_tweak_add( detail::_get_context(), key.begin(), key.size(), (unsigned char*) left.data() ) > 0 );
+        FC_ASSERT( secp256k1_ec_pubkey_tweak_add( detail::_get_context(), key.data(), key.size(),
+                                                  (unsigned char*) left.data() ) > 0 );
         // FIXME: check validity - if left + key == infinity then invalid
         extended_public_key result( key, detail::_right(l), i, fingerprint(), depth + 1 );
         return result;
