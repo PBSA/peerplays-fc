@@ -84,23 +84,20 @@ namespace fc { namespace http {
               typedef type::elog_type elog_type;
               typedef type::request_type request_type;
               typedef type::response_type response_type;
-              typedef websocketpp::transport::asio::basic_socket::endpoint
-                  socket_type;
+              typedef websocketpp::transport::asio::basic_socket::endpoint socket_type;
           };
 
-          typedef websocketpp::transport::asio::endpoint<transport_config>
-              transport_type;
+          typedef websocketpp::transport::asio::endpoint<transport_config> transport_type;
 
-          static const long timeout_open_handshake = 0;
-
-       // permessage_compress extension
-       struct permessage_deflate_config {};
+          // permessage_compress extension
+          struct permessage_deflate_config {};
 #ifdef HAS_ZLIB
-       typedef websocketpp::extensions::permessage_deflate::enabled <permessage_deflate_config> permessage_deflate_type;
+          typedef websocketpp::extensions::permessage_deflate::enabled <permessage_deflate_config>
+                permessage_deflate_type;
 #else
-       typedef websocketpp::extensions::permessage_deflate::disabled <permessage_deflate_config> permessage_deflate_type;
+          typedef websocketpp::extensions::permessage_deflate::disabled <permessage_deflate_config>
+                permessage_deflate_type;
 #endif
-
       };
       struct asio_tls_with_stub_log : public websocketpp::config::asio_tls {
 
@@ -130,10 +127,17 @@ namespace fc { namespace http {
               typedef websocketpp::transport::asio::tls_socket::endpoint socket_type;
           };
 
-          typedef websocketpp::transport::asio::endpoint<transport_config>
-              transport_type;
+          typedef websocketpp::transport::asio::endpoint<transport_config> transport_type;
 
-          static const long timeout_open_handshake = 0;
+          // permessage_compress extension
+          struct permessage_deflate_config {};
+#ifdef HAS_ZLIB
+          typedef websocketpp::extensions::permessage_deflate::enabled <permessage_deflate_config>
+                permessage_deflate_type;
+#else
+          typedef websocketpp::extensions::permessage_deflate::disabled <permessage_deflate_config>
+                permessage_deflate_type;
+#endif
       };
       struct asio_tls_stub_log : public websocketpp::config::asio_tls {
          typedef asio_tls_stub_log type;
@@ -154,21 +158,26 @@ namespace fc { namespace http {
          typedef base::rng_type rng_type;
 
          struct transport_config : public base::transport_config {
-         typedef type::concurrency_type concurrency_type;
-         typedef type::alog_type alog_type;
-         typedef type::elog_type elog_type;
-         typedef type::request_type request_type;
-         typedef type::response_type response_type;
-         typedef websocketpp::transport::asio::tls_socket::endpoint socket_type;
+            typedef type::concurrency_type concurrency_type;
+            typedef type::alog_type alog_type;
+            typedef type::elog_type elog_type;
+            typedef type::request_type request_type;
+            typedef type::response_type response_type;
+            typedef websocketpp::transport::asio::tls_socket::endpoint socket_type;
          };
 
-         typedef websocketpp::transport::asio::endpoint<transport_config>
-         transport_type;
-      };
+         typedef websocketpp::transport::asio::endpoint<transport_config> transport_type;
 
-      using websocketpp::connection_hdl;
-      typedef websocketpp::server<asio_with_stub_log>  websocket_server_type;
-      typedef websocketpp::server<asio_tls_stub_log>   websocket_tls_server_type;
+         // permessage_compress extension
+         struct permessage_deflate_config {};
+#ifdef HAS_ZLIB
+         typedef websocketpp::extensions::permessage_deflate::enabled <permessage_deflate_config>
+               permessage_deflate_type;
+#else
+         typedef websocketpp::extensions::permessage_deflate::disabled <permessage_deflate_config>
+               permessage_deflate_type;
+#endif
+      };
 
       template<typename T>
       class websocket_connection_impl : public websocket_connection
@@ -227,10 +236,13 @@ namespace fc { namespace http {
 
       typedef websocketpp::lib::shared_ptr<boost::asio::ssl::context> context_ptr;
 
-      class websocket_server_impl
+      using websocketpp::connection_hdl;
+
+      template<typename T>
+      class generic_websocket_server_impl
       {
          public:
-            websocket_server_impl( const std::string& forward_header_key )
+            generic_websocket_server_impl( const std::string& forward_header_key )
                :_server_thread( fc::thread::current() ), _forward_header_key(forward_header_key)
             {
                _server.clear_access_channels( websocketpp::log::alevel::all );
@@ -239,12 +251,13 @@ namespace fc { namespace http {
                _server.set_open_handler( [&]( connection_hdl hdl ){
                   _server_thread.async( [this, hdl](){
                         auto new_con = std::make_shared<possibly_proxied_websocket_connection<
-                              websocket_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl),
-                                                                       _forward_header_key );
+                              typename websocketpp::server<T>::connection_ptr>>( _server.get_con_from_hdl(hdl),
+                                                                                 _forward_header_key );
                         _on_connection( _connections[hdl] = new_con );
                      }).wait();
                });
-               _server.set_message_handler( [&]( connection_hdl hdl, websocket_server_type::message_ptr msg ){
+               _server.set_message_handler( [&]( connection_hdl hdl,
+                              typename websocketpp::server<T>::message_ptr msg ){
                     _server_thread.async( [&](){
                        auto current_con = _connections.find(hdl);
                        assert( current_con != _connections.end() );
@@ -263,16 +276,17 @@ namespace fc { namespace http {
                     }).wait();
                });
 
-               _server.set_socket_init_handler( [&](websocketpp::connection_hdl hdl, boost::asio::ip::tcp::socket& s ) {
-                      boost::asio::ip::tcp::no_delay option(true);
-                      s.lowest_layer().set_option(option);
+               _server.set_socket_init_handler( [&]( websocketpp::connection_hdl hdl,
+                              typename websocketpp::server<T>::connection_type::socket_type& s ) {
+                     boost::asio::ip::tcp::no_delay option(true);
+                     s.lowest_layer().set_option(option);
                } );
 
                _server.set_http_handler( [&]( connection_hdl hdl ){
                     _server_thread.async( [&](){
                        auto con = _server.get_con_from_hdl(hdl);
                        auto current_con = std::make_shared<possibly_proxied_websocket_connection<
-                             websocket_server_type::connection_ptr>>( con, _forward_header_key );
+                             typename websocketpp::server<T>::connection_ptr>>( con, _forward_header_key );
                        _on_connection( current_con );
 
                        con->defer_http_response();
@@ -330,7 +344,8 @@ namespace fc { namespace http {
                     }
                });
             }
-            ~websocket_server_impl()
+
+            virtual ~generic_websocket_server_impl()
             {
                if( _server.is_listening() )
                   _server.stop_listening();
@@ -345,33 +360,47 @@ namespace fc { namespace http {
                if( _closed ) _closed->wait();
             }
 
-            typedef std::map<connection_hdl, websocket_connection_ptr,std::owner_less<connection_hdl> > con_map;
+            typedef std::map<connection_hdl, websocket_connection_ptr, std::owner_less<connection_hdl> > con_map;
 
             con_map                  _connections;
             fc::thread&              _server_thread;
-            websocket_server_type    _server;
+            websocketpp::server<T>   _server;
             on_connection_handler    _on_connection;
             fc::promise<void>::ptr   _closed;
             uint32_t                 _pending_messages = 0;
             std::string              _forward_header_key; // A header like "X-Forwarded-For" (XFF), with data IP:port
       };
 
-      class websocket_tls_server_impl
+      class websocket_server_impl : public generic_websocket_server_impl<asio_with_stub_log>
+      {
+         public:
+            websocket_server_impl( const std::string& forward_header_key )
+            : generic_websocket_server_impl( forward_header_key )
+            {}
+
+            virtual ~websocket_server_impl() {}
+      };
+
+      class websocket_tls_server_impl : public generic_websocket_server_impl<asio_tls_stub_log>
       {
          public:
             websocket_tls_server_impl( const string& server_pem, const string& ssl_password,
                                        const std::string& forward_header_key )
-               :_server_thread( fc::thread::current() ), _forward_header_key(forward_header_key)
+               : generic_websocket_server_impl( forward_header_key )
             {
                {
                   _server.set_tls_init_handler( [=]( websocketpp::connection_hdl hdl ) -> context_ptr {
-                        context_ptr ctx = websocketpp::lib::make_shared<boost::asio::ssl::context>(boost::asio::ssl::context::tlsv1);
+                        context_ptr ctx = websocketpp::lib::make_shared<boost::asio::ssl::context>(
+                                                boost::asio::ssl::context::tlsv1 );
                         try {
-                           ctx->set_options(boost::asio::ssl::context::default_workarounds |
-                           boost::asio::ssl::context::no_sslv2 |
-                           boost::asio::ssl::context::no_sslv3 |
-                           boost::asio::ssl::context::single_dh_use);
-                           ctx->set_password_callback([=](std::size_t max_length, boost::asio::ssl::context::password_purpose){ return ssl_password;});
+                           ctx->set_options( boost::asio::ssl::context::default_workarounds |
+                                             boost::asio::ssl::context::no_sslv2 |
+                                             boost::asio::ssl::context::no_sslv3 |
+                                             boost::asio::ssl::context::single_dh_use );
+                           ctx->set_password_callback(
+                                 [=](std::size_t max_length, boost::asio::ssl::context::password_purpose){
+                                       return ssl_password;
+                           });
                            ctx->use_certificate_chain_file(server_pem);
                            ctx->use_private_key_file(server_pem, boost::asio::ssl::context::pem);
                         } catch (std::exception& e) {
@@ -380,97 +409,10 @@ namespace fc { namespace http {
                         return ctx;
                   });
                }
-
-               _server.clear_access_channels( websocketpp::log::alevel::all );
-               _server.init_asio(&fc::asio::default_io_service());
-               _server.set_reuse_addr(true);
-               _server.set_open_handler( [&]( connection_hdl hdl ){
-                    _server_thread.async( [&](){
-                       auto new_con = std::make_shared<possibly_proxied_websocket_connection<
-                             websocket_tls_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl),
-                                                                          _forward_header_key );
-                       _on_connection( _connections[hdl] = new_con );
-                    }).wait();
-               });
-               _server.set_message_handler( [&]( connection_hdl hdl, websocket_server_type::message_ptr msg ){
-                    _server_thread.async( [&](){
-                       auto current_con = _connections.find(hdl);
-                       assert( current_con != _connections.end() );
-                       auto received = msg->get_payload();
-                       std::shared_ptr<websocket_connection> con = current_con->second;
-                       wlog( "[IN] ${remote_endpoint} ${msg}",
-                             ("remote_endpoint",con->get_remote_endpoint_string()) ("msg",received) );
-                       fc::async([con,received](){ con->on_message( received ); });
-                    }).wait();
-               });
-
-               _server.set_http_handler( [&]( connection_hdl hdl ){
-                    _server_thread.async( [&](){
-
-                       auto con = _server.get_con_from_hdl(hdl);
-                       auto current_con = std::make_shared<possibly_proxied_websocket_connection<
-                             websocket_tls_server_type::connection_ptr>>( con, _forward_header_key );
-                       try{
-                          _on_connection( current_con );
-
-                          std::string remote_endpoint = current_con->get_remote_endpoint_string();
-                          std::string request_body = con->get_request_body();
-                          wlog( "[HTTP-IN] ${remote_endpoint} ${msg}",
-                                ("remote_endpoint",remote_endpoint) ("msg",request_body) );
-                          auto response = current_con->on_http( request_body );
-                          ilog( "[HTTP-OUT] ${remote_endpoint} ${status} ${msg}",
-                                ("remote_endpoint",remote_endpoint)
-                                ("status",response.status)
-                                ("msg",response.body_as_string) );
-                          con->set_body( std::move( response.body_as_string ) );
-                          con->set_status( websocketpp::http::status_code::value( response.status ) );
-                       } catch ( const fc::exception& e )
-                       {
-                         edump((e.to_detail_string()));
-                       }
-                       current_con->closed();
-
-                    }).wait();
-               });
-
-               _server.set_close_handler( [&]( connection_hdl hdl ){
-                    _server_thread.async( [&](){
-                       _connections[hdl]->closed();
-                       _connections.erase( hdl );
-                    }).wait();
-               });
-
-               _server.set_fail_handler( [&]( connection_hdl hdl ){
-                    if( _server.is_listening() )
-                    {
-                       _server_thread.async( [&](){
-                          if( _connections.find(hdl) != _connections.end() )
-                          {
-                             _connections[hdl]->closed();
-                             _connections.erase( hdl );
-                          }
-                       }).wait();
-                    }
-               });
             }
 
-            ~websocket_tls_server_impl()
-            {
-               if( _server.is_listening() )
-                  _server.stop_listening();
-               auto cpy_con = _connections;
-               for( auto item : cpy_con )
-                  _server.close( item.first, 0, "server exit" );
-            }
+            virtual ~websocket_tls_server_impl() {}
 
-            typedef std::map<connection_hdl, websocket_connection_ptr,std::owner_less<connection_hdl> > con_map;
-
-            con_map                     _connections;
-            fc::thread&                 _server_thread;
-            websocket_tls_server_type   _server;
-            on_connection_handler       _on_connection;
-            fc::promise<void>::ptr      _closed;
-            std::string              _forward_header_key; // A header like "X-Forwarded-For" (XFF), with data IP:port
       };
 
 
@@ -526,6 +468,7 @@ namespace fc { namespace http {
 
                 _client.init_asio( &fc::asio::default_io_service() );
             }
+
             virtual ~generic_websocket_client_impl()
             {
                if( _connection )
