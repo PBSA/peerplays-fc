@@ -69,6 +69,8 @@ BOOST_AUTO_TEST_CASE(websocket_test_with_proxy_header)
     // set up logging
     fc::appender::ptr ca(new fc::console_appender);
     fc::logger l = fc::logger::get("rpc");
+    auto old_log_level = l.get_log_level();
+    l.set_log_level( fc::log_level::info );
     l.add_appender( ca );
     
     fc::http::websocket_client client;
@@ -119,7 +121,9 @@ BOOST_AUTO_TEST_CASE(websocket_test_with_proxy_header)
 
     BOOST_CHECK_THROW(c_conn->send_message( "again" ), fc::assert_exception);
     BOOST_CHECK_THROW(client.connect( "ws://localhost:" + fc::to_string(port) ), fc::exception);
+
     l.remove_appender(ca);
+    l.set_log_level(old_log_level);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
