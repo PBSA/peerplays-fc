@@ -20,8 +20,6 @@
 #include <fc/thread/thread.hpp>
 #include <fc/asio.hpp>
 
-#include <boost/algorithm/string.hpp>
-
 #if WIN32
 #include <wincrypt.h>
 #endif
