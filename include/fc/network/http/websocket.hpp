@@ -101,7 +101,7 @@ namespace fc { namespace http {
       private:
          std::unique_ptr<detail::websocket_client_impl> my;
          std::unique_ptr<detail::websocket_tls_client_impl> smy;
-         std::vector<std::pair<std::string,std::string>> headers;
+         fc::http::headers _headers;
    };
 
 } }
