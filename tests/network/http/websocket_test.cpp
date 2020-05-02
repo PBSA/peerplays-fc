@@ -27,6 +27,11 @@ BOOST_AUTO_TEST_CASE(websocket_test)
                 c->on_message_handler([&](const std::string& s){
                     c->send_message("echo: " + s);
                 });
+                c->on_http_handler([&](const std::string& s){
+                    fc::http::reply reply;
+                    reply.body_as_string = "http-echo: " + s;
+                    return reply;
+                });
             });
 
         server.listen( 0 );
@@ -57,6 +62,18 @@ BOOST_AUTO_TEST_CASE(websocket_test)
         c_conn->send_message( "hello world" );
         fc::usleep( fc::milliseconds(100) );
         BOOST_CHECK_EQUAL("echo: hello world", echo);
+
+        // Testing on_http
+        std::string server_endpoint_string = "127.0.0.1:" + fc::to_string(port);
+        fc::ip::endpoint server_endpoint = fc::ip::endpoint::from_string( server_endpoint_string );
+        fc::http::connection c_http_conn;
+        c_http_conn.connect_to( server_endpoint );
+
+        std::string url = "http://localhost:" + fc::to_string(port);
+        fc::http::reply reply = c_http_conn.request( "POST", url, "hello world again" );
+        std::string reply_body( reply.body.begin(), reply.body.end() );
+        BOOST_CHECK_EQUAL(200, reply.status);
+        BOOST_CHECK_EQUAL("http-echo: hello world again", reply_body );
     }
 
     BOOST_CHECK_THROW(c_conn->send_message( "again" ), fc::assert_exception);
@@ -87,6 +104,11 @@ BOOST_AUTO_TEST_CASE(websocket_test_with_proxy_header)
                 c->on_message_handler([&](const std::string& s){
                     c->send_message("echo: " + s);
                 });
+                c->on_http_handler([&](const std::string& s){
+                    fc::http::reply reply;
+                    reply.body_as_string = "http-echo: " + s;
+                    return reply;
+                });
             });
 
         server.listen( 0 );
@@ -117,6 +139,20 @@ BOOST_AUTO_TEST_CASE(websocket_test_with_proxy_header)
         c_conn->send_message( "hello world" );
         fc::usleep( fc::milliseconds(100) );
         BOOST_CHECK_EQUAL("echo: hello world", echo);
+
+        // Testing on_http
+        std::string server_endpoint_string = "127.0.0.1:" + fc::to_string(port);
+        fc::ip::endpoint server_endpoint = fc::ip::endpoint::from_string( server_endpoint_string );
+        fc::http::connection c_http_conn;
+        c_http_conn.connect_to( server_endpoint );
+
+        std::string url = "http://localhost:" + fc::to_string(port);
+        fc::http::header fwd("MyProxyHeaderKey", "MyServer:8080");
+        fc::http::headers headers {fwd};
+        fc::http::reply reply = c_http_conn.request( "POST", url, "hello world again", headers );
+        std::string reply_body( reply.body.begin(), reply.body.end() );
+        BOOST_CHECK_EQUAL(200, reply.status);
+        BOOST_CHECK_EQUAL("http-echo: hello world again", reply_body );
     }
 
     BOOST_CHECK_THROW(c_conn->send_message( "again" ), fc::assert_exception);
