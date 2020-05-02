@@ -473,11 +473,6 @@ namespace fc { namespace http {
             std::string              _forward_header_key; // A header like "X-Forwarded-For" (XFF), with data IP:port
       };
 
-      typedef websocketpp::client<asio_with_stub_log> websocket_client_type;
-      typedef websocketpp::client<asio_tls_stub_log> websocket_tls_client_type;
-
-      typedef websocket_client_type::connection_ptr  websocket_client_connection_type;
-      typedef websocket_tls_client_type::connection_ptr  websocket_tls_client_connection_type;
 
       template<typename T>
       class generic_websocket_client_impl
@@ -673,7 +668,8 @@ namespace fc { namespace http {
    }
    void websocket_server::listen( const fc::ip::endpoint& ep )
    {
-       my->_server.listen( boost::asio::ip::tcp::endpoint( boost::asio::ip::address_v4(uint32_t(ep.get_address())),ep.port()) );
+       my->_server.listen( boost::asio::ip::tcp::endpoint(
+             boost::asio::ip::address_v4(uint32_t(ep.get_address())),ep.port()) );
    }
 
    uint16_t websocket_server::get_listening_port()
@@ -715,7 +711,8 @@ namespace fc { namespace http {
    }
    void websocket_tls_server::listen( const fc::ip::endpoint& ep )
    {
-      my->_server.listen( boost::asio::ip::tcp::endpoint( boost::asio::ip::address_v4(uint32_t(ep.get_address())),ep.port()) );
+      my->_server.listen( boost::asio::ip::tcp::endpoint(
+            boost::asio::ip::address_v4(uint32_t(ep.get_address())),ep.port()) );
    }
 
    void websocket_tls_server::start_accept() {
