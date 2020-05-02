@@ -715,6 +715,7 @@ namespace fc { namespace http {
        return my->_connection;
    } FC_CAPTURE_AND_RETHROW( (uri) ) }
 
+   // TODO most code in this function is same as ::connect, best refactor
    websocket_connection_ptr websocket_client::secure_connect( const std::string& uri )
    { try {
        if( uri.substr(0,3) == "ws:" )
@@ -726,6 +727,7 @@ namespace fc { namespace http {
        smy->_connected = promise<void>::create("websocket::connect");
 
        smy->_client.set_open_handler( [=]( websocketpp::connection_hdl hdl ){
+          smy->_hdl = hdl;
           auto con =  smy->_client.get_con_from_hdl(hdl);
           smy->_connection = std::make_shared<detail::websocket_connection_impl<
                                 detail::websocket_tls_client_connection_type>>( con );
@@ -734,12 +736,15 @@ namespace fc { namespace http {
        });
 
        auto con = smy->_client.get_connection( uri, ec );
+       std::for_each(headers.begin(), headers.end(), [con](std::pair<std::string, std::string> in) {
+            con->append_header(in.first, in.second);
+         });
        if( ec )
           FC_ASSERT( !ec, "error: ${e}", ("e",ec.message()) );
        smy->_client.connect(con);
        smy->_connected->wait();
        return smy->_connection;
-       } FC_CAPTURE_AND_RETHROW( (uri) ) }
+   } FC_CAPTURE_AND_RETHROW( (uri) ) }
 
    void websocket_client::close()
    {
