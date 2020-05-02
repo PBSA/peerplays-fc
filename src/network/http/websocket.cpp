@@ -253,7 +253,7 @@ namespace fc { namespace http {
                        auto payload = msg->get_payload();
                        std::shared_ptr<websocket_connection> con = current_con->second;
                        wlog( "[IN] ${remote_endpoint} ${msg}",
-                             ("remote_endpoint",con->get_remote_endpoint()) ("msg",payload) );
+                             ("remote_endpoint",con->get_remote_endpoint_string()) ("msg",payload) );
                        ++_pending_messages;
                        auto f = fc::async([this,con,payload](){
                           if( _pending_messages )
@@ -278,7 +278,7 @@ namespace fc { namespace http {
                        _on_connection( current_con );
 
                        con->defer_http_response();
-                       std::string remote_endpoint = current_con->get_remote_endpoint();
+                       std::string remote_endpoint = current_con->get_remote_endpoint_string();
                        std::string request_body = con->get_request_body();
                        wlog( "[IN] ${remote_endpoint} ${msg}",
                              ("remote_endpoint",remote_endpoint) ("msg",request_body) );
@@ -399,7 +399,7 @@ namespace fc { namespace http {
                        auto received = msg->get_payload();
                        std::shared_ptr<websocket_connection> con = current_con->second;
                        wlog( "[IN] ${remote_endpoint} ${msg}",
-                             ("remote_endpoint",con->get_remote_endpoint()) ("msg",received) );
+                             ("remote_endpoint",con->get_remote_endpoint_string()) ("msg",received) );
                        fc::async([con,received](){ con->on_message( received ); });
                     }).wait();
                });
@@ -413,7 +413,7 @@ namespace fc { namespace http {
                        try{
                           _on_connection( current_con );
 
-                          std::string remote_endpoint = current_con->get_remote_endpoint();
+                          std::string remote_endpoint = current_con->get_remote_endpoint_string();
                           std::string request_body = con->get_request_body();
                           wlog( "[IN] ${remote_endpoint} ${msg}",
                                 ("remote_endpoint",remote_endpoint) ("msg",request_body) );
@@ -476,7 +476,6 @@ namespace fc { namespace http {
 
       typedef websocket_client_type::connection_ptr  websocket_client_connection_type;
       typedef websocket_tls_client_type::connection_ptr  websocket_tls_client_connection_type;
-      using websocketpp::connection_hdl;
 
       template<typename T>
       class generic_websocket_client_impl

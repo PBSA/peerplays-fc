@@ -34,7 +34,7 @@ namespace fc { namespace http {
 
          virtual std::string get_request_header(const std::string& key) = 0;
 
-         const std::string& get_remote_endpoint()const { return _remote_endpoint; }
+         const std::string& get_remote_endpoint_string()const { return _remote_endpoint; }
 
          fc::signal<void()> closed;
       protected:
