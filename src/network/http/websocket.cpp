@@ -676,11 +676,6 @@ namespace fc { namespace http {
    }
 
 
-   websocket_tls_client::websocket_tls_client( const std::string& ca_filename ):my( new detail::websocket_tls_client_impl( ca_filename ) ) {}
-   websocket_tls_client::~websocket_tls_client(){ }
-
-
-
    websocket_client::websocket_client( const std::string& ca_filename )
          :my( new detail::websocket_client_impl() ),
           smy(new detail::websocket_tls_client_impl( ca_filename ))
@@ -763,29 +758,5 @@ namespace fc { namespace http {
    {
       headers.push_back( std::make_pair(key, value) );
    }
-
-   websocket_connection_ptr websocket_tls_client::connect( const std::string& uri )
-   { try {
-       websocketpp::lib::error_code ec;
-
-       my->_connected = promise<void>::create("websocket::connect");
-
-       my->_client.set_open_handler( [=]( websocketpp::connection_hdl hdl ){
-          auto con =  my->_client.get_con_from_hdl(hdl);
-          my->_connection = std::make_shared<detail::websocket_connection_impl<
-                               detail::websocket_tls_client_connection_type>>( con );
-          my->_closed = promise<void>::create("websocket::closed");
-          my->_connected->set_value();
-       });
-
-       auto con = my->_client.get_connection( uri, ec );
-       if( ec )
-       {
-          FC_ASSERT( !ec, "error: ${e}", ("e",ec.message()) );
-       }
-       my->_client.connect(con);
-       my->_connected->wait();
-       return my->_connection;
-   } FC_CAPTURE_AND_RETHROW( (uri) ) }
 
 } } // fc::http
