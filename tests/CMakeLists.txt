@@ -16,6 +16,12 @@ target_link_libraries( hmac_test fc )
 add_executable( ecc_test crypto/ecc_test.cpp )
 target_link_libraries( ecc_test fc )
 
+add_executable( ws_test_server ws_test_server.cpp )
+target_link_libraries( ws_test_server fc )
+
+add_executable( ws_test_client ws_test_client.cpp )
+target_link_libraries( ws_test_client fc )
+
 #add_executable( test_aes aes_test.cpp )
 #target_link_libraries( test_aes fc ${rt_library} ${pthread_library} )
 #add_executable( test_sleep sleep.cpp )

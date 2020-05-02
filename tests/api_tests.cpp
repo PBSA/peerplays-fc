@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(login_test) {
    try {
       fc::api<fc::test::calculator> calc_api( std::make_shared<fc::test::some_calculator>() );
 
-      auto server = std::make_shared<fc::http::websocket_server>();
+      auto server = std::make_shared<fc::http::websocket_server>("");
       server->on_connection([&]( const websocket_connection_ptr& c ){
                auto wsc = std::make_shared<websocket_api_connection>(c, MAX_DEPTH);
                auto login = std::make_shared<fc::test::login_api>();
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE(optionals_test) {
       BOOST_CHECK_EQUAL(oapi->bar("a", "b", "c"), "[\"a\",\"b\",\"c\"]");
       BOOST_CHECK_EQUAL(oapi->bar("a", {}, "c"), "[\"a\",null,\"c\"]");
 
-      auto server = std::make_shared<fc::http::websocket_server>();
+      auto server = std::make_shared<fc::http::websocket_server>("");
       server->on_connection([&]( const websocket_connection_ptr& c ){
                auto wsc = std::make_shared<websocket_api_connection>(c, MAX_DEPTH);
                wsc->register_api(fc::api<fc::test::optionals_api>(optionals));

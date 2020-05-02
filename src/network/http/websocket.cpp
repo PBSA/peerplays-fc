@@ -73,14 +73,6 @@ namespace fc { namespace http {
           typedef base::con_msg_manager_type con_msg_manager_type;
           typedef base::endpoint_msg_manager_type endpoint_msg_manager_type;
 
-          /// Custom Logging policies
-          /*typedef websocketpp::log::syslog<concurrency_type,
-              websocketpp::log::elevel> elog_type;
-          typedef websocketpp::log::syslog<concurrency_type,
-              websocketpp::log::alevel> alog_type;
-          */
-          //typedef base::alog_type alog_type;
-          //typedef base::elog_type elog_type;
           typedef websocketpp::log::stub elog_type;
           typedef websocketpp::log::stub alog_type;
 
@@ -124,14 +116,6 @@ namespace fc { namespace http {
           typedef base::con_msg_manager_type con_msg_manager_type;
           typedef base::endpoint_msg_manager_type endpoint_msg_manager_type;
 
-          /// Custom Logging policies
-          /*typedef websocketpp::log::syslog<concurrency_type,
-              websocketpp::log::elevel> elog_type;
-          typedef websocketpp::log::syslog<concurrency_type,
-              websocketpp::log::alevel> alog_type;
-          */
-          //typedef base::alog_type alog_type;
-          //typedef base::elog_type elog_type;
           typedef websocketpp::log::stub elog_type;
           typedef websocketpp::log::stub alog_type;
 
@@ -164,8 +148,6 @@ namespace fc { namespace http {
          typedef base::con_msg_manager_type con_msg_manager_type;
          typedef base::endpoint_msg_manager_type endpoint_msg_manager_type;
 
-         //typedef base::alog_type alog_type;
-         //typedef base::elog_type elog_type;
          typedef websocketpp::log::stub elog_type;
          typedef websocketpp::log::stub alog_type;
 
@@ -184,10 +166,6 @@ namespace fc { namespace http {
          transport_type;
       };
 
-
-
-
-
       using websocketpp::connection_hdl;
       typedef websocketpp::server<asio_with_stub_log>  websocket_server_type;
       typedef websocketpp::server<asio_tls_stub_log>   websocket_tls_server_type;
@@ -196,8 +174,9 @@ namespace fc { namespace http {
       class websocket_connection_impl : public websocket_connection
       {
          public:
-            websocket_connection_impl( T con )
-            :_ws_connection(con){
+            websocket_connection_impl( T con ) : _ws_connection(con)
+            {
+               _remote_endpoint = con->get_remote_endpoint();
             }
 
             virtual ~websocket_connection_impl()
@@ -206,8 +185,8 @@ namespace fc { namespace http {
 
             virtual void send_message( const std::string& message )override
             {
-               idump((message));
-               //std::cerr<<"send: "<<message<<"\n";
+               ilog( "[OUT] ${remote_endpoint} ${msg}",
+                     ("remote_endpoint",_remote_endpoint) ("msg",message) );
                auto ec = _ws_connection->send( message );
                FC_ASSERT( !ec, "websocket send failed: ${msg}", ("msg",ec.message() ) );
             }
@@ -224,34 +203,62 @@ namespace fc { namespace http {
             T _ws_connection;
       };
 
+      template<typename T>
+      class possibly_proxied_websocket_connection : public websocket_connection_impl<T>
+      {
+         public:
+            possibly_proxied_websocket_connection( T con, const std::string& forward_header_key )
+               : websocket_connection_impl<T>(con)
+            {
+               // By calling the parent's constructor, _remote_endpoint has been initialized.
+               // Now try to extract remote address from the header, if found, overwrite it
+               if( !forward_header_key.empty() )
+               {
+                  const std::string value = this->get_request_header( forward_header_key );
+                  if( !value.empty() )
+                     this->_remote_endpoint = value;
+               }
+            }
+
+            virtual ~possibly_proxied_websocket_connection()
+            {
+            }
+      };
+
       typedef websocketpp::lib::shared_ptr<boost::asio::ssl::context> context_ptr;
 
       class websocket_server_impl
       {
          public:
-            websocket_server_impl()
-            :_server_thread( fc::thread::current() )
+            websocket_server_impl( const std::string& forward_header_key )
+               :_server_thread( fc::thread::current() ), _forward_header_key(forward_header_key)
             {
-
                _server.clear_access_channels( websocketpp::log::alevel::all );
                _server.init_asio(&fc::asio::default_io_service());
                _server.set_reuse_addr(true);
                _server.set_open_handler( [&]( connection_hdl hdl ){
-                    _server_thread.async( [&](){
-                       auto new_con = std::make_shared<websocket_connection_impl<websocket_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
-                       _on_connection( _connections[hdl] = new_con );
-                    }).wait();
+                  _server_thread.async( [this, hdl](){
+                        auto new_con = std::make_shared<possibly_proxied_websocket_connection<
+                              websocket_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl),
+                                                                       _forward_header_key );
+                        _on_connection( _connections[hdl] = new_con );
+                     }).wait();
                });
                _server.set_message_handler( [&]( connection_hdl hdl, websocket_server_type::message_ptr msg ){
                     _server_thread.async( [&](){
                        auto current_con = _connections.find(hdl);
                        assert( current_con != _connections.end() );
-                       wdump(("server")(msg->get_payload()));
                        auto payload = msg->get_payload();
                        std::shared_ptr<websocket_connection> con = current_con->second;
+                       wlog( "[IN] ${remote_endpoint} ${msg}",
+                             ("remote_endpoint",con->get_remote_endpoint_string()) ("msg",payload) );
                        ++_pending_messages;
-                       auto f = fc::async([this,con,payload](){ if( _pending_messages ) --_pending_messages; con->on_message( payload ); });
-                       if( _pending_messages > 100 ) 
+                       auto f = fc::async([this,con,payload](){
+                          if( _pending_messages )
+                             --_pending_messages;
+                          con->on_message( payload );
+                       });
+                       if( _pending_messages > 100 )
                          f.wait();
                     }).wait();
                });
@@ -263,17 +270,23 @@ namespace fc { namespace http {
 
                _server.set_http_handler( [&]( connection_hdl hdl ){
                     _server_thread.async( [&](){
-                       auto current_con = std::make_shared<websocket_connection_impl<websocket_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
+                       auto con = _server.get_con_from_hdl(hdl);
+                       auto current_con = std::make_shared<possibly_proxied_websocket_connection<
+                             websocket_server_type::connection_ptr>>( con, _forward_header_key );
                        _on_connection( current_con );
 
-                       auto con = _server.get_con_from_hdl(hdl);
                        con->defer_http_response();
+                       std::string remote_endpoint = current_con->get_remote_endpoint_string();
                        std::string request_body = con->get_request_body();
-                       wdump(("server")(request_body));
+                       wlog( "[HTTP-IN] ${remote_endpoint} ${msg}",
+                             ("remote_endpoint",remote_endpoint) ("msg",request_body) );
 
-                       fc::async([current_con, request_body, con] {
+                       fc::async([current_con, request_body, con, remote_endpoint] {
                           fc::http::reply response = current_con->on_http(request_body);
-                          idump( (response) );
+                          ilog( "[HTTP-OUT] ${remote_endpoint} ${status} ${msg}",
+                                ("remote_endpoint",remote_endpoint)
+                                ("status",response.status)
+                                ("msg",response.body_as_string) );
                           con->set_body( std::move( response.body_as_string ) );
                           con->set_status( websocketpp::http::status_code::value(response.status) );
                           con->send_http_response();
@@ -340,15 +353,16 @@ namespace fc { namespace http {
             on_connection_handler    _on_connection;
             fc::promise<void>::ptr   _closed;
             uint32_t                 _pending_messages = 0;
+            std::string              _forward_header_key; // A header like "X-Forwarded-For" (XFF), with data IP:port
       };
 
       class websocket_tls_server_impl
       {
          public:
-            websocket_tls_server_impl( const string& server_pem, const string& ssl_password )
-            :_server_thread( fc::thread::current() )
+            websocket_tls_server_impl( const string& server_pem, const string& ssl_password,
+                                       const std::string& forward_header_key )
+               :_server_thread( fc::thread::current() ), _forward_header_key(forward_header_key)
             {
-               //if( server_pem.size() )
                {
                   _server.set_tls_init_handler( [=]( websocketpp::connection_hdl hdl ) -> context_ptr {
                         context_ptr ctx = websocketpp::lib::make_shared<boost::asio::ssl::context>(boost::asio::ssl::context::tlsv1);
@@ -372,7 +386,9 @@ namespace fc { namespace http {
                _server.set_reuse_addr(true);
                _server.set_open_handler( [&]( connection_hdl hdl ){
                     _server_thread.async( [&](){
-                       auto new_con = std::make_shared<websocket_connection_impl<websocket_tls_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
+                       auto new_con = std::make_shared<possibly_proxied_websocket_connection<
+                             websocket_tls_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl),
+                                                                          _forward_header_key );
                        _on_connection( _connections[hdl] = new_con );
                     }).wait();
                });
@@ -382,6 +398,8 @@ namespace fc { namespace http {
                        assert( current_con != _connections.end() );
                        auto received = msg->get_payload();
                        std::shared_ptr<websocket_connection> con = current_con->second;
+                       wlog( "[IN] ${remote_endpoint} ${msg}",
+                             ("remote_endpoint",con->get_remote_endpoint_string()) ("msg",received) );
                        fc::async([con,received](){ con->on_message( received ); });
                     }).wait();
                });
@@ -389,14 +407,21 @@ namespace fc { namespace http {
                _server.set_http_handler( [&]( connection_hdl hdl ){
                     _server_thread.async( [&](){
 
-                       auto current_con = std::make_shared<websocket_connection_impl<websocket_tls_server_type::connection_ptr>>( _server.get_con_from_hdl(hdl) );
+                       auto con = _server.get_con_from_hdl(hdl);
+                       auto current_con = std::make_shared<possibly_proxied_websocket_connection<
+                             websocket_tls_server_type::connection_ptr>>( con, _forward_header_key );
                        try{
                           _on_connection( current_con );
 
-                          auto con = _server.get_con_from_hdl(hdl);
-                          wdump(("server")(con->get_request_body()));
-                          auto response = current_con->on_http( con->get_request_body() );
-                          idump((response));
+                          std::string remote_endpoint = current_con->get_remote_endpoint_string();
+                          std::string request_body = con->get_request_body();
+                          wlog( "[HTTP-IN] ${remote_endpoint} ${msg}",
+                                ("remote_endpoint",remote_endpoint) ("msg",request_body) );
+                          auto response = current_con->on_http( request_body );
+                          ilog( "[HTTP-OUT] ${remote_endpoint} ${status} ${msg}",
+                                ("remote_endpoint",remote_endpoint)
+                                ("status",response.status)
+                                ("msg",response.body_as_string) );
                           con->set_body( std::move( response.body_as_string ) );
                           con->set_status( websocketpp::http::status_code::value( response.status ) );
                        } catch ( const fc::exception& e )
@@ -428,6 +453,7 @@ namespace fc { namespace http {
                     }
                });
             }
+
             ~websocket_tls_server_impl()
             {
                if( _server.is_listening() )
@@ -444,26 +470,14 @@ namespace fc { namespace http {
             websocket_tls_server_type   _server;
             on_connection_handler       _on_connection;
             fc::promise<void>::ptr      _closed;
+            std::string              _forward_header_key; // A header like "X-Forwarded-For" (XFF), with data IP:port
       };
-
-
-
-
-
-
-
-
-
-
-
-
 
       typedef websocketpp::client<asio_with_stub_log> websocket_client_type;
       typedef websocketpp::client<asio_tls_stub_log> websocket_tls_client_type;
 
       typedef websocket_client_type::connection_ptr  websocket_client_connection_type;
       typedef websocket_tls_client_type::connection_ptr  websocket_tls_client_connection_type;
-      using websocketpp::connection_hdl;
 
       template<typename T>
       class generic_websocket_client_impl
@@ -477,7 +491,6 @@ namespace fc { namespace http {
                                                   typename websocketpp::client<T>::message_ptr msg ){
                    _client_thread.async( [&](){
                         wdump((msg->get_payload()));
-                        //std::cerr<<"recv: "<<msg->get_payload()<<"\n";
                         auto received = msg->get_payload();
                         fc::async( [=](){
                            if( _connection )
@@ -598,7 +611,8 @@ namespace fc { namespace http {
 
    } // namespace detail
 
-   websocket_server::websocket_server():my( new detail::websocket_server_impl() ) {}
+   websocket_server::websocket_server( const std::string& forward_header_key )
+         :my( new detail::websocket_server_impl( forward_header_key ) ) {}
    websocket_server::~websocket_server(){}
 
    void websocket_server::on_connection( const on_connection_handler& handler )
@@ -636,9 +650,11 @@ namespace fc { namespace http {
            my->_server.close(connection.first, websocketpp::close::status::normal, "Goodbye");
    }
 
+   websocket_tls_server::websocket_tls_server( const string& server_pem, const string& ssl_password,
+                                               const std::string& forward_header_key )
+         :my( new detail::websocket_tls_server_impl(server_pem, ssl_password, forward_header_key) )
+   {}
 
-
-   websocket_tls_server::websocket_tls_server( const string& server_pem, const string& ssl_password ):my( new detail::websocket_tls_server_impl(server_pem, ssl_password) ) {}
    websocket_tls_server::~websocket_tls_server(){}
 
    void websocket_tls_server::on_connection( const on_connection_handler& handler )
@@ -660,12 +676,11 @@ namespace fc { namespace http {
    }
 
 
-   websocket_tls_client::websocket_tls_client( const std::string& ca_filename ):my( new detail::websocket_tls_client_impl( ca_filename ) ) {}
-   websocket_tls_client::~websocket_tls_client(){ }
+   websocket_client::websocket_client( const std::string& ca_filename )
+         :my( new detail::websocket_client_impl() ),
+          smy(new detail::websocket_tls_client_impl( ca_filename ))
+   {}
 
-
-
-   websocket_client::websocket_client( const std::string& ca_filename ):my( new detail::websocket_client_impl() ),smy(new detail::websocket_tls_client_impl( ca_filename )) {}
    websocket_client::~websocket_client(){ }
 
    websocket_connection_ptr websocket_client::connect( const std::string& uri )
@@ -674,7 +689,6 @@ namespace fc { namespace http {
           return secure_connect(uri);
        FC_ASSERT( uri.substr(0,3) == "ws:" );
 
-       // wlog( "connecting to ${uri}", ("uri",uri));
        websocketpp::lib::error_code ec;
 
        my->_uri = uri;
@@ -683,13 +697,17 @@ namespace fc { namespace http {
        my->_client.set_open_handler( [=]( websocketpp::connection_hdl hdl ){
           my->_hdl = hdl;
           auto con =  my->_client.get_con_from_hdl(hdl);
-          my->_connection = std::make_shared<detail::websocket_connection_impl<detail::websocket_client_connection_type>>( con );
+          my->_connection = std::make_shared<detail::websocket_connection_impl<
+                               detail::websocket_client_connection_type>>( con );
           my->_closed = promise<void>::create("websocket::closed");
           my->_connected->set_value();
        });
 
        auto con = my->_client.get_connection( uri, ec );
 
+       std::for_each(headers.begin(), headers.end(), [con](std::pair<std::string, std::string> in) {
+            con->append_header(in.first, in.second);
+         });
        if( ec ) FC_ASSERT( !ec, "error: ${e}", ("e",ec.message()) );
 
        my->_client.connect(con);
@@ -697,31 +715,36 @@ namespace fc { namespace http {
        return my->_connection;
    } FC_CAPTURE_AND_RETHROW( (uri) ) }
 
+   // TODO most code in this function is same as ::connect, best refactor
    websocket_connection_ptr websocket_client::secure_connect( const std::string& uri )
    { try {
        if( uri.substr(0,3) == "ws:" )
           return connect(uri);
        FC_ASSERT( uri.substr(0,4) == "wss:" );
-       // wlog( "connecting to ${uri}", ("uri",uri));
        websocketpp::lib::error_code ec;
 
        smy->_uri = uri;
        smy->_connected = promise<void>::create("websocket::connect");
 
        smy->_client.set_open_handler( [=]( websocketpp::connection_hdl hdl ){
+          smy->_hdl = hdl;
           auto con =  smy->_client.get_con_from_hdl(hdl);
-          smy->_connection = std::make_shared<detail::websocket_connection_impl<detail::websocket_tls_client_connection_type>>( con );
+          smy->_connection = std::make_shared<detail::websocket_connection_impl<
+                                detail::websocket_tls_client_connection_type>>( con );
           smy->_closed = promise<void>::create("websocket::closed");
           smy->_connected->set_value();
        });
 
        auto con = smy->_client.get_connection( uri, ec );
+       std::for_each(headers.begin(), headers.end(), [con](std::pair<std::string, std::string> in) {
+            con->append_header(in.first, in.second);
+         });
        if( ec )
           FC_ASSERT( !ec, "error: ${e}", ("e",ec.message()) );
        smy->_client.connect(con);
        smy->_connected->wait();
        return smy->_connection;
-       } FC_CAPTURE_AND_RETHROW( (uri) ) }
+   } FC_CAPTURE_AND_RETHROW( (uri) ) }
 
    void websocket_client::close()
    {
@@ -736,28 +759,9 @@ namespace fc { namespace http {
           my->_closed->wait();
    }
 
-   websocket_connection_ptr websocket_tls_client::connect( const std::string& uri )
-   { try {
-       // wlog( "connecting to ${uri}", ("uri",uri));
-       websocketpp::lib::error_code ec;
-
-       my->_connected = promise<void>::create("websocket::connect");
-
-       my->_client.set_open_handler( [=]( websocketpp::connection_hdl hdl ){
-          auto con =  my->_client.get_con_from_hdl(hdl);
-          my->_connection = std::make_shared<detail::websocket_connection_impl<detail::websocket_tls_client_connection_type>>( con );
-          my->_closed = promise<void>::create("websocket::closed");
-          my->_connected->set_value();
-       });
-
-       auto con = my->_client.get_connection( uri, ec );
-       if( ec )
-       {
-          FC_ASSERT( !ec, "error: ${e}", ("e",ec.message()) );
-       }
-       my->_client.connect(con);
-       my->_connected->wait();
-       return my->_connection;
-   } FC_CAPTURE_AND_RETHROW( (uri) ) }
+   void websocket_client::append_header(const std::string& key, const std::string& value)
+   {
+      headers.push_back( std::make_pair(key, value) );
+   }
 
 } } // fc::http
