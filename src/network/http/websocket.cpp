@@ -278,13 +278,15 @@ namespace fc { namespace http {
                        con->defer_http_response();
                        std::string remote_endpoint = current_con->get_remote_endpoint_string();
                        std::string request_body = con->get_request_body();
-                       wlog( "[IN] ${remote_endpoint} ${msg}",
+                       wlog( "[HTTP-IN] ${remote_endpoint} ${msg}",
                              ("remote_endpoint",remote_endpoint) ("msg",request_body) );
 
                        fc::async([current_con, request_body, con, remote_endpoint] {
                           fc::http::reply response = current_con->on_http(request_body);
-                          ilog( "[OUT] ${remote_endpoint} ${msg}",
-                                ("remote_endpoint",remote_endpoint) ("msg",response) );
+                          ilog( "[HTTP-OUT] ${remote_endpoint} ${status} ${msg}",
+                                ("remote_endpoint",remote_endpoint)
+                                ("status",response.status)
+                                ("msg",response.body_as_string) );
                           con->set_body( std::move( response.body_as_string ) );
                           con->set_status( websocketpp::http::status_code::value(response.status) );
                           con->send_http_response();
@@ -413,11 +415,13 @@ namespace fc { namespace http {
 
                           std::string remote_endpoint = current_con->get_remote_endpoint_string();
                           std::string request_body = con->get_request_body();
-                          wlog( "[IN] ${remote_endpoint} ${msg}",
+                          wlog( "[HTTP-IN] ${remote_endpoint} ${msg}",
                                 ("remote_endpoint",remote_endpoint) ("msg",request_body) );
                           auto response = current_con->on_http( request_body );
-                          ilog( "[OUT] ${remote_endpoint} ${msg}",
-                                ("remote_endpoint",remote_endpoint) ("msg",response) );
+                          ilog( "[HTTP-OUT] ${remote_endpoint} ${status} ${msg}",
+                                ("remote_endpoint",remote_endpoint)
+                                ("status",response.status)
+                                ("msg",response.body_as_string) );
                           con->set_body( std::move( response.body_as_string ) );
                           con->set_status( websocketpp::http::status_code::value( response.status ) );
                        } catch ( const fc::exception& e )
