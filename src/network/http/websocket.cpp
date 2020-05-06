@@ -273,7 +273,12 @@ namespace fc { namespace http {
                           con->on_message( payload );
                        });
                        if( _pending_messages > 100 )
-                         f.wait();
+                         f.wait(); // Note: this is a bit strange, because it forces the server to process all
+                                   //       100 pending messages (assuming this message is the last one) before
+                                   //       trying to accept a new message.
+                                   //       Ideally the `wait` should be canceled immediately when the number of
+                                   //       pending messages falls below 100. That said, wait on the whole queue,
+                                   //       but not wait on one message.
                     }).wait();
                });
 
@@ -290,7 +295,8 @@ namespace fc { namespace http {
                              typename websocketpp::server<T>::connection_ptr>>( con, _forward_header_key );
                        _on_connection( current_con );
 
-                       con->defer_http_response();
+                       con->defer_http_response(); // Note: this can tie up resources if send_http_response() is not
+                                                   //       called quickly enough
                        std::string remote_endpoint = current_con->get_remote_endpoint_string();
                        std::string request_body = con->get_request_body();
                        wlog( "[HTTP-IN] ${remote_endpoint} ${msg}",
@@ -351,6 +357,9 @@ namespace fc { namespace http {
                if( _server.is_listening() )
                   _server.stop_listening();
 
+               // Note: since _connections can be modified by lambda functions in set_*_handler, which are running
+               //       in another thread, perhaps we need to wait for them (especially the one in set_open_handler)
+               //       being processed. Otherwise `_closed.wait()` may hang.
                if( _connections.size() )
                   _closed = promise<void>::create();
 
@@ -363,7 +372,8 @@ namespace fc { namespace http {
 
             typedef std::map<connection_hdl, websocket_connection_ptr, std::owner_less<connection_hdl> > con_map;
 
-            con_map                  _connections;
+            con_map                  _connections; // Note: std::map is not thread-safe nor task-safe, we may need
+                                                   //       to use a mutex or similar to avoid concurrent access.
             fc::thread&              _server_thread;
             websocketpp::server<T>   _server;
             on_connection_handler    _on_connection;
