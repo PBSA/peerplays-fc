@@ -361,13 +361,15 @@ namespace fc { namespace http {
                //       in another thread, perhaps we need to wait for them (especially the one in set_open_handler)
                //       being processed. Otherwise `_closed.wait()` may hang.
                if( _connections.size() )
+               {
                   _closed = promise<void>::create();
 
-               auto cpy_con = _connections;
-               for( auto item : cpy_con )
-                  _server.close( item.first, 0, "server exit" );
+                  auto cpy_con = _connections;
+                  for( auto& item : cpy_con )
+                     _server.close( item.first, 0, "server exit" );
 
-               if( _closed ) _closed->wait();
+                  _closed->wait();
+               }
             }
 
             typedef std::map<connection_hdl, websocket_connection_ptr, std::owner_less<connection_hdl> > con_map;
