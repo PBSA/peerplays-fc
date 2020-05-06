@@ -248,7 +248,7 @@ namespace fc { namespace http {
                _server.clear_access_channels( websocketpp::log::alevel::all );
                _server.init_asio(&fc::asio::default_io_service());
                _server.set_reuse_addr(true);
-               _server.set_open_handler( [&]( connection_hdl hdl ){
+               _server.set_open_handler( [this]( connection_hdl hdl ){
                   _server_thread.async( [this, hdl](){
                         auto new_con = std::make_shared<possibly_proxied_websocket_connection<
                               typename websocketpp::server<T>::connection_ptr>>( _server.get_con_from_hdl(hdl),
@@ -256,11 +256,12 @@ namespace fc { namespace http {
                         _on_connection( _connections[hdl] = new_con );
                      }).wait();
                });
-               _server.set_message_handler( [&]( connection_hdl hdl,
+               _server.set_message_handler( [this]( connection_hdl hdl,
                               typename websocketpp::server<T>::message_ptr msg ){
-                    _server_thread.async( [&](){
+                    _server_thread.async( [this,hdl,msg](){
                        auto current_con = _connections.find(hdl);
-                       assert( current_con != _connections.end() );
+                       if( current_con == _connections.end() )
+                          return;
                        auto payload = msg->get_payload();
                        std::shared_ptr<websocket_connection> con = current_con->second;
                        wlog( "[IN] ${remote_endpoint} ${msg}",
@@ -276,14 +277,14 @@ namespace fc { namespace http {
                     }).wait();
                });
 
-               _server.set_socket_init_handler( [&]( websocketpp::connection_hdl hdl,
+               _server.set_socket_init_handler( [this]( websocketpp::connection_hdl hdl,
                               typename websocketpp::server<T>::connection_type::socket_type& s ) {
                      boost::asio::ip::tcp::no_delay option(true);
                      s.lowest_layer().set_option(option);
                } );
 
-               _server.set_http_handler( [&]( connection_hdl hdl ){
-                    _server_thread.async( [&](){
+               _server.set_http_handler( [this]( connection_hdl hdl ){
+                    _server_thread.async( [this,hdl](){
                        auto con = _server.get_con_from_hdl(hdl);
                        auto current_con = std::make_shared<possibly_proxied_websocket_connection<
                              typename websocketpp::server<T>::connection_ptr>>( con, _forward_header_key );
@@ -309,8 +310,8 @@ namespace fc { namespace http {
                     }).wait();
                });
 
-               _server.set_close_handler( [&]( connection_hdl hdl ){
-                    _server_thread.async( [&](){
+               _server.set_close_handler( [this]( connection_hdl hdl ){
+                    _server_thread.async( [this,hdl](){
                        if( _connections.find(hdl) != _connections.end() )
                        {
                           _connections[hdl]->closed();
@@ -325,10 +326,10 @@ namespace fc { namespace http {
                     }).wait();
                });
 
-               _server.set_fail_handler( [&]( connection_hdl hdl ){
+               _server.set_fail_handler( [this]( connection_hdl hdl ){
                     if( _server.is_listening() )
                     {
-                       _server_thread.async( [&](){
+                       _server_thread.async( [this,hdl](){
                           if( _connections.find(hdl) != _connections.end() )
                           {
                              _connections[hdl]->closed();
@@ -388,27 +389,25 @@ namespace fc { namespace http {
                                        const std::string& forward_header_key )
                : generic_websocket_server_impl( forward_header_key )
             {
-               {
-                  _server.set_tls_init_handler( [=]( websocketpp::connection_hdl hdl ) -> context_ptr {
-                        context_ptr ctx = websocketpp::lib::make_shared<boost::asio::ssl::context>(
-                                                boost::asio::ssl::context::tlsv1 );
-                        try {
-                           ctx->set_options( boost::asio::ssl::context::default_workarounds |
-                                             boost::asio::ssl::context::no_sslv2 |
-                                             boost::asio::ssl::context::no_sslv3 |
-                                             boost::asio::ssl::context::single_dh_use );
-                           ctx->set_password_callback(
-                                 [=](std::size_t max_length, boost::asio::ssl::context::password_purpose){
-                                       return ssl_password;
-                           });
-                           ctx->use_certificate_chain_file(server_pem);
-                           ctx->use_private_key_file(server_pem, boost::asio::ssl::context::pem);
-                        } catch (std::exception& e) {
-                           std::cout << e.what() << std::endl;
-                        }
-                        return ctx;
-                  });
-               }
+               _server.set_tls_init_handler( [this,server_pem,ssl_password]( websocketpp::connection_hdl hdl ) {
+                     context_ptr ctx = websocketpp::lib::make_shared<boost::asio::ssl::context>(
+                                             boost::asio::ssl::context::tlsv1 );
+                     try {
+                        ctx->set_options( boost::asio::ssl::context::default_workarounds |
+                                          boost::asio::ssl::context::no_sslv2 |
+                                          boost::asio::ssl::context::no_sslv3 |
+                                          boost::asio::ssl::context::single_dh_use );
+                        ctx->set_password_callback(
+                              [ssl_password](std::size_t max_length, boost::asio::ssl::context::password_purpose){
+                                    return ssl_password;
+                        });
+                        ctx->use_certificate_chain_file(server_pem);
+                        ctx->use_private_key_file(server_pem, boost::asio::ssl::context::pem);
+                     } catch (std::exception& e) {
+                        std::cout << e.what() << std::endl;
+                     }
+                     return ctx;
+               });
             }
 
             virtual ~websocket_tls_server_impl() {}
@@ -424,19 +423,19 @@ namespace fc { namespace http {
             :_client_thread( fc::thread::current() )
             {
                 _client.clear_access_channels( websocketpp::log::alevel::all );
-                _client.set_message_handler( [&]( connection_hdl hdl,
+                _client.set_message_handler( [this]( connection_hdl hdl,
                                                   typename websocketpp::client<T>::message_ptr msg ){
-                   _client_thread.async( [&](){
+                   _client_thread.async( [this,msg](){
                         wdump((msg->get_payload()));
                         auto received = msg->get_payload();
-                        fc::async( [=](){
+                        fc::async( [this,received](){
                            if( _connection )
                                _connection->on_message(received);
                         });
                    }).wait();
                 });
-                _client.set_close_handler( [=]( connection_hdl hdl ){
-                   _client_thread.async( [&](){
+                _client.set_close_handler( [this]( connection_hdl hdl ){
+                   _client_thread.async( [this](){
                          if( _connection ) {
                             _connection->closed();
                             _connection.reset();
@@ -445,12 +444,12 @@ namespace fc { namespace http {
                    if( _closed )
                       _closed->set_value();
                 });
-                _client.set_fail_handler( [=]( connection_hdl hdl ){
+                _client.set_fail_handler( [this]( connection_hdl hdl ){
                    auto con = _client.get_con_from_hdl(hdl);
                    auto message = con->get_ec().message();
                    if( _connection )
                    {
-                      _client_thread.async( [&](){
+                      _client_thread.async( [this](){
                             if( _connection ) {
                                _connection->closed();
                                _connection.reset();
@@ -487,7 +486,7 @@ namespace fc { namespace http {
                _uri = uri;
                _connected = promise<void>::create("websocket::connect");
 
-               _client.set_open_handler( [=]( websocketpp::connection_hdl hdl ){
+               _client.set_open_handler( [this]( websocketpp::connection_hdl hdl ){
                   _hdl = hdl;
                   auto con = _client.get_con_from_hdl(hdl);
                   _connection = std::make_shared<websocket_connection_impl<
@@ -533,13 +532,18 @@ namespace fc { namespace http {
                 // "_default" uses default CA's provided by OS
 
                 //
-                // We need ca_filename to be copied into the closure, as the referenced object might be destroyed by the caller by the time
-                // tls_init_handler() is called.  According to [1], capture-by-value results in the desired behavior (i.e. creation of
-                // a copy which is stored in the closure) on standards compliant compilers, but some compilers on some optimization levels
-                // are buggy and are not standards compliant in this situation.  Also, keep in mind this is the opinion of a single forum
+                // We need ca_filename to be copied into the closure, as the
+                // referenced object might be destroyed by the caller by the time
+                // tls_init_handler() is called.  According to [1], capture-by-value
+                // results in the desired behavior (i.e. creation of
+                // a copy which is stored in the closure) on standards compliant compilers,
+                // but some compilers on some optimization levels
+                // are buggy and are not standards compliant in this situation.
+                //  Also, keep in mind this is the opinion of a single forum
                 // poster and might be wrong.
                 //
-                // To be safe, the following line explicitly creates a non-reference string which is captured by value, which should have the
+                // To be safe, the following line explicitly creates a non-reference string
+                // which is captured by value, which should have the
                 // correct behavior on all compilers.
                 //
                 // [1] http://www.cplusplus.com/forum/general/142165/
@@ -548,13 +552,14 @@ namespace fc { namespace http {
 
                 std::string ca_filename_copy = ca_filename;
 
-                _client.set_tls_init_handler( [=](websocketpp::connection_hdl) {
-                   context_ptr ctx = websocketpp::lib::make_shared<boost::asio::ssl::context>(boost::asio::ssl::context::tlsv1);
+                _client.set_tls_init_handler( [this,ca_filename_copy](websocketpp::connection_hdl) {
+                   context_ptr ctx = websocketpp::lib::make_shared<boost::asio::ssl::context>(
+                                           boost::asio::ssl::context::tlsv1);
                    try {
-                      ctx->set_options(boost::asio::ssl::context::default_workarounds |
-                      boost::asio::ssl::context::no_sslv2 |
-                      boost::asio::ssl::context::no_sslv3 |
-                      boost::asio::ssl::context::single_dh_use);
+                      ctx->set_options( boost::asio::ssl::context::default_workarounds |
+                                        boost::asio::ssl::context::no_sslv2 |
+                                        boost::asio::ssl::context::no_sslv3 |
+                                        boost::asio::ssl::context::single_dh_use );
 
                       setup_peer_verify( ctx, ca_filename_copy );
                    } catch (std::exception& e) {
