@@ -692,8 +692,26 @@ namespace fc { namespace http {
             boost::asio::ip::address_v4(uint32_t(ep.get_address())),ep.port()) );
    }
 
+   uint16_t websocket_tls_server::get_listening_port()
+   {
+      websocketpp::lib::asio::error_code ec;
+      return my->_server.get_local_endpoint(ec).port();
+   }
+
    void websocket_tls_server::start_accept() {
       my->_server.start_accept();
+   }
+
+   void websocket_tls_server::stop_listening()
+   {
+      my->_server.stop_listening();
+   }
+
+   void websocket_tls_server::close()
+   {
+      websocketpp::lib::error_code ec;
+      for( auto& connection : my->_connections )
+         my->_server.close( connection.first, websocketpp::close::status::normal, "Goodbye", ec );
    }
 
 
