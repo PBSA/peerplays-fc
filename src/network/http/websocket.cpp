@@ -665,8 +665,9 @@ namespace fc { namespace http {
 
    void websocket_server::close()
    {
+      auto cpy_con = my->_connections;
       websocketpp::lib::error_code ec;
-      for( auto& connection : my->_connections )
+      for( auto& connection : cpy_con )
          my->_server.close( connection.first, websocketpp::close::status::normal, "Goodbye", ec );
    }
 
@@ -709,8 +710,9 @@ namespace fc { namespace http {
 
    void websocket_tls_server::close()
    {
+      auto cpy_con = my->_connections;
       websocketpp::lib::error_code ec;
-      for( auto& connection : my->_connections )
+      for( auto& connection : cpy_con )
          my->_server.close( connection.first, websocketpp::close::status::normal, "Goodbye", ec );
    }
 
