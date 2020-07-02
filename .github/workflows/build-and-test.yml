@@ -5,7 +5,7 @@ env:
   CCACHE_SLOPPINESS: include_file_ctime,include_file_mtime,time_macros
 jobs:
   test-release:
-    name: Build and run tests in Release mode
+    name: Build and run tests in Ubuntu, Release mode
     runs-on: ubuntu-latest
     steps:
     - name: Install dependencies
@@ -64,7 +64,7 @@ jobs:
         task_cancel_test
         _EOT_
   test-debug:
-    name: Build and run tests in Debug mode
+    name: Build and run tests in Ubuntu, Debug mode
     runs-on: ubuntu-latest
     steps:
     - name: Install dependencies
@@ -122,3 +122,49 @@ jobs:
         hmac_test
         task_cancel_test
         _EOT_
+  test-macos:
+    name: Build and run tests in macOS
+    runs-on: macos-latest
+    steps:
+    - name: Install dependencies
+      run: |
+        brew install autoconf automake libtool
+        brew install ccache
+        brew search boost
+        brew install boost@1.60
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Configure
+      run: |
+        mkdir -p _build
+        pushd _build
+        cmake -D CMAKE_BUILD_TYPE=Release \
+              -D CMAKE_C_COMPILER_LAUNCHER=ccache \
+              -D CMAKE_CXX_COMPILER_LAUNCHER=ccache \
+              -D BOOST_ROOT=/usr/local/opt/boost@1.60 \
+              -D OPENSSL_ROOT_DIR=/usr/local/opt/openssl \
+              ..
+        popd
+    - name: Load Cache
+      uses: actions/cache@v1
+      with:
+        path: ccache
+        key: ccache-osx-${{ github.ref }}-${{ github.sha }}
+        restore-keys: |
+          ccache-osx-${{ github.ref }}-
+          ccache-osx-
+    - name: Build
+      run: |
+        export CCACHE_DIR="$GITHUB_WORKSPACE/ccache"
+        mkdir -p "$CCACHE_DIR"
+        make -j 2 -C _build
+        df -h
+    - name: Unit-Tests
+      run: |
+        pushd _build/tests
+        ./all_tests -l message
+        ./bloom_test -- README.md
+        ./ecc_test README.md
+        ./hmac_test
+        ./task_cancel_test
