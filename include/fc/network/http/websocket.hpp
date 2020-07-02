@@ -41,9 +41,6 @@ namespace fc { namespace http {
 
    typedef std::function<void(const websocket_connection_ptr&)> on_connection_handler;
 
-   // Recommended changes in the future 
-   // TODO websocket_tls_server and websocket_server have almost the same interface and implementation,
-   //      better refactor to remove duplicate code and to avoid undesired or unnecessary differences
    class websocket_server
    {
       public:
@@ -62,9 +59,6 @@ namespace fc { namespace http {
    };
 
 
-   // Recommended changes in the future 
-   // TODO websocket_tls_server and websocket_server have almost the same interface and implementation,
-   //      better refactor to remove duplicate code and to avoid undesired or unnecessary differences
    class websocket_tls_server
    {
       public:
@@ -76,9 +70,6 @@ namespace fc { namespace http {
          void listen( uint16_t port );
          void listen( const fc::ip::endpoint& ep );
          void start_accept();
-         uint16_t get_listening_port();
-         void stop_listening();
-         void close();
 
       private:
          friend class detail::websocket_tls_server_impl;
