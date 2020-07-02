@@ -145,6 +145,7 @@ jobs:
               -D BOOST_ROOT=/usr/local/opt/boost@1.60 \
               -D OPENSSL_ROOT_DIR=/usr/local/opt/openssl \
               ..
+        popd
     - name: Load Cache
       uses: actions/cache@v1
       with:
@@ -162,8 +163,8 @@ jobs:
     - name: Unit-Tests
       run: |
         pushd _build/tests
-        all_test -l message
-        bloom_test -- README.md
-        ecc_test README.md
-        hmac_test
-        task_cancel_test
+        ./all_tests -l message
+        ./bloom_test -- README.md
+        ./ecc_test README.md
+        ./hmac_test
+        ./task_cancel_test
