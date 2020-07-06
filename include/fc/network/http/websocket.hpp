@@ -70,6 +70,9 @@ namespace fc { namespace http {
          void listen( uint16_t port );
          void listen( const fc::ip::endpoint& ep );
          void start_accept();
+         uint16_t get_listening_port();
+         void stop_listening();
+         void close();
 
       private:
          friend class detail::websocket_tls_server_impl;
