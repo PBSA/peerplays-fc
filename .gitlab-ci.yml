@@ -1,0 +1,10 @@
+include:
+    - template: Jobs/Code-Quality.gitlab-ci.yml
+
+stages:
+    - test
+
+trigger_build_peerplays:
+  stage: test
+  script:
+    - "curl -X POST -F token=$CI_JOB_TOKEN -F ref=$REF_NAME https://gitlab.com/api/v4/projects/10735589/trigger/pipeline"
