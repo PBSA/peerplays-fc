@@ -35,6 +35,7 @@
 #include <websocketpp/uri.hpp>
 #include <websocketpp/logger/levels.hpp>
 
+#include <websocketpp/common/asio.hpp>
 #include <websocketpp/common/functional.hpp>
 
 #include <sstream>
@@ -191,8 +192,7 @@ public:
 
         m_io_service = ptr;
         m_external_io_service = true;
-        m_acceptor = lib::make_shared<lib::asio::ip::tcp::acceptor>(
-            lib::ref(*m_io_service));
+        m_acceptor.reset(new lib::asio::ip::tcp::acceptor(*m_io_service));
 
         m_state = READY;
         ec = lib::error_code();
@@ -314,8 +314,10 @@ public:
      *
      * New values affect future calls to listen only.
      *
-     * A value of zero will use the operating system default. This is the
-     * default value.
+     * The default value is specified as *::asio::socket_base::max_connections
+     * which uses the operating system defined maximum queue length. Your OS
+     * may restrict or silently lower this value. A value of zero may cause
+     * all connections to be rejected.
      *
      * @since 0.3.0
      *
@@ -660,9 +662,7 @@ public:
      * @since 0.3.0
      */
     void start_perpetual() {
-        m_work = lib::make_shared<lib::asio::io_service::work>(
-            lib::ref(*m_io_service)
-        );
+        m_work.reset(new lib::asio::io_service::work(*m_io_service));
     }
 
     /// Clears the endpoint's perpetual flag, allowing it to exit when empty
@@ -826,8 +826,7 @@ protected:
 
         // Create a resolver
         if (!m_resolver) {
-            m_resolver = lib::make_shared<lib::asio::ip::tcp::resolver>(
-                lib::ref(*m_io_service));
+            m_resolver.reset(new lib::asio::ip::tcp::resolver(*m_io_service));
         }
 
         tcon->set_uri(u);
