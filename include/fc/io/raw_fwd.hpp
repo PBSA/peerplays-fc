@@ -119,6 +119,9 @@ namespace fc {
     template<typename Stream, typename T> inline void pack( Stream& s, const std::vector<T>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream, typename T> inline void unpack( Stream& s, std::vector<T>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
 
+    template<typename Stream> inline void pack( Stream& s, const signed_int& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream> inline void unpack( Stream& s, signed_int& vi, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+
     template<typename Stream> inline void pack( Stream& s, const unsigned_int& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream> inline void unpack( Stream& s, unsigned_int& vi, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
 

@@ -192,6 +192,16 @@ namespace fc {
        v = std::make_shared<const T>(std::move(tmp));
     } FC_RETHROW_EXCEPTIONS( warn, "std::shared_ptr<const T>", ("type",fc::get_typename<T>::name()) ) }
 
+    template<typename Stream> inline void pack( Stream& s, const signed_int& v, uint32_t _max_depth ) {
+      uint32_t val = (v.value<<1) ^ (v.value>>31);
+      do {
+        uint8_t b = uint8_t(val) & 0x7f;
+        val >>= 7;
+        b |= ((val > 0) << 7);
+        s.write((char*)&b,1);//.put(b);
+      } while( val );
+    }
+
     template<typename Stream> inline void pack( Stream& s, const unsigned_int& v, uint32_t _max_depth ) {
       uint64_t val = v.value;
       do {
@@ -202,6 +212,17 @@ namespace fc {
       }while( val );
     }
 
+    template<typename Stream> inline void unpack( Stream& s, signed_int& vi, uint32_t _max_depth ) {
+      uint32_t v = 0; char b = 0; int by = 0;
+      do {
+        s.get(b);
+        v |= uint32_t(uint8_t(b) & 0x7f) << by;
+        by += 7;
+      } while( (uint8_t(b) & 0x80) && by < 32 );
+      vi.value = ((v>>1) ^ (v>>31)) + (v&0x01);
+      vi.value = v&0x01 ? vi.value : -vi.value;
+      vi.value = -vi.value;
+    }
     template<typename Stream> inline void unpack( Stream& s, unsigned_int& vi, uint32_t _max_depth ) {
       uint64_t v = 0; char b = 0; uint8_t by = 0;
       do {
