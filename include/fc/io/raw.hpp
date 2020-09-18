@@ -530,14 +530,14 @@ namespace fc {
         template<typename Stream>
         static inline void pack( Stream& s, const T& v, uint32_t _max_depth ) {
           FC_ASSERT( _max_depth > 0 );
-          fc::raw::pack( s, (int64_t)v, _max_depth - 1 );
+          fc::raw::pack( s, signed_int((int64_t)v), _max_depth - 1 );
         }
         template<typename Stream>
         static inline void unpack( Stream& s, T& v, uint32_t _max_depth ) {
           FC_ASSERT( _max_depth > 0 );
-          int64_t temp;
+          signed_int temp;
           fc::raw::unpack( s, temp, _max_depth - 1 );
-          v = (T)temp;
+          v = (T)temp.value;
         }
       };
 
