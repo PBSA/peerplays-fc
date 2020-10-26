@@ -110,12 +110,20 @@ struct Derivation_reflection_transformer {
 };
 } // namespace impl
 
+// Workaround to inconsistent compiler rules on whether template must/cannot be specified here
+#if defined(__clang__) && __clang_major__ < 11
+#define MAYBE_TEMPLATE template
+#else
+#define MAYBE_TEMPLATE
+#endif
+
 /// Macro to transform reflected fields of a base class to a derived class and concatenate them to a type list
 #define FC_CONCAT_BASE_MEMBER_REFLECTIONS(r, derived, base) \
-   ::add_list<typelist::transform<reflector<base>::members, impl::Derivation_reflection_transformer<derived>>>
+   ::add_list<typelist::transform<typename reflector<base>::members, \
+                                  impl::Derivation_reflection_transformer<derived>>>
 /// Macro to concatenate a new @ref field_reflection to a typelist
 #define FC_CONCAT_MEMBER_REFLECTION(r, container, idx, member) \
-   ::add<typename impl::Reflect_type<container>::template with_field_type<decltype(container::member)> \
+   ::MAYBE_TEMPLATE add<typename impl::Reflect_type<container>::template with_field_type<decltype(container::member)> \
                                                ::template at_index<idx> \
                                                ::template with_field_pointer<&container::member>::type>
 #define FC_REFLECT_MEMBER_NAME(r, container, idx, member) \

@@ -7,6 +7,8 @@ PROJECT( fc )
 set( CMAKE_CXX_STANDARD 14 )
 SET( CMAKE_CXX_STANDARD_REQUIRED ON )
 
+set( FC_BUILD_DYNAMIC_LIBRARIES OFF CACHE BOOL "Whether FC should build as a dynamic library rather than static" )
+
 if( "${CMAKE_CXX_COMPILER_ID}" MATCHES "^(Apple)?Clang|GNU$" )
   set( CMAKE_CXX_EXTENSIONS ON ) # for __int128 support
 else( "${CMAKE_CXX_COMPILER_ID}" MATCHES "^(Apple)?Clang|GNU$" )
@@ -41,7 +43,11 @@ endif()
 SET(BOOST_COMPONENTS)
 LIST(APPEND BOOST_COMPONENTS coroutine thread date_time filesystem system program_options serialization chrono unit_test_framework context iostreams regex)
 # boost::endian is also required, but FindBoost can't handle header-only libs
-SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
+if(${FC_BUILD_DYNAMIC_LIBRARIES})
+  SET( Boost_USE_STATIC_LIBS OFF CACHE STRING "ON or OFF" )
+else()
+  SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" )
+endif()
 
 # Configure secp256k1-zkp
 if ( WIN32 )
@@ -63,10 +69,16 @@ if ( WIN32 )
 else ( WIN32 )
     include(ExternalProject)
 
+    if( CMAKE_POSITION_INDEPENDENT_CODE )
+        set( SECP_USE_PIC --with-pic )
+    else( CMAKE_POSITION_INDEPENDENT_CODE )
+        set( SECP_USE_PIC "" )
+    endif()
+
     ExternalProject_Add( project_secp256k1
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp
      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp
-     CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --with-bignum=no
+     CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp --with-bignum=no ${SECP_USE_PIC}
      BUILD_COMMAND make
      INSTALL_COMMAND true
      BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/secp256k1-zkp/src/project_secp256k1-build/.libs/libsecp256k1.a
@@ -84,7 +96,10 @@ else ( WIN32 )
     set_property(TARGET secp256k1 PROPERTY IMPORTED_LOCATION ${binary_dir}/.libs/libsecp256k1${CMAKE_STATIC_LIBRARY_SUFFIX})
     set_property(TARGET secp256k1 PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/secp256k1-zkp/include)
     add_dependencies(secp256k1 project_secp256k1)
-    install( FILES ${binary_dir}/.libs/libsecp256k1${CMAKE_STATIC_LIBRARY_SUFFIX} DESTINATION lib/cryptonomex )
+    if (${FC_BUILD_DYNAMIC_LIBRARIES})
+        FILE(GLOB SECP_SHARED ${binary_dir}/.libs/libsecp256k1.so*)
+    endif()
+    install( FILES ${binary_dir}/.libs/libsecp256k1${CMAKE_STATIC_LIBRARY_SUFFIX} ${SECP_SHARED} DESTINATION lib/cryptonomex )
 endif ( WIN32 )
 # End configure secp256k1-zkp
 
@@ -95,7 +110,7 @@ if ( NOT WIN32 )
     ExternalProject_Add( project_editline
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vendor/editline
      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline
-     CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/editline
+     CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/vendor/editline CFLAGS=-fPIC
      BUILD_COMMAND make
      INSTALL_COMMAND true
      BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/vendor/editline/src/project_editline-build/src/.libs/libeditline.a
@@ -111,7 +126,10 @@ if ( NOT WIN32 )
     set_property(TARGET editline PROPERTY IMPORTED_LOCATION ${binary_dir}/src/.libs/libeditline${CMAKE_STATIC_LIBRARY_SUFFIX})
     set_property(TARGET editline PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/editline/include)
     add_dependencies(editline project_editline)
-    install( FILES ${binary_dir}/src/.libs/libeditline${CMAKE_STATIC_LIBRARY_SUFFIX} DESTINATION lib/cryptonomex )
+    if (${FC_BUILD_DYNAMIC_LIBRARIES})
+        FILE(GLOB EDITLINE_SHARED ${binary_dir}/src/.libs/libeditline.so*)
+    endif()
+    install( FILES ${binary_dir}/src/.libs/libeditline${CMAKE_STATIC_LIBRARY_SUFFIX} ${EDITLINE_SHARED} DESTINATION lib/cryptonomex )
 endif ( NOT WIN32 )
 # End configure editline
 
@@ -240,7 +258,13 @@ list(APPEND sources ${fc_headers})
 
 add_subdirectory( vendor/websocketpp EXCLUDE_FROM_ALL )
 
-add_library( fc ${sources} )
+if (NOT ${FC_BUILD_DYNAMIC_LIBRARIES} )
+    add_library( fc ${sources} )
+else()
+    add_library( fc SHARED ${sources} )
+endif()
+
+install( TARGETS fc LIBRARY DESTINATION lib ARCHIVE DESTINATION lib )
 install( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" DESTINATION include )
 
 # begin editline stuff
@@ -351,7 +375,7 @@ elseif(WIN32 AND MINGW)
 endif()
 
 
-IF(Boost_UNIT_TEST_FRAMEWORK_LIBRARY MATCHES "\\.(so|dll)$")
+IF(Boost_UNIT_TEST_FRAMEWORK_LIBRARY MATCHES "\\.(so|dll)$" OR FC_BUILD_DYNAMIC_LIBRARIES)
 IF(MSVC)
 add_definitions(/DBOOST_TEST_DYN_LINK)
 ELSE(MSVC)

@@ -240,7 +240,7 @@ template<typename T> struct wrapper { using type = T; };
  */
 template<typename... Types, typename Callable, typename = std::enable_if_t<impl::length<Types...>::value != 0>,
          typename Return = decltype(std::declval<Callable>()(wrapper<at<list<Types...>, 0>>()))>
-Return dispatch(list<Types...>, std::size_t index, Callable c) {
+Return dispatch(list<Types...>, uint64_t index, Callable c) {
    static std::function<Return(Callable&)> call_table[] =
       { impl::dispatch_helper<Callable, Return, wrapper<Types>>... };
    if (index < impl::length<Types...>::value) return call_table[index](c);
@@ -249,7 +249,7 @@ Return dispatch(list<Types...>, std::size_t index, Callable c) {
 template<typename List, typename Callable>
 auto dispatch(List l, int64_t index, Callable c) {
    if (index < 0) throw std::out_of_range("Negative index to fc::typelist::runtime::dispatch()");
-   return dispatch(l, std::size_t(index), std::move(c));
+   return dispatch(l, std::uint64_t(index), std::move(c));
 }
 
 /// @brief Invoke the provided callable with an argument wrapper<Type>() for each type in the list
