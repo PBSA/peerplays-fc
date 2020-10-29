@@ -90,7 +90,9 @@ bool operator == ( const sha1& h1, const sha1& h2 ) {
   void from_variant( const variant& v, sha1& bi, uint32_t max_depth )
   {
     std::vector<char> ve = v.as< std::vector<char> >( max_depth );
-    memset( &bi, char(0), sizeof(bi) );
+    for (size_t i = 0; i < bi.data_size(); i++) {
+       bi.data()[i] = 0;
+    }
     if( ve.size() )
        memcpy( &bi, ve.data(), fc::min<size_t>(ve.size(),sizeof(bi)) );
   }
