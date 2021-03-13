@@ -1,11 +1,13 @@
 #pragma once
+#include <fc/container/zeroed_array.hpp>
 #include <fc/crypto/bigint.hpp>
 #include <fc/crypto/openssl.hpp>
 #include <fc/crypto/sha256.hpp>
 #include <fc/crypto/sha512.hpp>
 #include <fc/fwd.hpp>
-#include <fc/array.hpp>
 #include <fc/io/raw_fwd.hpp>
+
+#include <array>
 
 namespace fc {
 
@@ -16,16 +18,16 @@ namespace fc {
       class private_key_impl;
     }
 
-    typedef fc::sha256                  blind_factor_type;
-    typedef fc::array<char,33>          commitment_type;
-    typedef fc::array<char,33>          public_key_data;
-    typedef fc::sha256                  private_key_secret;
-    typedef fc::array<char,65>          public_key_point_data; ///< the full non-compressed version of the ECC point
-    typedef fc::array<char,72>          signature;
-    typedef fc::array<unsigned char,65> compact_signature;
-    typedef std::vector<char>           range_proof_type;
-    typedef fc::array<char,78>          extended_key_data;
- 
+    typedef fc::sha256                               blind_factor_type;
+    typedef zero_initialized_array<unsigned char,33> commitment_type;
+    typedef zero_initialized_array<unsigned char,33> public_key_data;
+    typedef fc::sha256                               private_key_secret;
+    typedef zero_initialized_array<unsigned char,65> public_key_point_data; ///< the full non-compressed version of the ECC point
+    typedef zero_initialized_array<unsigned char,72> signature;
+    typedef zero_initialized_array<unsigned char,65> compact_signature;
+    typedef std::vector<char>                        range_proof_type;
+    typedef zero_initialized_array<unsigned char,78> extended_key_data;
+
     /**
      *  @class public_key
      *  @brief contains only the public point of an elliptic curve key.
@@ -117,9 +119,7 @@ namespace fc {
             */
            fc::sha512 get_shared_secret( const public_key& pub )const;
 
-//           signature         sign( const fc::sha256& digest )const;
            compact_signature sign_compact( const fc::sha256& digest, bool require_canonical = true )const;
-//           bool              verify( const fc::sha256& digest, const signature& sig );
 
            public_key get_public_key()const;
 
@@ -155,9 +155,9 @@ namespace fc {
 
             extended_key_data serialize_extended() const;
             static extended_public_key deserialize( const extended_key_data& data );
-            fc::string str() const;
-            fc::string to_base58() const { return str(); }
-            static extended_public_key from_base58( const fc::string& base58 );
+            std::string str() const;
+            std::string to_base58() const { return str(); }
+            static extended_public_key from_base58( const std::string& base58 );
 
         private:
             sha256 c;
@@ -179,16 +179,15 @@ namespace fc {
 
             extended_key_data serialize_extended() const;
             static extended_private_key deserialize( const extended_key_data& data );
-            fc::string str() const;
-            fc::string to_base58() const { return str(); }
-            static extended_private_key from_base58( const fc::string& base58 );
-            static extended_private_key generate_master( const fc::string& seed );
+            std::string str() const;
+            std::string to_base58() const { return str(); }
+            static extended_private_key from_base58( const std::string& base58 );
+            static extended_private_key generate_master( const std::string& seed );
             static extended_private_key generate_master( const char* seed, uint32_t seed_len );
 
-        private:
+    private:
             extended_private_key private_derive_rest( const fc::sha512& hash,
                                                       int num ) const;
-
             sha256 c;
             int child_num, parent_fp;
             uint8_t depth;

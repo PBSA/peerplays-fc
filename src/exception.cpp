@@ -8,6 +8,25 @@
 
 namespace fc
 {
+   FC_IMPLEMENT_EXCEPTION( timeout_exception, timeout_exception_code, "Timeout" )
+   FC_IMPLEMENT_EXCEPTION( file_not_found_exception, file_not_found_exception_code, "File Not Found" )
+   FC_IMPLEMENT_EXCEPTION( parse_error_exception, parse_error_exception_code, "Parse Error" )
+   FC_IMPLEMENT_EXCEPTION( invalid_arg_exception, invalid_arg_exception_code, "Invalid Argument" )
+   FC_IMPLEMENT_EXCEPTION( key_not_found_exception, key_not_found_exception_code, "Key Not Found" )
+   FC_IMPLEMENT_EXCEPTION( bad_cast_exception, bad_cast_exception_code, "Bad Cast" )
+   FC_IMPLEMENT_EXCEPTION( out_of_range_exception, out_of_range_exception_code, "Out of Range" )
+   FC_IMPLEMENT_EXCEPTION( method_not_found_exception, method_not_found_exception_code, "Method Not Found" );
+   FC_IMPLEMENT_EXCEPTION( invalid_operation_exception, invalid_operation_exception_code, "Invalid Operation" )
+   FC_IMPLEMENT_EXCEPTION( unknown_host_exception, unknown_host_exception_code, "Unknown Host" )
+   FC_IMPLEMENT_EXCEPTION( canceled_exception, canceled_exception_code, "Canceled" )
+   FC_IMPLEMENT_EXCEPTION( assert_exception, assert_exception_code, "Assert Exception" )
+   FC_IMPLEMENT_EXCEPTION( eof_exception, eof_exception_code, "End Of File" )
+   FC_IMPLEMENT_EXCEPTION( null_optional, null_optional_code, "null optional" )
+   FC_IMPLEMENT_EXCEPTION( aes_exception, aes_error_code, "AES error" )
+   FC_IMPLEMENT_EXCEPTION( overflow_exception, overflow_code, "Integer Overflow" )
+   FC_IMPLEMENT_EXCEPTION( underflow_exception, underflow_code, "Integer Underflow" )
+   FC_IMPLEMENT_EXCEPTION( divide_by_zero_exception, divide_by_zero_code, "Integer Divide By Zero" )
+
    FC_REGISTER_EXCEPTIONS( (timeout_exception)
                            (file_not_found_exception)
                            (parse_error_exception)
@@ -46,7 +65,7 @@ namespace fc
       my->_code = code;
       my->_what = what_value;
       my->_name = name_value;
-      my->_elog = fc::move(msgs);
+      my->_elog = std::move(msgs);
    }
 
    exception::exception(
@@ -63,7 +82,7 @@ namespace fc
    }
 
    unhandled_exception::unhandled_exception( log_message&& m, std::exception_ptr e )
-   :exception( fc::move(m) )
+   :exception( std::move(m) )
    {
       _inner = e;
    }
@@ -73,11 +92,11 @@ namespace fc
    }
    unhandled_exception::unhandled_exception( log_messages m )
    :exception()
-   { my->_elog = fc::move(m); }
+   { my->_elog = std::move(m); }
 
    std::exception_ptr unhandled_exception::get_inner_exception()const { return _inner; }
 
-   NO_RETURN void     unhandled_exception::dynamic_rethrow_exception()const
+   [[noreturn]] void unhandled_exception::dynamic_rethrow_exception()const
    {
       if( !(_inner == std::exception_ptr()) ) std::rethrow_exception( _inner );
       else { fc::exception::dynamic_rethrow_exception(); }
@@ -109,13 +128,13 @@ namespace fc
       my->_code = code;
       my->_what = what_value;
       my->_name = name_value;
-      my->_elog.push_back( fc::move( msg ) );
+      my->_elog.push_back( std::move( msg ) );
    }
    exception::exception( const exception& c )
    :my( new detail::exception_impl(*c.my) )
    { }
    exception::exception( exception&& c )
-   :my( fc::move(c.my) ){}
+   :my( std::move(c.my) ){}
 
    const char*  exception::name()const throw() { return my->_name.c_str(); }
    const char*  exception::what()const throw() { return my->_what.c_str(); }
@@ -153,7 +172,7 @@ namespace fc
    const log_messages&   exception::get_log()const { return my->_elog; }
    void                  exception::append_log( log_message m )
    {
-      my->_elog.emplace_back( fc::move(m) );
+      my->_elog.emplace_back( std::move(m) );
    }
 
    /**
@@ -163,22 +182,41 @@ namespace fc
     */
    string exception::to_detail_string( log_level ll )const
    {
-      fc::stringstream ss;
-      ss << variant(my->_code).as_string() <<" " << my->_name << ": " <<my->_what<<"\n";
-      for( auto itr = my->_elog.begin(); itr != my->_elog.end();  )
-      {
-         ss << itr->get_message() <<"\n";
-         try
-         {
-            ss << "    " << json::to_string( itr->get_data() )<<"\n";
+      std::stringstream ss;
+      try {
+         try {
+            ss << variant( my->_code ).as_string();
+         } catch( std::bad_alloc& ) {
+            throw;
+         } catch( ... ) {
+            ss << "<- exception in to_detail_string.";
          }
-         catch( const fc::assert_exception& e )
+         ss << " " << my->_name << ": " << my->_what << "\n";
+         for( auto itr = my->_elog.begin(); itr != my->_elog.end(); )
          {
-            ss << "ERROR: Failed to convert log data to string!\n";
+            try {
+               ss << itr->get_message() <<"\n";
+               try
+               {
+                  ss << "    " << json::to_string( itr->get_data() )<<"\n";
+               }
+               catch( const fc::assert_exception& e )
+               {
+                  ss << "ERROR: Failed to convert log data to string!\n";
+               }
+               ss << "    " << itr->get_context().to_string();
+            } catch( std::bad_alloc& ) {
+               throw;
+            } catch( ... ) {
+               ss << "<- exception in to_detail_string.";
+            }
+            ++itr;
+            if( itr != my->_elog.end() ) ss<<"\n";
          }
-         ss << "    " << itr->get_context().to_string();
-         ++itr;
-         if( itr != my->_elog.end() ) ss<<"\n";
+      } catch( std::bad_alloc& ) {
+         throw;
+      } catch( ... ) {
+         ss << "<- exception in to_detail_string.\n";
       }
       return ss.str();
    }
@@ -188,17 +226,28 @@ namespace fc
     */
    string exception::to_string( log_level ll )const
    {
-      fc::stringstream ss;
-      ss << what() << ":";
-      for( auto itr = my->_elog.begin(); itr != my->_elog.end(); ++itr )
-      {
-         if( itr->get_format().size() )
-            ss << " " << fc::format_string( itr->get_format(), itr->get_data() );
+      std::stringstream ss;
+      try {
+         ss << what() << ":";
+         for( auto itr = my->_elog.begin(); itr != my->_elog.end(); ++itr ) {
+            if( itr->get_format().size() )
+               try {
+                  ss << " " << fc::format_string( itr->get_format(), itr->get_data() );
+               } catch( std::bad_alloc& ) {
+                  throw;
+               } catch( ... ) {
+                  ss << "<- exception in to_string.\n";
+               }
+         }
+      } catch( std::bad_alloc& ) {
+         throw;
+      } catch( ... ) {
+         ss << "<- exception in to_string.\n";
       }
       return ss.str();
    }
 
-   void NO_RETURN exception_factory::rethrow( const exception& e )const
+   [[noreturn]] void exception_factory::rethrow( const exception& e )const
    {
       auto itr = _registered_exceptions.find( e.code() );
       if( itr != _registered_exceptions.end() )
@@ -210,7 +259,7 @@ namespace fc
     * the error code.  This is used to propagate exception types
     * across conversions to/from JSON
     */
-   NO_RETURN void  exception::dynamic_rethrow_exception()const
+   [[noreturn]] void exception::dynamic_rethrow_exception()const
    {
       exception_factory::instance().rethrow( *this );
    }
@@ -220,7 +269,7 @@ namespace fc
        return std::make_shared<exception>(*this);
    }
 
-   fc::string except_str()
+   std::string except_str()
    {
        return boost::current_exception_diagnostic_information();
    }

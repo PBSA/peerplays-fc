@@ -11,8 +11,13 @@
 #include <fc/reflect/variant.hpp>
 #include <algorithm>
 
+#if defined(__APPLE__) or defined(__OpenBSD__)
+#include <boost/multiprecision/integer.hpp>
+#endif
+
 namespace fc
 {
+
 /**
  *  The TypeID is stored in the 'last byte' of the variant.
  */
@@ -27,7 +32,7 @@ variant::variant()
    set_variant_type( this, null_type );
 }
 
-variant::variant( fc::nullptr_t, uint32_t max_depth )
+variant::variant( std::nullptr_t, uint32_t max_depth )
 {
    set_variant_type( this, null_type );
 }
@@ -73,6 +78,14 @@ variant::variant( uint64_t val, uint32_t max_depth )
    *reinterpret_cast<uint64_t*>(this)  = val;
    set_variant_type( this, uint64_type );
 }
+
+#if defined(__APPLE__) or defined(__OpenBSD__)
+variant::variant( size_t val, uint32_t max_depth )
+{
+   *reinterpret_cast<uint64_t*>(this)  = val;
+   set_variant_type( this, uint64_type );
+}
+#endif
 
 variant::variant( int64_t val, uint32_t max_depth )
 {
@@ -132,31 +145,31 @@ variant::variant( const wchar_t* str, uint32_t max_depth )
    set_variant_type( this, string_type );
 }
 
-variant::variant( fc::string val, uint32_t max_depth )
+variant::variant( std::string val, uint32_t max_depth )
 {
-   *reinterpret_cast<string**>(this)  = new string( fc::move(val) );
+   *reinterpret_cast<string**>(this)  = new string( std::move(val) );
    set_variant_type( this, string_type );
 }
 variant::variant( blob val, uint32_t max_depth )
 {
-   *reinterpret_cast<blob**>(this)  = new blob( fc::move(val) );
+   *reinterpret_cast<blob**>(this)  = new blob( std::move(val) );
    set_variant_type( this, blob_type );
 }
 
 variant::variant( variant_object obj, uint32_t max_depth )
 {
-   *reinterpret_cast<variant_object**>(this) = new variant_object(fc::move(obj));
+   *reinterpret_cast<variant_object**>(this) = new variant_object(std::move(obj));
    set_variant_type(this,  object_type );
 }
 variant::variant( mutable_variant_object obj, uint32_t max_depth )
 {
-   *reinterpret_cast<variant_object**>(this) = new variant_object(fc::move(obj));
+   *reinterpret_cast<variant_object**>(this) = new variant_object(std::move(obj));
    set_variant_type(this,  object_type );
 }
 
 variant::variant( variants arr, uint32_t max_depth )
 {
-   *reinterpret_cast<variants**>(this)  = new variants(fc::move(arr));
+   *reinterpret_cast<variants**>(this)  = new variants(std::move(arr));
    set_variant_type(this,  array_type );
 }
 
@@ -621,6 +634,7 @@ void from_variant( const variant& var, uint64_t& vo, uint32_t max_depth )
    vo = var.as_uint64();
 }
 
+void to_variant( const bool& var, variant& vo, uint32_t max_depth )  { vo = uint64_t(var); }
 void from_variant( const variant& var, bool& vo, uint32_t max_depth )
 {
    vo = var.as_bool();
@@ -638,7 +652,7 @@ void from_variant( const variant& var, float& vo, uint32_t max_depth )
 
 void to_variant( const std::string& s, variant& v, uint32_t max_depth )
 {
-    v = variant( fc::string(s), max_depth );
+    v = variant( std::string(s), max_depth );
 }
 
 void from_variant( const variant& var, string& vo, uint32_t max_depth )
@@ -663,13 +677,38 @@ void from_variant( const variant& var, std::vector<char>& vo, uint32_t max_depth
      }
 }
 
-#ifdef __APPLE__
-#elif !defined(_MSC_VER)
+void to_variant( const uint128_t& var, variant& vo, uint32_t max_depth )
+{
+#if defined(__APPLE__) or defined(__OpenBSD__)
+   boost::multiprecision::uint128_t helper = uint128_hi64( var );
+   helper <<= 64;
+   helper += uint128_lo64( var );
+   vo = boost::lexical_cast<std::string>( helper );
+#else
+   vo = boost::lexical_cast<std::string>( var );
+#endif
+}
+
+void from_variant( const variant& var, uint128_t& vo, uint32_t max_depth )
+{
+#if defined(__APPLE__) or defined(__OpenBSD__)
+   boost::multiprecision::uint128_t helper = boost::lexical_cast<boost::multiprecision::uint128_t>( var.as_string() );
+   vo = static_cast<uint64_t>( helper >> 64 );
+   vo <<= 64;
+   vo += static_cast<uint64_t>( helper & 0xffffffffffffffffULL );
+#else
+   vo = boost::lexical_cast<uint128_t>( var.as_string() );
+#endif
+}
+
+#if defined(__APPLE__) or defined(__OpenBSD__)
+   void to_variant( size_t s, variant& v, uint32_t max_depth ) { v = variant( uint64_t(s) ); }
+#elif !defined(_WIN32)
    void to_variant( long long int s, variant& v, uint32_t max_depth ) { v = variant( int64_t(s) ); }
    void to_variant( unsigned long long int s, variant& v, uint32_t max_depth ) { v = variant( uint64_t(s)); }
 #endif
 
-   variant operator == ( const variant& a, const variant& b )
+   bool operator == ( const variant& a, const variant& b )
    {
       if( a.is_string()  || b.is_string() ) return a.as_string() == b.as_string();
       if( a.is_double()  || b.is_double() ) return a.as_double() == b.as_double();
@@ -678,7 +717,7 @@ void from_variant( const variant& var, std::vector<char>& vo, uint32_t max_depth
       return false;
    }
 
-   variant operator != ( const variant& a, const variant& b )
+   bool operator != ( const variant& a, const variant& b )
    {
       if( a.is_string()  || b.is_string() ) return a.as_string() != b.as_string();
       if( a.is_double()  || b.is_double() ) return a.as_double() != b.as_double();
@@ -687,12 +726,12 @@ void from_variant( const variant& var, std::vector<char>& vo, uint32_t max_depth
       return false;
    }
 
-   variant operator ! ( const variant& a )
+   bool operator ! ( const variant& a )
    {
       return !a.as_bool();
    }
 
-   variant operator < ( const variant& a, const variant& b )
+   bool operator < ( const variant& a, const variant& b )
    {
       if( a.is_string()  || b.is_string() ) return a.as_string() < b.as_string();
       if( a.is_double()  || b.is_double() ) return a.as_double() < b.as_double();
@@ -701,7 +740,7 @@ void from_variant( const variant& var, std::vector<char>& vo, uint32_t max_depth
       FC_ASSERT( false, "Invalid operation" );
    }
 
-   variant operator > ( const variant& a, const variant& b )
+   bool operator > ( const variant& a, const variant& b )
    {
       if( a.is_string()  || b.is_string() ) return a.as_string() > b.as_string();
       if( a.is_double()  || b.is_double() ) return a.as_double() > b.as_double();
@@ -710,7 +749,7 @@ void from_variant( const variant& var, std::vector<char>& vo, uint32_t max_depth
       FC_ASSERT( false, "Invalid operation" );
    }
 
-   variant operator <= ( const variant& a, const variant& b )
+   bool operator <= ( const variant& a, const variant& b )
    {
       if( a.is_string()  || b.is_string() ) return a.as_string() <= b.as_string();
       if( a.is_double()  || b.is_double() ) return a.as_double() <= b.as_double();

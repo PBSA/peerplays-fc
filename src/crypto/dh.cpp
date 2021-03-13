@@ -1,9 +1,9 @@
 #include <fc/crypto/dh.hpp>
-#include <openssl/dh.h>
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+#endif
 
 namespace fc {
-    SSL_TYPE(ssl_dh, DH, DH_free)
-
     static bool validate( const ssl_dh& dh, bool& valid ) {
         int check;
         DH_check(dh,&check);
@@ -33,15 +33,15 @@ namespace fc {
    {
         if( !p.size() ) 
             return valid = false;
-        ssl_dh dh = DH_new();
+        ssl_dh dh(DH_new());
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
         const auto bn_p = BN_bin2bn( (unsigned char*)&p.front(), p.size(), NULL );
         const auto bn_g = BN_bin2bn( (unsigned char*)&g, 1, NULL );
         DH_set0_pqg(dh.obj, bn_p, NULL, bn_g);
-#else        
+#else
         dh->p = BN_bin2bn( (unsigned char*)&p.front(), p.size(), NULL );
         dh->g = BN_bin2bn( (unsigned char*)&g, 1, NULL );
-#endif        
+#endif
         return fc::validate( dh, valid );
    }
 
@@ -49,12 +49,12 @@ namespace fc {
    {
         if( !p.size() ) 
             return valid = false;
-        ssl_dh dh = DH_new();
+        ssl_dh dh(DH_new());
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
         const auto bn_p = BN_bin2bn( (unsigned char*)&p.front(), p.size(), NULL );
         const auto bn_g = BN_bin2bn( (unsigned char*)&g, 1, NULL );
         DH_set0_pqg(dh.obj, bn_p, NULL, bn_g);
-#else        
+#else
         dh->p = BN_bin2bn( (unsigned char*)&p.front(), p.size(), NULL );
         dh->g = BN_bin2bn( (unsigned char*)&g, 1, NULL );
 #endif
@@ -87,7 +87,7 @@ namespace fc {
         return true;
    }
    bool diffie_hellman::compute_shared_key( const char* buf, uint32_t s ) {
-        ssl_dh dh = DH_new();
+        ssl_dh dh(DH_new());
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
         auto bn_p = BN_bin2bn( (unsigned char*)&p.front(), p.size(), NULL );
         auto bn_pub_key = BN_bin2bn( (unsigned char*)&pub_key.front(), pub_key.size(), NULL );
@@ -95,7 +95,7 @@ namespace fc {
         auto bn_g = BN_bin2bn( (unsigned char*)&g, 1, NULL );
         DH_set0_pqg(dh.obj, bn_p, NULL, bn_g);
         DH_set0_key(dh.obj, bn_pub_key, bn_priv_key);
-#else        
+#else
         dh->p = BN_bin2bn( (unsigned char*)&p.front(), p.size(), NULL );
         dh->pub_key = BN_bin2bn( (unsigned char*)&pub_key.front(), pub_key.size(), NULL );
         dh->priv_key = BN_bin2bn( (unsigned char*)&priv_key.front(), priv_key.size(), NULL );
@@ -111,8 +111,12 @@ namespace fc {
 
         ssl_bignum pk;
         BN_bin2bn( (unsigned char*)buf, s, pk );
-        shared_key.resize( DH_size(dh) ); 
-        DH_compute_key( (unsigned char*)&shared_key.front(), pk, dh );
+        int est_size = DH_size(dh);
+        shared_key.resize( est_size );
+        int actual_size = DH_compute_key( (unsigned char*)&shared_key.front(), pk, dh );
+        if ( actual_size < 0 ) return false;
+        if ( actual_size != est_size )
+           shared_key.resize( actual_size );
 
         return true;
    }

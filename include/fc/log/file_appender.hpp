@@ -12,14 +12,13 @@ class file_appender : public appender {
          struct config {
             config( const fc::path& p = "log.txt" );
 
-            fc::string                         format;
+            std::string                         format;
             fc::path                           filename;
             bool                               flush = true;
             bool                               rotate = false;
             microseconds                       rotation_interval;
             microseconds                       rotation_limit;
-            bool                               rotation_compression = false;
-            uint32_t                           max_object_depth;
+            uint32_t                           max_object_depth = FC_MAX_LOG_OBJECT_DEPTH;
          };
          file_appender( const variant& args );
          ~file_appender();
@@ -27,10 +26,10 @@ class file_appender : public appender {
 
       private:
          class impl;
-         fc::shared_ptr<impl> my;
+         std::unique_ptr<impl> my;
    };
 } // namespace fc
 
 #include <fc/reflect/reflect.hpp>
 FC_REFLECT( fc::file_appender::config,
-            (format)(filename)(flush)(rotate)(rotation_interval)(rotation_limit)(rotation_compression)(max_object_depth) )
+            (format)(filename)(flush)(rotate)(rotation_interval)(rotation_limit)(max_object_depth) )

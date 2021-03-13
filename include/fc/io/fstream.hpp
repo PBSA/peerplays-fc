@@ -1,14 +1,13 @@
 #pragma once
-#include <fc/shared_ptr.hpp>
 #include <fc/filesystem.hpp>
 #include <fc/io/iostream.hpp>
 #include <fstream>
+#include <memory>
 
 namespace fc {
   class path;
   class ofstream : virtual public ostream {
     public:
-      enum mode { out, binary };
       ofstream();
       ofstream( const fc::path& file, std::ios_base::openmode m = std::ios_base::out | std::ios_base::binary );
       ~ofstream();
@@ -22,7 +21,7 @@ namespace fc {
 
     private:
       class impl;
-      fc::shared_ptr<impl> my;
+      std::shared_ptr<impl> my;
   };
 
   class ifstream : virtual public istream {
@@ -45,7 +44,7 @@ namespace fc {
       bool      eof()const;
     private:
       class impl;
-      fc::shared_ptr<impl> my;
+      std::shared_ptr<impl> my;
   };
 
   /**

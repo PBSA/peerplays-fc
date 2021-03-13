@@ -1,5 +1,4 @@
 #include <fc/network/url.hpp>
-#include <fc/string.hpp>
 #include <fc/io/sstream.hpp>
 #include <fc/exception/exception.hpp>
 #include <fc/log/logger.hpp>
@@ -12,7 +11,7 @@ namespace fc
     class url_impl
     {
       public:
-         void parse( const fc::string& s )
+         void parse( const std::string& s )
          {
            std::stringstream ss(s);
            std::string skip,_lpath,_largs,luser,lpass;
@@ -20,23 +19,23 @@ namespace fc
            std::getline( ss, skip, '/' );
            std::getline( ss, skip, '/' );
            
-           if( s.find('@') != size_t(fc::string::npos) ) {
-             fc::string user_pass;
+           if( s.find('@') != size_t(std::string::npos) ) {
+             std::string user_pass;
              std::getline( ss, user_pass, '@' );
              std::stringstream upss(user_pass);
-             if( user_pass.find( ':' ) != size_t(fc::string::npos) ) {
+             if( user_pass.find( ':' ) != size_t(std::string::npos) ) {
                 std::getline( upss, luser, ':' );
                 std::getline( upss, lpass, ':' );
-                _user = fc::move(luser);
-                _pass = fc::move(lpass);
+                _user = std::move(luser);
+                _pass = std::move(lpass);
              } else {
-                _user = fc::move(user_pass);
+                _user = std::move(user_pass);
              }
            }
-           fc::string host_port;
+           std::string host_port;
            std::getline( ss, host_port, '/' );
            auto pos = host_port.find( ':' );
-           if( pos != fc::string::npos ) {
+           if( pos != std::string::npos ) {
               try {
               _port = static_cast<uint16_t>(to_uint64( host_port.substr( pos+1 ) ));
               } catch ( ... ) {
@@ -44,7 +43,7 @@ namespace fc
               }
               _host = host_port.substr(0,pos);
            } else {
-              _host = fc::move(host_port);
+              _host = std::move(host_port);
            }
            std::getline( ss, _lpath, '?' );
 #ifdef WIN32
@@ -60,22 +59,9 @@ namespace fc
            _path = fc::path( "/" ) / _lpath;
 #endif
            std::getline( ss, _largs );
-           if( _largs.size() ) 
+           if( _args.valid() && _args->size() ) 
            {
-             mutable_variant_object new_args;
-             std::istringstream args_stream(_largs);
-             std::string _larg;
-             while (std::getline(args_stream, _larg, '&'))
-             {
-               std::string::size_type equals_pos = _larg.find('=');
-               if (equals_pos != std::string::npos)
-               {
-                 std::string key = _larg.substr(0, equals_pos);
-                 std::string value = _larg.substr(equals_pos + 1);
-                 new_args[key] = value;
-               }
-             } 
-             _args = new_args;
+             // TODO: args = std::move(_args);
            }
          }
 
@@ -91,7 +77,7 @@ namespace fc
 
   void to_variant( const url& u, fc::variant& v, uint32_t max_depth )
   {
-    v = fc::string(u);
+    v = std::string(u);
   }
   void from_variant( const fc::variant& v, url& u, uint32_t max_depth )
   {
@@ -101,25 +87,21 @@ namespace fc
   url::operator string()const
   {
       std::stringstream ss;
-      ss << my->_proto << "://";
-      if( my->_user.valid() ) 
-      {
+      ss<<my->_proto<<"://";
+      if( my->_user.valid() ) {
         ss << *my->_user;
-        if( my->_pass.valid() )
-          ss << ":" << *my->_pass;
-        ss << "@";
+        if( my->_pass.valid() ) {
+          ss<<":"<<*my->_pass;
+        }
+        ss<<"@";
       }
-      if( my->_host.valid() ) 
-        ss << *my->_host;
-      if( my->_port.valid() ) 
-        ss << ":" << *my->_port;
-      if( my->_path.valid() ) 
-        ss << my->_path->generic_string();
-      ss << args_as_string();
+      if( my->_host.valid() ) ss<<*my->_host;
+      if( my->_port.valid() ) ss<<":"<<*my->_port;
+      if( my->_path.valid() ) ss<<my->_path->generic_string();
       return ss.str();
   }
 
-  url::url( const fc::string& u )
+  url::url( const std::string& u )
   :my( std::make_shared<detail::url_impl>() )
   {
     my->parse(u);
@@ -139,7 +121,7 @@ namespace fc
   :my(u.my){}
 
   url::url( url&& u )
-  :my( fc::move(u.my) )
+  :my( std::move(u.my) )
   {
     u.my = get_null_url();
   }
@@ -150,7 +132,7 @@ namespace fc
 
   }
   url::url( mutable_url&& mu )
-  :my( fc::move( mu.my ) )
+  :my( std::move( mu.my ) )
   { }
 
   url::~url(){}
@@ -165,7 +147,7 @@ namespace fc
   {
      if( this != &u )
      {
-        my = fc::move(u.my);
+        my = std::move(u.my);
         u.my= get_null_url();
      }
      return *this;
@@ -177,7 +159,7 @@ namespace fc
   }
   url& url::operator=(mutable_url&& u )
   {
-     my = fc::move(u.my);
+     my = std::move(u.my);
      return *this;
   }
 
@@ -204,21 +186,6 @@ namespace fc
   ovariant_object           url::args()const
   {
     return my->_args;
-  }
-  std::string               url::args_as_string()const
-  {
-    std::ostringstream ss;
-    if( my->_args ) 
-    {
-      bool first = true;
-      for (auto iter = my->_args->begin(); iter != my->_args->end(); ++iter)
-      {
-        ss << (first ? "?" : "&");
-        first = false;
-        ss << iter->key() << "=" << iter->value().as_string();
-      }
-    }
-    return ss.str();
   }
   fc::optional<uint16_t>    url::port()const
   {

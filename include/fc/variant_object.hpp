@@ -1,7 +1,6 @@
 #pragma once
 #include <fc/variant.hpp>
-#include <fc/shared_ptr.hpp>
-#include <fc/unique_ptr.hpp>
+#include <memory>
 
 namespace fc
 {
@@ -71,7 +70,7 @@ namespace fc
       variant_object( string key, T&& val )
       :_key_value( std::make_shared<std::vector<entry> >() )
       {
-         *this = variant_object( std::move(key), variant(forward<T>(val)) );
+         *this = variant_object( std::move(key), variant(std::forward<T>(val)) );
       }
       variant_object( const variant_object& );
       variant_object( variant_object&& );
@@ -174,7 +173,7 @@ namespace fc
       mutable_variant_object& operator()( string key, T&& var, uint32_t max_depth )
       {
          _FC_ASSERT( max_depth > 0, "Recursion depth exceeded!" );
-         set( std::move(key), variant( fc::forward<T>(var), max_depth - 1 ) );
+         set( std::move(key), variant( std::forward<T>(var), max_depth - 1 ) );
          return *this;
       }
       /**
@@ -192,7 +191,7 @@ namespace fc
       explicit mutable_variant_object( T&& v )
       :_key_value( new std::vector<entry>() )
       {
-          *this = variant(fc::forward<T>(v)).get_object();
+          *this = variant(std::forward<T>(v)).get_object();
       }
 
       mutable_variant_object();
@@ -203,7 +202,7 @@ namespace fc
       mutable_variant_object( string key, T&& val )
       :_key_value( new std::vector<entry>() )
       {
-         set( std::move(key), variant(fc::forward<T>(val)) );
+         set( std::move(key), variant(std::forward<T>(val)) );
       }
 
       mutable_variant_object( mutable_variant_object&& );
@@ -221,18 +220,35 @@ namespace fc
    class limited_mutable_variant_object : public mutable_variant_object
    {
       public:
-         limited_mutable_variant_object( uint32_t max_depth );
+         limited_mutable_variant_object( uint32_t max_depth, bool skip_on_exception = false );
 
          template<typename T>
          limited_mutable_variant_object& operator()( string key, T&& var )
          {
-            set( std::move(key), variant( fc::forward<T>(var), _max_depth ) );
+            if( _reached_depth_limit )
+               // _skip_on_exception will always be true here
+               return *this;
+
+            optional<variant> v;
+            try
+            {
+               v = variant( std::forward<T>(var), _max_depth );
+            }
+            catch( ... )
+            {
+               if( !_skip_on_exception )
+                  throw;
+               v = variant( "[ERROR: Caught exception while converting data to variant]" );
+            }
+            set( std::move(key), *v );
             return *this;
          }
          limited_mutable_variant_object& operator()( const variant_object& vo );
 
       private:
-         const uint32_t _max_depth;
+         const uint32_t _max_depth;       ///< The depth limit
+         const bool _reached_depth_limit; ///< Indicates whether we've reached depth limit
+         const bool _skip_on_exception;   ///< If set to true, won't rethrow exceptions when reached depth limit
    };
 
    /** @ingroup Serializable */

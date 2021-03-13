@@ -7,11 +7,11 @@
 
 namespace fc {
    namespace raw {
-       template<typename Stream, typename T>
-       inline void pack( Stream& s, const flat_set<T>& value, uint32_t _max_depth ) {
+       template<typename Stream, typename T, typename... A>
+       inline void pack( Stream& s, const flat_set<T, A...>& value, uint32_t _max_depth ) {
          FC_ASSERT( _max_depth > 0 );
          --_max_depth;
-         pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
+         pack( s, unsigned_int(value.size()), _max_depth );
          auto itr = value.begin();
          auto end = value.end();
          while( itr != end ) {
@@ -19,14 +19,13 @@ namespace fc {
            ++itr;
          }
        }
-       template<typename Stream, typename T>
-       inline void unpack( Stream& s, flat_set<T>& value, uint32_t _max_depth ) {
+       template<typename Stream, typename T, typename... A>
+       inline void unpack( Stream& s, flat_set<T, A...>& value, uint32_t _max_depth ) {
          FC_ASSERT( _max_depth > 0 );
          --_max_depth;
          unsigned_int size; unpack( s, size, _max_depth );
          value.clear();
-         FC_ASSERT( size.value*sizeof(T) < MAX_ARRAY_ALLOC_SIZE );
-         value.reserve(size.value);
+         value.reserve( std::min( size.value, static_cast<uint64_t>(FC_MAX_PREALLOC_SIZE) ) );
          for( uint32_t i = 0; i < size.value; ++i )
          {
              T tmp;
@@ -38,7 +37,7 @@ namespace fc {
        inline void pack( Stream& s, const flat_map<K,V...>& value, uint32_t _max_depth ) {
          FC_ASSERT( _max_depth > 0 );
          --_max_depth;
-         pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
+         pack( s, unsigned_int(value.size()), _max_depth );
          auto itr = value.begin();
          auto end = value.end();
          while( itr != end ) {
@@ -53,8 +52,7 @@ namespace fc {
          --_max_depth;
          unsigned_int size; unpack( s, size, _max_depth );
          value.clear();
-         FC_ASSERT( size.value*(sizeof(K)+sizeof(V)) < MAX_ARRAY_ALLOC_SIZE );
-         value.reserve(size.value);
+         value.reserve( std::min( size.value, static_cast<uint64_t>(FC_MAX_PREALLOC_SIZE) ) );
          for( uint32_t i = 0; i < size.value; ++i )
          {
              std::pair<K,V> tmp;
@@ -67,7 +65,7 @@ namespace fc {
        void pack( Stream& s, const bip::vector<T,A>& value, uint32_t _max_depth ) {
          FC_ASSERT( _max_depth > 0 );
          --_max_depth;
-         pack( s, unsigned_int((uint32_t)value.size()), _max_depth );
+         pack( s, unsigned_int(value.size()), _max_depth );
          if( !std::is_fundamental<T>::value ) {
             auto itr = value.begin();
             auto end = value.end();
@@ -86,11 +84,16 @@ namespace fc {
           --_max_depth;
           unsigned_int size;
           unpack( s, size, _max_depth );
-          value.resize( size );
           if( !std::is_fundamental<T>::value ) {
-             for( auto& item : value )
-                unpack( s, item, _max_depth );
+             value.resize( std::min( size.value, static_cast<uint64_t>(FC_MAX_PREALLOC_SIZE) ) );
+             for( uint64_t i = 0; i < size; i++ )
+             {
+                if( i >= value.size() )
+                   value.resize( std::min( static_cast<uint64_t>(2*value.size()), size.value ) );
+                unpack( s, value[i], _max_depth );
+             }
           } else {
+             value.resize( size );
              s.read( (char*)value.data(), value.size() );
           }
        }
@@ -98,8 +101,8 @@ namespace fc {
    } // namespace raw
 
 
-   template<typename T>
-   void to_variant( const flat_set<T>& var, variant& vo, uint32_t _max_depth )
+   template<typename T, typename... A>
+   void to_variant( const flat_set<T, A...>& var, variant& vo, uint32_t _max_depth )
    {
        FC_ASSERT( _max_depth > 0 );
       --_max_depth;
@@ -109,8 +112,8 @@ namespace fc {
           vars[i++] = variant( item, _max_depth );
        vo = vars;
    }
-   template<typename T>
-   void from_variant( const variant& var, flat_set<T>& vo, uint32_t _max_depth )
+   template<typename T, typename... A>
+   void from_variant( const variant& var, flat_set<T, A...>& vo, uint32_t _max_depth )
    {
       FC_ASSERT( _max_depth > 0 );
       --_max_depth;

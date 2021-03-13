@@ -1,11 +1,15 @@
 #pragma once
+#include <boost/endian/buffers.hpp>
+
 #include <fc/config.hpp>
 #include <fc/container/flat_fwd.hpp>
-#include <fc/container/deque_fwd.hpp>
 #include <fc/io/varint.hpp>
-#include <fc/array.hpp>
 #include <fc/safe.hpp>
+#include <fc/uint128.hpp>
+
+#include <array>
 #include <deque>
+#include <memory>
 #include <vector>
 #include <string>
 #include <unordered_set>
@@ -22,25 +26,29 @@ namespace fc {
    class path;
    template<typename... Types> class static_variant;
 
+   class sha224;
+   class sha256;
+   class sha512;
+   class ripemd160;
+
    template<typename IntType, typename EnumType> class enum_type;
    namespace ip { class endpoint; }
 
    namespace ecc { class public_key; class private_key; }
-   template<typename Storage> class fixed_string;
 
    namespace raw {
     template<typename T>
     inline size_t pack_size(  const T& v );
-
-    template<typename Stream, typename Storage> inline void pack( Stream& s, const fc::fixed_string<Storage>& u, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
-    template<typename Stream, typename Storage> inline void unpack( Stream& s, fc::fixed_string<Storage>& u, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
 
     template<typename Stream, typename IntType, typename EnumType>
     inline void pack( Stream& s, const fc::enum_type<IntType,EnumType>& tp, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream, typename IntType, typename EnumType>
     inline void unpack( Stream& s, fc::enum_type<IntType,EnumType>& tp, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
 
-
+    template<typename Stream>
+    inline void pack( Stream& s, const uint128_t& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream>
+    inline void unpack( Stream& s, uint128_t& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
 
     template<typename Stream, typename T> inline void pack( Stream& s, const std::set<T>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream, typename T> inline void unpack( Stream& s, std::set<T>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
@@ -53,8 +61,8 @@ namespace fc {
     //template<typename Stream, typename T> inline void pack( Stream& s, const flat_set<T>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     //template<typename Stream, typename T> inline void unpack( Stream& s, flat_set<T>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
 
-    //template<typename Stream, typename T> inline void pack( Stream& s, const std::deque<T>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
-    //template<typename Stream, typename T> inline void unpack( Stream& s, std::deque<T>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream, typename T> inline void pack( Stream& s, const std::deque<T>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream, typename T> inline void unpack( Stream& s, std::deque<T>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
 
     template<typename Stream, typename K, typename V> inline void pack( Stream& s, const std::unordered_map<K,V>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream, typename K, typename V> inline void unpack( Stream& s, std::unordered_map<K,V>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
@@ -96,8 +104,17 @@ namespace fc {
     template<typename Stream> void unpack( Stream& s, fc::ecc::private_key&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream> void pack( Stream& s, const fc::ecc::private_key&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
 
-    template<typename Stream, typename T> inline void pack( Stream& s, const T& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
-    template<typename Stream, typename T> inline void unpack( Stream& s, T& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream> inline void unpack( Stream& s, fc::sha224&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream> inline void pack( Stream& s, const fc::sha224&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream> inline void unpack( Stream& s, fc::sha256&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream> inline void pack( Stream& s, const fc::sha256&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream> inline void unpack( Stream& s, fc::sha512&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream> inline void pack( Stream& s, const fc::sha512&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream> inline void unpack( Stream& s, fc::ripemd160&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream> inline void pack( Stream& s, const fc::ripemd160&, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+
+    template<typename Stream, typename T> void pack( Stream& s, const T& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream, typename T> void unpack( Stream& s, T& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
 
     template<typename Stream, typename T> inline void pack( Stream& s, const std::vector<T>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream, typename T> inline void unpack( Stream& s, std::vector<T>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
@@ -111,9 +128,33 @@ namespace fc {
     template<typename Stream> inline void pack( Stream& s, const char* v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream> inline void pack( Stream& s, const std::vector<char>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream> inline void unpack( Stream& s, std::vector<char>& value, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream, boost::endian::order O, class T, std::size_t N, boost::endian::align A>
+    inline void pack( Stream& s, const boost::endian::endian_buffer<O,T,N,A>& v, uint32_t _max_depth );
+    template<typename Stream, boost::endian::order O, class T, std::size_t N, boost::endian::align A>
+    inline void unpack( Stream& s, boost::endian::endian_buffer<O,T,N,A>& v, uint32_t _max_depth );
 
-    template<typename Stream, typename T, size_t N> inline void pack( Stream& s, const fc::array<T,N>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
-    template<typename Stream, typename T, size_t N> inline void unpack( Stream& s, fc::array<T,N>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH);
+    template<typename Stream, typename T, size_t N>
+    inline void pack( Stream& s, const std::array<T,N>& v, uint32_t _max_depth ) = delete;
+    template<typename Stream, typename T, size_t N>
+    inline void unpack( Stream& s, std::array<T,N>& v, uint32_t _max_depth ) = delete;
+    template<typename Stream, size_t N>
+    inline void pack( Stream& s, const std::array<char,N>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream, size_t N>
+    inline void unpack( Stream& s, std::array<char,N>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH);
+    template<typename Stream, size_t N>
+    inline void pack( Stream& s, const std::array<unsigned char,N>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream, size_t N>
+    inline void unpack( Stream& s, std::array<unsigned char,N>& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH);
+
+    template<typename Stream, typename T> inline void pack( Stream& s, const std::shared_ptr<T>& v,
+                                                            uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream, typename T> inline void unpack( Stream& s, std::shared_ptr<T>& v,
+                                                              uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+
+    template<typename Stream, typename T> inline void pack( Stream& s, const std::shared_ptr<const T>& v,
+                                                            uint32_t _max_depth=FC_PACK_MAX_DEPTH );
+    template<typename Stream, typename T> inline void unpack( Stream& s, std::shared_ptr<const T>& v,
+                                                              uint32_t _max_depth=FC_PACK_MAX_DEPTH );
 
     template<typename Stream> inline void pack( Stream& s, const bool& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );
     template<typename Stream> inline void unpack( Stream& s, bool& v, uint32_t _max_depth=FC_PACK_MAX_DEPTH );

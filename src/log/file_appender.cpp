@@ -5,9 +5,6 @@
 #include <fc/thread/scoped_lock.hpp>
 #include <fc/thread/thread.hpp>
 #include <fc/variant.hpp>
-#ifdef FC_USE_FULL_ZLIB
-# include <fc/compress/zlib.hpp>
-#endif
 #include <boost/thread/mutex.hpp>
 #include <iomanip>
 #include <queue>
@@ -16,9 +13,7 @@
 
 namespace fc {
 
-   static const string compression_extension( ".gz" );
-
-   class file_appender::impl : public fc::retainable
+   class file_appender::impl
    {
       public:
          config                     cfg;
@@ -26,61 +21,40 @@ namespace fc {
          boost::mutex               slock;
 
       private:
-         future<void>               _rotation_task;
-         time_point_sec             _current_file_start_time;
-         std::unique_ptr<thread>    _compression_thread;
-
-         time_point_sec get_file_start_time( const time_point_sec& timestamp, const microseconds& interval )
-         {
-             int64_t interval_seconds = interval.to_seconds();
-             int64_t file_number = timestamp.sec_since_epoch() / interval_seconds;
-             return time_point_sec( (uint32_t)(file_number * interval_seconds) );
-         }
-
-         void compress_file( const fc::path& filename )
-         {
-#ifdef FC_USE_FULL_ZLIB
-             FC_ASSERT( cfg.rotate && cfg.rotation_compression );
-             FC_ASSERT( _compression_thread );
-             if( !_compression_thread->is_current() )
-             {
-                 _compression_thread->async( [this, filename]() { compress_file( filename ); }, "compress_file" ).wait();
-                 return;
-             }
-
-             try
-             {
-                 gzip_compress_file( filename, filename.parent_path() / (filename.filename().string() + compression_extension) );
-                 remove_all( filename );
-             }
-             catch( ... )
-             {
-             }
-#endif
-         }
+         future<void>               _deletion_task;
+         boost::atomic<int64_t>     _current_file_number;
+         const int64_t              _interval_seconds;
+         time_point                 _next_file_time;
 
       public:
-         impl( const config& c) : cfg( c )
+         impl( const config& c) : cfg( c ), _interval_seconds( cfg.rotation_interval.to_seconds() )
          {
-             if( cfg.rotate )
-             {
-                 FC_ASSERT( cfg.rotation_interval >= seconds( 1 ) );
-                 FC_ASSERT( cfg.rotation_limit >= cfg.rotation_interval );
+            try
+            {
+               fc::create_directories(cfg.filename.parent_path());
 
-#ifdef FC_USE_FULL_ZLIB
-                 if( cfg.rotation_compression )
-                     _compression_thread.reset( new thread( "compression") );
-#endif
+               if( cfg.rotate )
+               {
+                  FC_ASSERT( cfg.rotation_interval >= seconds( 1 ) );
+                  FC_ASSERT( cfg.rotation_limit >= cfg.rotation_interval );
 
-                 _rotation_task = fc::async( [this]() { rotate_files( true ); }, "rotate_files(1)" );
-             }
+                  rotate_files( true );
+                  delete_files();
+               } else {
+                  out.open( cfg.filename, std::ios_base::out | std::ios_base::app);
+               }
+            }
+            catch( ... )
+            {
+               std::cerr << "error opening log file: " << cfg.filename.preferred_string() << "\n";
+            }
          }
 
          ~impl()
          {
             try
             {
-              _rotation_task.cancel_and_wait("file_appender is destructing");
+              _deletion_task.cancel_and_wait("file_appender is destructing");
             }
             catch( ... )
             {
@@ -89,9 +63,22 @@ namespace fc {
 
          void rotate_files( bool initializing = false )
          {
-             FC_ASSERT( cfg.rotate );
+             if( !cfg.rotate ) return;
+
              fc::time_point now = time_point::now();
-             fc::time_point_sec start_time = get_file_start_time( now, cfg.rotation_interval );
+             if( now < _next_file_time ) return;
+
+             int64_t new_file_number = now.sec_since_epoch() / _interval_seconds;
+             if( initializing )
+                _current_file_number.store( new_file_number );
+             else
+             {
+                int64_t prev_file_number = _current_file_number.load();
+                if( prev_file_number >= new_file_number ) return;
+                if( !_current_file_number.compare_exchange_weak( prev_file_number, new_file_number ) ) return;
+             }
+             fc::time_point_sec start_time = time_point_sec( (uint32_t)(new_file_number * _interval_seconds) );
+             _next_file_time = start_time + _interval_seconds;
              string timestamp_string = start_time.to_non_delimited_iso_string();
              fc::path link_filename = cfg.filename;
              fc::path log_filename = link_filename.parent_path() / (link_filename.filename().string() + "." + timestamp_string);
@@ -101,50 +88,41 @@ namespace fc {
 
                if( !initializing )
                {
-                   if( start_time <= _current_file_start_time )
-                   {
-                       _rotation_task = schedule( [this]() { rotate_files(); },
-                                                  _current_file_start_time + cfg.rotation_interval.to_seconds(),
-                                                  "rotate_files(2)" );
-                       return;
-                   }
-
                    out.flush();
                    out.close();
                }
                remove_all(link_filename);  // on windows, you can't delete the link while the underlying file is opened for writing
                out.open( log_filename, std::ios_base::out | std::ios_base::app );
-
                create_hard_link(log_filename, link_filename);
              }
+         }
 
+         void delete_files()
+         {
              /* Delete old log files */
-             fc::time_point limit_time = now - cfg.rotation_limit;
+             auto current_file = _current_file_number.load();
+             fc::time_point_sec start_time = time_point_sec( (uint32_t)(current_file * _interval_seconds) );
+             fc::time_point limit_time = time_point::now() - cfg.rotation_limit;
+             fc::path link_filename = cfg.filename;
              string link_filename_string = link_filename.filename().string();
              directory_iterator itr(link_filename.parent_path());
+             string timestamp_string = start_time.to_non_delimited_iso_string();
              for( ; itr != directory_iterator(); itr++ )
              {
                  try
                  {
                      string current_filename = itr->filename().string();
-                     if (current_filename.compare(0, link_filename_string.size(), link_filename_string) != 0 ||
-                         current_filename.size() <= link_filename_string.size() + 1)
-                       continue;
+                     if( current_filename.compare(0, link_filename_string.size(), link_filename_string) != 0
+                            || current_filename.size() <= link_filename_string.size() + 1 )
+                        continue;
                      string current_timestamp_str = current_filename.substr(link_filename_string.size() + 1,
                                                                             timestamp_string.size());
                      fc::time_point_sec current_timestamp = fc::time_point_sec::from_iso_string( current_timestamp_str );
-                     if( current_timestamp < start_time )
+                     if( current_timestamp < start_time
+                            && ( current_timestamp < limit_time || file_size( current_filename ) <= 0 ) )
                      {
-                         if( current_timestamp < limit_time || file_size( link_filename.parent_path() / itr->filename() ) <= 0 )
-                         {
-                             remove_all( *itr );
-                             continue;
-                         }
-                         if( !cfg.rotation_compression )
-                           continue;
-                         if( current_filename.find( compression_extension ) != string::npos )
-                           continue;
-                         compress_file( *itr );
+                        remove_all( *itr );
+                        continue;
                      }
                  }
                  catch (const fc::canceled_exception&)
@@ -155,11 +133,10 @@ namespace fc {
                  {
                  }
              }
-
-             _current_file_start_time = start_time;
-             _rotation_task = schedule( [this]() { rotate_files(); },
-                                        _current_file_start_time + cfg.rotation_interval.to_seconds(),
-                                        "rotate_files(3)" );
+             uint64_t next_file = time_point::now().sec_since_epoch() / _interval_seconds + 1;
+             _deletion_task = schedule( [this]() { delete_files(); },
+                                        fc::time_point_sec( next_file * _interval_seconds),
+                                        "delete_files(3)" );
          }
    };
 
@@ -167,39 +144,22 @@ namespace fc {
      format( "${timestamp} ${thread_name} ${context} ${file}:${line} ${method} ${level}]  ${message}" ),
      filename(p),
      flush(true),
-     rotate(false),
-     rotation_compression(false)
+     rotate(false)
    {}
 
    file_appender::file_appender( const variant& args ) :
      my( new impl( args.as<config>( FC_MAX_LOG_OBJECT_DEPTH ) ) )
-   {
-      try
-      {
-         fc::create_directories(my->cfg.filename.parent_path());
-
-         if(!my->cfg.rotate)
-            my->out.open( my->cfg.filename, std::ios_base::out | std::ios_base::app);
-
-      }
-      catch( ... )
-      {
-         std::cerr << "error opening log file: " << my->cfg.filename.preferred_string() << "\n";
-      }
-   }
+   {}
 
    file_appender::~file_appender(){}
 
    // MS THREAD METHOD  MESSAGE \t\t\t File:Line
    void file_appender::log( const log_message& m )
    {
+      my->rotate_files();
+
       std::stringstream line;
-      //line << (m.get_context().get_timestamp().time_since_epoch().count() % (1000ll*1000ll*60ll*60))/1000 <<"ms ";
-      //line << string(m.get_context().get_timestamp()) << " ";
-      time_point timestamp = m.get_context().get_timestamp();
-      line << string(timestamp);
-      uint64_t milliseconds = (timestamp.time_since_epoch().count() % 1000000) / 1000;
-      line << "." << std::setw(3) << std::setfill('0') << milliseconds << std::setfill(' ') << " ";
+      line << string(m.get_context().get_timestamp()) << " ";
       line << std::setw( 21 ) << (m.get_context().get_thread_name().substr(0,9) + string(":") + m.get_context().get_task_name()).c_str() << " ";
 
       string method_name = m.get_context().get_method();
@@ -218,7 +178,7 @@ namespace fc {
       }
 
       line << "] ";
-      fc::string message = fc::format_string( m.get_format(), m.get_data(), my->cfg.max_object_depth );
+      std::string message = fc::format_string( m.get_format(), m.get_data(), my->cfg.max_object_depth );
       line << message.c_str();
 
       {
