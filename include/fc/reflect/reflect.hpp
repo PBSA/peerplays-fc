@@ -111,7 +111,7 @@ struct Derivation_reflection_transformer {
 } // namespace impl
 
 // Workaround to inconsistent compiler rules on whether template must/cannot be specified here
-#if defined(__clang__) && __clang_major__ < 11
+#if defined(__clang__)
 #define MAYBE_TEMPLATE template
 #else
 #define MAYBE_TEMPLATE
