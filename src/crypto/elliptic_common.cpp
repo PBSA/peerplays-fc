@@ -83,8 +83,10 @@ namespace fc { namespace ecc {
             ssl_bignum order;
             FC_ASSERT( EC_GROUP_get_order( group, order, ctx ) );
             private_key_secret bin;
-            FC_ASSERT( (size_t) BN_num_bytes( order ) == bin.data_size() );
-            FC_ASSERT( (size_t) BN_bn2bin( order, (unsigned char*) bin.data() ) == bin.data_size() );
+            size_t order_BN_num_bytes = BN_num_bytes( order );
+            FC_ASSERT( order_BN_num_bytes == bin.data_size() );
+            size_t order_BN_bn2bin = BN_bn2bin( order, (unsigned char*) bin.data() );
+            FC_ASSERT( order_BN_bn2bin == bin.data_size() );
             return bin;
         }
 
@@ -102,8 +104,10 @@ namespace fc { namespace ecc {
             FC_ASSERT( EC_GROUP_get_order( group, order, ctx ) );
             BN_rshift1( order, order );
             private_key_secret bin;
-            FC_ASSERT( (size_t) BN_num_bytes( order ) == bin.data_size() );
-            FC_ASSERT( (size_t) BN_bn2bin( order, (unsigned char*) bin.data() ) == bin.data_size() );
+            size_t order_BN_num_bytes = BN_num_bytes( order );
+            FC_ASSERT( order_BN_num_bytes == bin.data_size() );
+            size_t order_BN_bn2bin = BN_bn2bin( order, (unsigned char*) bin.data() );
+            FC_ASSERT( order_BN_bn2bin == bin.data_size() );
             return bin;
         }
 

@@ -1,6 +1,8 @@
 #pragma once
 #include <assert.h>
 #include <utility>
+#include <string.h>
+
 
 namespace fc {
 #ifdef _MSC_VER
@@ -22,12 +24,13 @@ namespace fc {
     public:
       typedef T value_type;
 
-      optional():_valid(false){}
+      optional():_valid(false){ memset(_value, 0, sizeof(_value)); }
       ~optional(){ reset(); }
 
       optional( optional& o )
       :_valid(false) 
       {
+        memset(_value, 0, sizeof(_value));
         if( o._valid ) new (ptr()) T( *o );
         _valid = o._valid;
       }
@@ -35,6 +38,7 @@ namespace fc {
       optional( const optional& o )
       :_valid(false) 
       {
+        memset(_value, 0, sizeof(_value));
         if( o._valid ) new (ptr()) T( *o );
         _valid = o._valid;
       }
@@ -42,6 +46,7 @@ namespace fc {
       optional( optional&& o )
       :_valid(false) 
       {
+        memset(_value, 0, sizeof(_value));
         if( o._valid ) new (ptr()) T( std::move(*o) );
         _valid = o._valid;
         o.reset();
@@ -51,6 +56,7 @@ namespace fc {
       optional( const optional<U>& o )
       :_valid(false) 
       {
+        memset(_value, 0, sizeof(_value));
         if( o._valid ) new (ptr()) T( *o );
         _valid = o._valid;
       }
@@ -59,6 +65,7 @@ namespace fc {
       optional( optional<U>& o )
       :_valid(false) 
       {
+        memset(_value, 0, sizeof(_value));
         if( o._valid )
         {
           new (ptr()) T( *o );
@@ -70,6 +77,7 @@ namespace fc {
       optional( optional<U>&& o )
       :_valid(false) 
       {
+        memset(_value, 0, sizeof(_value));
         if( o._valid ) new (ptr()) T( std::move(*o) );
         _valid = o._valid;
         o.reset();
@@ -79,6 +87,7 @@ namespace fc {
       optional( U&& u )
       :_valid(true) 
       {
+        memset(_value, 0, sizeof(_value));
         new ((char*)ptr()) T( std::forward<U>(u) );
       }
 
